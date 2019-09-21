@@ -15,13 +15,12 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -71,7 +70,7 @@
         <url>https://github.com/teamapps-org/universal-db</url>
         <connection>scm:git:git@github.com:teamapps-org/universal-db.git</connection>
         <developerConnection>scm:git:git@github.com:teamapps-org/universal-db.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>v0.1.1</tag>
     </scm>
 
 
@@ -190,7 +189,7 @@
             <plugin>
                 <groupId>org.teamapps</groupId>
                 <artifactId>universal-db-maven-plugin</artifactId>
-                <version>1.1-SNAPSHOT</version>
+                <version>1.2</version>
                 <executions>
                     <execution>
                         <phase>generate-test-sources</phase>
