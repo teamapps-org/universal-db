@@ -1,0 +1,673 @@
+
+{staticFieldName}:
+public final static String {staticName} = "{name}";
+
+{staticField}:
+protected static {type} {name};
+
+################################################################################
+### INTERFACE GET METHODS:
+{INTERFACE_GET_METHOD_BOOLEAN}#
+    boolean get{name}();
+#
+{INTERFACE_GET_METHOD_SHORT}#
+    short get{name}();
+#
+{INTERFACE_GET_METHOD_INT}#
+    int get{name}();
+#
+{INTERFACE_GET_METHOD_LONG}#
+    long get{name}();
+#
+{INTERFACE_GET_METHOD_FLOAT}#
+    float get{name}();
+#
+{INTERFACE_GET_METHOD_DOUBLE}#
+    double get{name}();
+#
+{INTERFACE_GET_METHOD_TEXT}#
+    String get{name}();
+#
+{INTERFACE_GET_METHOD_FILE}#
+    FileValue get{name}();
+#
+{INTERFACE_GET_METHOD_SINGLE_REFERENCE}#
+    {reference} get{name}();
+#
+{INTERFACE_GET_METHOD_MULTI_REFERENCE}#
+    List<{reference}> get{name}();
+#
+{INTERFACE_GET_METHOD_TIMESTAMP}#
+    Instant get{name}();
+#
+{INTERFACE_GET_METHOD_TIMESTAMP_2}#
+    int get{name}AsEpochSecond();
+#
+{INTERFACE_GET_METHOD_TIMESTAMP_3}#
+    long get{name}AsEpochMilli();
+#
+{INTERFACE_GET_METHOD_DATE}#
+    Instant get{name}();
+#
+{INTERFACE_GET_METHOD_DATE_2}#
+    long get{name}AsEpochMilli();
+#
+{INTERFACE_GET_METHOD_TIME}#
+    Instant get{name}();
+#
+{INTERFACE_GET_METHOD_TIME_2}#
+    int get{name}AsSeconds();
+#
+{INTERFACE_GET_METHOD_DATE_TIME}#
+    Instant get{name}();
+#
+{INTERFACE_GET_METHOD_DATE_TIME_2}#
+    long get{name}AsEpochMilli();
+#
+{INTERFACE_GET_METHOD_LOCAL_DATE}#
+    LocalDate get{name}();
+#
+{INTERFACE_GET_METHOD_LOCAL_DATE_2}#
+    long get{name}AsEpochMilli();
+#
+{INTERFACE_GET_METHOD_ENUM}#
+    {enum} get{name}();
+#
+
+### INTERFACE SET METHODS ####################
+{INTERFACE_SET_METHOD_BOOLEAN}#
+    {type} set{name}(boolean value);
+#
+{INTERFACE_SET_METHOD_SHORT}#
+    {type} set{name}(short value);
+#
+{INTERFACE_SET_METHOD_INT}#
+    {type} set{name}(int value);
+#
+{INTERFACE_SET_METHOD_LONG}#
+    {type} set{name}(long value);
+#
+{INTERFACE_SET_METHOD_FLOAT}#
+    {type} set{name}(float value);
+#
+{INTERFACE_SET_METHOD_DOUBLE}#
+    {type} set{name}(double value);
+#
+{INTERFACE_SET_METHOD_TEXT}#
+    {type} set{name}(String value);
+#
+{INTERFACE_SET_METHOD_FILE}#
+    {type} set{name}(File value);
+#
+{INTERFACE_SET_METHOD_SINGLE_REFERENCE}#
+    {type} set{name}({reference} value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE}#
+    {type} set{name}(List<{reference}> value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE_2}#
+    {type} set{name}({reference} ... value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE_3}#
+    {type} add{name}(List<{reference}> value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE_4}#
+    {type} add{name}({reference} ... value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE_5}#
+    {type} remove{name}(List<{reference}> value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE_6}#
+    {type} remove{name}({reference} ... value);
+#
+{INTERFACE_SET_METHOD_MULTI_REFERENCE_7}#
+    {type} removeAll{name}();
+#
+{INTERFACE_SET_METHOD_TIMESTAMP}#
+    {type} set{name}(Instant value);
+#
+{INTERFACE_SET_METHOD_TIMESTAMP_2}#
+    {type} set{name}AsEpochSecond(int value);
+#
+{INTERFACE_SET_METHOD_TIMESTAMP_3}#
+    {type} set{name}AsEpochMilli(long value);
+#
+{INTERFACE_SET_METHOD_DATE}#
+    {type} set{name}(Instant value);
+#
+{INTERFACE_SET_METHOD_DATE_2}#
+    {type} set{name}AsEpochMilli(long value);
+#
+{INTERFACE_SET_METHOD_TIME}#
+    {type} set{name}(Instant value);
+#
+{INTERFACE_SET_METHOD_TIME_2}#
+    {type} set{name}AsSeconds(int value);
+#
+{INTERFACE_SET_METHOD_DATE_TIME}#
+    {type} set{name}(Instant value);
+#
+{INTERFACE_SET_METHOD_DATE_TIME_2}#
+    {type} set{name}AsEpochMilli(long value);
+#
+{INTERFACE_SET_METHOD_LOCAL_DATE}#
+    {type} set{name}(LocalDate value);
+#
+{INTERFACE_SET_METHOD_LOCAL_DATE_2}#
+    {type} set{name}AsEpochMilli(long value);
+#
+{INTERFACE_SET_METHOD_ENUM}#
+    {type} set{name}({enum} value);
+#
+
+################################################################################
+### ENTITY GET METHODS:
+{ENTITY_GET_METHOD_BOOLEAN}#
+	@Override
+	public boolean get{name}() {
+		if (isChanged({name2})) {
+			return (boolean) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_SHORT}#
+	@Override
+	public short get{name}() {
+		if (isChanged({name2})) {
+			return (short) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_INT}#
+	@Override
+	public int get{name}() {
+		if (isChanged({name2})) {
+			return (int) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_LONG}#
+	@Override
+	public long get{name}() {
+		if (isChanged({name2})) {
+			return (long) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_FLOAT}#
+	@Override
+	public float get{name}() {
+		if (isChanged({name2})) {
+			return (float) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_DOUBLE}#
+	@Override
+	public double get{name}() {
+		if (isChanged({name2})) {
+			return (double) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_TEXT}#
+	@Override
+	public String get{name}() {
+		if (isChanged({name2})) {
+			return (String) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_FILE}#
+	@Override
+	public FileValue get{name}() {
+		if (isChanged({name2})) {
+			return (FileValue) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_SINGLE_REFERENCE}#
+	@Override
+	public {otherType} get{name}() {
+		if (isChanged({name2})) {
+			return ({otherType}) getReferenceChangeValue({name2});
+		} else {
+			int id = {name2}.getValue(getId());
+			if (id > 0) {
+				return {otherType}.getById(id);
+			} else {
+				return null;
+			}
+		}
+	}
+#
+{ENTITY_GET_METHOD_MULTI_REFERENCE}#
+	@Override
+	public List<{otherType}> get{name}() {
+		if (isChanged({name2})) {
+		    return createEntityList({name2}, {otherType}.getBuilder());
+		} else {
+			if (!{name2}.isEmpty(getId())) {
+				return new EntityArrayList<>({otherType}.getBuilder(), {name2}.getReferences(getId()), {name2}.getReferencesCount(getId()));
+			} else {
+				return Collections.emptyList();
+			}
+		}
+	}
+#
+{ENTITY_GET_METHOD_TIMESTAMP}#
+	@Override
+	public Instant get{name}() {
+    	int value;
+    	if (isChanged({name2})) {
+			value = (int) getChangedValue({name2});
+		} else {
+			value = {name2}.getValue(getId());
+		}
+		return value == 0 ? null : Instant.ofEpochSecond(value);
+	}
+#
+{ENTITY_GET_METHOD_TIMESTAMP_2}#
+	@Override
+	public int get{name}AsEpochSecond() {
+    	if (isChanged({name2})) {
+			return (int) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_TIMESTAMP_3}#
+	@Override
+	public long get{name}AsEpochMilli() {
+    	if (isChanged({name2})) {
+			return ((long) ((Integer) getChangedValue({name2})).longValue()) * 1000L;
+		} else {
+			return {name2}.getValue(getId()) * 1000L;
+		}
+	}
+#
+{ENTITY_GET_METHOD_DATE}#
+	@Override
+	public Instant get{name}() {
+    	long value;
+    	if (isChanged({name2})) {
+			value = (long) getChangedValue({name2});
+		} else {
+			value = {name2}.getValue(getId());
+		}
+		return value == 0 ? null : Instant.ofEpochMilli(value);
+	}
+#
+{ENTITY_GET_METHOD_DATE_2}#
+	@Override
+	public long get{name}AsEpochMilli() {
+    	if (isChanged({name2})) {
+			return (long) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_TIME}#
+	@Override
+	public Instant get{name}() {
+    	int value;
+    	if (isChanged({name2})) {
+			value = (int) getChangedValue({name2});
+		} else {
+			value = {name2}.getValue(getId());
+		}
+		return value == 0 ? null: Instant.ofEpochSecond(value);
+	}
+#
+{ENTITY_GET_METHOD_TIME_2}#
+	@Override
+	public int get{name}AsSeconds() {
+    	if (isChanged({name2})) {
+			return (int) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_DATE_TIME}#
+	@Override
+	public Instant get{name}() {
+    	long value;
+    	if (isChanged({name2})) {
+			value = (long) getChangedValue({name2});
+		} else {
+			value = {name2}.getValue(getId());
+		}
+		return value == 0 ? null : Instant.ofEpochMilli(value);
+	}
+#
+{ENTITY_GET_METHOD_DATE_TIME_2}#
+	@Override
+	public long get{name}AsEpochMilli() {
+    	if (isChanged({name2})) {
+			return (long) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_LOCAL_DATE}#
+	@Override
+	public LocalDate get{name}() {
+    	long value;
+    	if (isChanged({name2})) {
+			value = (long) getChangedValue({name2});
+		} else {
+			value = {name2}.getValue(getId());
+		}
+		return value == 0 ? null : LocalDate.ofInstant(Instant.ofEpochMilli(value), ZoneOffset.UTC);
+	}
+#
+{ENTITY_GET_METHOD_LOCAL_DATE_2}#
+	@Override
+	public long get{name}AsEpochMilli() {
+    	if (isChanged({name2})) {
+			return (long) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_ENUM}#
+	@Override
+	public {name} get{name}() {
+    	short shortValue;
+		if (isChanged({name2})) {
+			shortValue = (short) getChangedValue({name2});
+		} else {
+			shortValue = {name2}.getValue(getId());
+		}
+		return shortValue == 0 ? null : {name}.values()[shortValue - 1];
+	}
+#
+
+### ENTITY SET METHODS ####################
+{ENTITY_SET_METHOD_BOOLEAN}#
+	@Override
+	public {type} set{name}(boolean value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_SHORT}#
+	@Override
+	public {type} set{name}(short value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_INT}#
+	@Override
+	public {type} set{name}(int value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_LONG}#
+	@Override
+	public {type} set{name}(long value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_FLOAT}#
+	@Override
+	public {type} set{name}(float value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_DOUBLE}#
+	@Override
+	public {type} set{name}(double value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TEXT}#
+	@Override
+	public {type} set{name}(String value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_FILE}#
+	@Override
+	public {type} set{name}(File value) {
+	    FileValue storeFile = {name2}.storeFile(value);
+		setChangeValue({name2}, storeFile, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_SINGLE_REFERENCE}#
+	@Override
+	public {type} set{name}({otherType} value) {
+		setSingleReferenceValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE}#
+	@Override
+	public {type} set{name}(List<{otherType}> value) {
+		setMultiReferenceValue(value, {name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE_2}#
+	@Override
+	public {type} set{name}({otherType} ... value) {
+		setMultiReferenceValue(Arrays.asList(value), {name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE_3}#
+	@Override
+	public {type} add{name}(List<{otherType}> value) {
+		addMultiReferenceValue(value, {name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE_4}#
+	@Override
+	public {type} add{name}({otherType} ... value) {
+		addMultiReferenceValue(Arrays.asList(value), {name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE_5}#
+	@Override
+	public {type} remove{name}(List<{otherType}> value) {
+		removeMultiReferenceValue(value, {name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE_6}#
+	@Override
+	public {type} remove{name}({otherType} ... value) {
+		removeMultiReferenceValue(Arrays.asList(value), {name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_MULTI_REFERENCE_7}#
+	@Override
+	public {type} removeAll{name}() {
+		removeAllMultiReferenceValue({name2}, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TIMESTAMP}#
+	@Override
+	public {type} set{name}(Instant value) {
+		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
+		setChangeValue({name2}, intValue, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TIMESTAMP_2}#
+	@Override
+	public {type} set{name}AsEpochSecond(int value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TIMESTAMP_3}#
+	@Override
+	public {type} set{name}AsEpochMilli(long value) {
+		int intValue = (int) (value / 1000);
+		setChangeValue({name2}, intValue, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_DATE}#
+	@Override
+	public {type} set{name}(Instant value) {
+		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
+		setChangeValue({name2}, longValue, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_DATE_2}#
+	@Override
+	public {type} set{name}AsEpochMilli(long value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TIME}#
+	@Override
+	public {type} set{name}(Instant value) {
+		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
+		setChangeValue({name2}, intValue, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TIME_2}#
+	@Override
+	public {type} set{name}AsSeconds(int value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_DATE_TIME}#
+	@Override
+	public {type} set{name}(Instant value) {
+		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
+		setChangeValue({name2}, longValue, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_DATE_TIME_2}#
+	@Override
+	public {type} set{name}AsEpochMilli(long value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_LOCAL_DATE}#
+	@Override
+	public {type} set{name}(LocalDate value) {
+		long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
+		setChangeValue({name2}, longValue, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_LOCAL_DATE_2}#
+	@Override
+	public {type} set{name}AsEpochMilli(long value) {
+		setChangeValue({name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_ENUM}#
+	@Override
+	public {type} set{name}({name} value) {
+    	short shortValue = (short) (value != null ? value.ordinal() + 1 : 0);
+    	setChangeValue({name2}, shortValue, table);
+		return this;
+	}
+#
+
+################################################################################
+{QUERY_METHOD}#
+	@Override
+	public {query} {name2}({filter} filter) {
+		and({udbType}.{name2}.createFilter(filter));
+		return this;
+	}
+#
+{QUERY_ENUMS}#
+	@Override
+	public {query} {name2}(EnumFilterType filterType, {enumType}... enums) {
+		and({udbType}.{name2}.createFilter(NumericFilter.createEnumFilter(filterType, enums)));
+		return this;
+	}
+#
+
+{QUERY_MULTI_REFERENCE}#
+	@Override
+	public {query} {name2}(MultiReferenceFilterType type, {otherType} ... values) {
+		List<Integer> ids = new ArrayList<>();
+		if (values != null) {
+			for ({otherType} value : values) {
+				ids.add(value.getId());
+			}
+		}
+		MultiReferenceFilter filter = MultiReferenceFilter.createFilter(type, ids);
+		and({udbType}.{name2}.createFilter(filter));
+		return this;
+	}
+#
+{QUERY_MULTI_REFERENCE_2}#
+	@Override
+	public {query} {name2}Count(MultiReferenceFilterType type, int count) {
+		MultiReferenceFilter filter = MultiReferenceFilter.createCountFilter(type, count);
+		and({udbType}.{name2}.createFilter(filter));
+		return this;
+	}
+#
+
+{QUERY_SUB_QUERY}#
+	@Override
+	public {query} filter{name}({otherQuery} query) {
+		{udbOtherQuery} udbQuery = ({udbOtherQuery}) query;
+		IndexPath path = new IndexPath();
+		path.addPath({udbType}.{name2}, {otherUdbType}.{otherName2});
+		udbQuery.prependPath(path);
+		and(udbQuery);
+		return this;
+	}
+#
+{QUERY_SUB_QUERY_2}#
+	@Override
+	public {query} filter{name}({otherQuery} query) {
+		{udbOtherQuery} udbQuery = ({udbOtherQuery}) query;
+		IndexPath path = new IndexPath();
+		path.addPath({udbType}.{name2});
+		udbQuery.prependPath(path);
+		and(udbQuery);
+		return this;
+	}
+#

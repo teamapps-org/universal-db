@@ -1,0 +1,31 @@
+package {package};
+
+import org.teamapps.universaldb.pojo.*;
+import org.teamapps.universaldb.record.*;
+import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.bool.*;
+import org.teamapps.universaldb.index.file.*;
+import org.teamapps.universaldb.index.enumeration.*;
+import org.teamapps.universaldb.index.numeric.*;
+import org.teamapps.universaldb.index.reference.value.*;
+import org.teamapps.universaldb.index.reference.multi.*;
+import org.teamapps.universaldb.index.reference.single.*;
+
+
+import java.util.*;
+{imports}
+
+public interface {query} {
+
+    static {query} create() {
+        return new {udbQuery}();
+    }
+
+{methods}
+    {query} andOr({query}... queries);
+
+    List<{type}> execute();
+
+    List<{type}> execute(String sortFieldName, boolean ascending, String ... path);
+}
+

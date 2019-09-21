@@ -1,0 +1,69 @@
+package {package};
+
+import org.teamapps.universaldb.*;
+import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.bool.*;
+import org.teamapps.universaldb.index.numeric.*;
+import org.teamapps.universaldb.index.file.*;
+import org.teamapps.universaldb.index.enumeration.*;
+import org.teamapps.universaldb.index.reference.multi.*;
+import org.teamapps.universaldb.index.reference.single.*;
+import org.teamapps.universaldb.pojo.*;
+import org.teamapps.universaldb.pojo.template.*;
+import org.teamapps.universaldb.transaction.*;
+import org.teamapps.universaldb.record.*;
+import org.teamapps.universaldb.query.*;
+
+
+import java.util.*;
+{imports}
+
+public class {udbQuery} extends AbstractUdbQuery implements {query} {
+
+    public {udbQuery}() {
+    }
+
+{methods}
+	@Override
+	public {udbQuery} andOr({query} ... queries) {
+	    AbstractUdbQuery[] abstractUdbQueries = Arrays.copyOf(queries, queries.length, AbstractUdbQuery[].class);
+		andOr(abstractUdbQueries);
+		return this;
+	}
+
+	@Override
+	public List<{type}> execute() {
+	    BitSet result;
+	    if (getFilter() != null) {
+	        result = getFilter().filter({udbType}.table.getRecordBitSet());
+	    } else {
+	        result = {udbType}.table.getRecordBitSet();
+	    }
+        return new EntityBitSetList<>({type}.getBuilder(), result);
+	}
+
+	@Override
+    public List<{type}> execute(String sortFieldName, boolean ascending, String ... path) {
+        BitSet result;
+        if (getFilter() != null) {
+            result = getFilter().filter({udbType}.table.getRecordBitSet());
+        } else {
+            result = {udbType}.table.getRecordBitSet();
+        }
+        return {udbType}.sort(result, sortFieldName, ascending, path);
+    }
+
+    @Override
+    public String toString() {
+        Filter filter = getFilter();
+        if (filter == null) {
+            return "EMPTY QUERY";
+        } else {
+            return filter.toString();
+        }
+    }
+}
+
+
+

@@ -1,0 +1,14 @@
+package {package};
+
+import org.teamapps.universaldb.schema.SchemaInfoProvider;
+
+public class SchemaInfo implements SchemaInfoProvider {
+
+	public static SchemaInfo create() {
+		return new SchemaInfo();
+	}
+
+	public String getSchema() {
+		return {schema}
+	}
+}
