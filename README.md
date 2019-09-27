@@ -5,7 +5,7 @@ An ultra fast embedded persisting in-memory database:
 
 * Easy and intuitive API through generated POJOs
 * Integrated full text search - including complex joins
-* Integrated file storage - either local or S3 compatible starage with AWS or min.io
+* Integrated file storage - either local or S3 compatible storage with AWS or min.io
 * File parsing and full text indexing
 
 ### Setting up the dependencies
