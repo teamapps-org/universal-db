@@ -26,6 +26,8 @@ public interface {query} {
 
     List<{type}> execute();
 
+    {type} executeExpectSingleton();
+
     List<{type}> execute(String sortFieldName, boolean ascending, String ... path);
 }
 

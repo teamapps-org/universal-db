@@ -95,7 +95,7 @@ public class UniversalDB implements DataBaseMapper, TransactionHandler {
 
         Schema schema = Schema.parse(schemaInfo.getSchema());
         String pojoPath = schema.getPojoNamespace();
-        this.schemaIndex = new SchemaIndex(new Schema(schema.getPojoNamespace()), storagePath);
+        this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
 
 
         schemaIndex.setFileStore(fileStore);
@@ -122,7 +122,7 @@ public class UniversalDB implements DataBaseMapper, TransactionHandler {
     private UniversalDB(File storagePath, Schema schema, ClusterConfig clusterConfig) throws IOException {
         this.storagePath = storagePath;
         this.transactionStore = new TransactionStore(storagePath);
-        this.schemaIndex = new SchemaIndex(new Schema(schema.getPojoNamespace()), storagePath);
+        this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
 
         mapSchema(schema);
         if (clusterConfig != null) {

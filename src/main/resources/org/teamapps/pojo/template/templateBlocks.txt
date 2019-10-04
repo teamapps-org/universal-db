@@ -408,49 +408,49 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_BOOLEAN}#
 	@Override
 	public {type} set{name}(boolean value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_SHORT}#
 	@Override
 	public {type} set{name}(short value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_INT}#
 	@Override
 	public {type} set{name}(int value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_LONG}#
 	@Override
 	public {type} set{name}(long value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_FLOAT}#
 	@Override
 	public {type} set{name}(float value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DOUBLE}#
 	@Override
 	public {type} set{name}(double value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TEXT}#
 	@Override
 	public {type} set{name}(String value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
@@ -458,7 +458,7 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(File value) {
 	    FileValue storeFile = {name2}.storeFile(value);
-		setChangeValue({name2}, storeFile, table);
+		setChangeValue(this.{name2}, storeFile, table);
 		return this;
 	}
 #
@@ -522,14 +522,14 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(Instant value) {
 		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
-		setChangeValue({name2}, intValue, table);
+		setChangeValue(this.{name2}, intValue, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TIMESTAMP_2}#
 	@Override
 	public {type} set{name}AsEpochSecond(int value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
@@ -537,7 +537,7 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
 		int intValue = (int) (value / 1000);
-		setChangeValue({name2}, intValue, table);
+		setChangeValue(this.{name2}, intValue, table);
 		return this;
 	}
 #
@@ -545,14 +545,14 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(Instant value) {
 		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
-		setChangeValue({name2}, longValue, table);
+		setChangeValue(this.{name2}, longValue, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DATE_2}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
@@ -560,14 +560,14 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(Instant value) {
 		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
-		setChangeValue({name2}, intValue, table);
+		setChangeValue(this.{name2}, intValue, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TIME_2}#
 	@Override
 	public {type} set{name}AsSeconds(int value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
@@ -575,14 +575,14 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(Instant value) {
 		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
-		setChangeValue({name2}, longValue, table);
+		setChangeValue(this.{name2}, longValue, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DATE_TIME_2}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
@@ -590,14 +590,14 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(LocalDate value) {
 		long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
-		setChangeValue({name2}, longValue, table);
+		setChangeValue(this.{name2}, longValue, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_LOCAL_DATE_2}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
-		setChangeValue({name2}, value, table);
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #
@@ -605,7 +605,7 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}({name} value) {
     	short shortValue = (short) (value != null ? value.ordinal() + 1 : 0);
-    	setChangeValue({name2}, shortValue, table);
+    	setChangeValue(this.{name2}, shortValue, table);
 		return this;
 	}
 #

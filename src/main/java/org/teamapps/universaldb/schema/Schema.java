@@ -39,7 +39,9 @@ public class Schema implements SchemaInfoProvider {
 	}
 
 	public static Schema create(String pojoNamespace) {
-		return new Schema(pojoNamespace);
+		Schema schema = new Schema();
+		schema.setPojoNamespace(pojoNamespace);
+		return schema;
 	}
 
 	public static Schema parse(String schemaData) {
@@ -68,7 +70,7 @@ public class Schema implements SchemaInfoProvider {
 	public Schema() {
 	}
 
-	public Schema(String schemaData) {
+	private Schema(String schemaData) {
 		String[] lines = schemaData.split("\n");
 		boolean foundSchema = false;
 		Database db = null;

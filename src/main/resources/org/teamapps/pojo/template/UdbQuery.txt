@@ -43,6 +43,22 @@ public class {udbQuery} extends AbstractUdbQuery implements {query} {
         return new EntityBitSetList<>({type}.getBuilder(), result);
 	}
 
+    @Override
+    public {type} executeExpectSingleton() {
+        BitSet result;
+        if (getFilter() != null) {
+            result = getFilter().filter({udbType}.table.getRecordBitSet());
+        } else {
+            result = {udbType}.table.getRecordBitSet();
+        }
+        int id = result.nextSetBit(1);
+        if (id < 0) {
+            return null;
+        } else {
+            return {type}.getBuilder().build(id);
+        }
+    }
+
 	@Override
     public List<{type}> execute(String sortFieldName, boolean ascending, String ... path) {
         BitSet result;
