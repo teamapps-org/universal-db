@@ -15,8 +15,8 @@ import org.teamapps.universaldb.transaction.*;
 import org.teamapps.universaldb.record.*;
 import org.teamapps.universaldb.query.*;
 
-
 import java.util.*;
+import java.util.function.Function;
 {imports}
 
 public class {udbQuery} extends AbstractUdbQuery implements {query} {
@@ -31,6 +31,15 @@ public class {udbQuery} extends AbstractUdbQuery implements {query} {
 		andOr(abstractUdbQueries);
 		return this;
 	}
+
+    @Override
+    public {query} customFilter(Function<{type}, Boolean> customFilter) {
+        Function<Integer, Boolean> filterFunction = id -> {
+            return customFilter.apply({type}.getById(id));
+        };
+        and(new CustomEntityFilter(filterFunction));
+        return this;
+    }
 
 	@Override
 	public List<{type}> execute() {

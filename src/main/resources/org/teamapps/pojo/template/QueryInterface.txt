@@ -11,8 +11,8 @@ import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.index.reference.multi.*;
 import org.teamapps.universaldb.index.reference.single.*;
 
-
 import java.util.*;
+import java.util.function.Function;
 {imports}
 
 public interface {query} {
@@ -23,6 +23,8 @@ public interface {query} {
 
 {methods}
     {query} andOr({query}... queries);
+
+    {query} customFilter(Function<{type}, Boolean> customFilter);
 
     List<{type}> execute();
 

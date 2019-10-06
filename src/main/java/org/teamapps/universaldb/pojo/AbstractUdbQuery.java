@@ -19,10 +19,7 @@
  */
 package org.teamapps.universaldb.pojo;
 
-import org.teamapps.universaldb.query.Filter;
-import org.teamapps.universaldb.query.IndexFilter;
-import org.teamapps.universaldb.query.IndexPath;
-import org.teamapps.universaldb.query.OrFilter;
+import org.teamapps.universaldb.query.*;
 
 import java.util.BitSet;
 
@@ -48,6 +45,14 @@ public class AbstractUdbQuery {
 	}
 
 	public void and(IndexFilter andFilter) {
+		if (filter == null) {
+			filter = andFilter;
+		} else {
+			filter = filter.and(andFilter);
+		}
+	}
+
+	public void and(CustomEntityFilter andFilter) {
 		if (filter == null) {
 			filter = andFilter;
 		} else {
