@@ -133,7 +133,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	protected void setSingleReferenceValue(ColumnIndex index, Entity reference, TableIndex tableIndex) {
 		AbstractUdbEntity entity = (AbstractUdbEntity) reference;
-		RecordReference recordReference = new RecordReference(entity.getId(), entity.getCorrelationId());
+		RecordReference recordReference = null;
+		if (entity != null) {
+			recordReference = new RecordReference(entity.getId(), entity.getCorrelationId());
+		}
 		checkChangeSet();
 		entityChangeSet.addChangeValue(index, recordReference);
 		entityChangeSet.setReferenceChange(index, entity);

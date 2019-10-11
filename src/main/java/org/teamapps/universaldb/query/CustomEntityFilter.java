@@ -43,6 +43,10 @@ public class CustomEntityFilter implements Filter{
 
 	@Override
 	public String explain(int level) {
-		return null;
+		StringBuilder sb = new StringBuilder();
+		sb.append(getExplainTabs(level));
+		sb.append("custom-filter");
+		sb.append("\n");
+		return sb.toString();
 	}
 }

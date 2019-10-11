@@ -55,7 +55,7 @@ public class EntityBitSetList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public boolean isEmpty() {
-		return count > 0;
+		return count == 0;
 	}
 
 	@Override
