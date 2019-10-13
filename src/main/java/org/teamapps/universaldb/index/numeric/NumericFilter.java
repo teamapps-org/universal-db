@@ -20,11 +20,10 @@
 package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.index.enumeration.EnumFilterType;
+import org.teamapps.universaldb.pojo.Entity;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class NumericFilter {
 	
@@ -68,6 +67,11 @@ public class NumericFilter {
 
 	public static NumericFilter containsFilter(Number ... numbers) {
 		return new NumericFilter(NumericFilterType.CONTAINS, Arrays.asList(numbers));
+	}
+
+	public static NumericFilter containsEntitiesFilter(Collection<? extends Entity> entities) {
+		List<Number> list = entities.stream().map(entity -> (Number) entity.getId()).collect(Collectors.toList());
+		return new NumericFilter(NumericFilterType.CONTAINS, list);
 	}
 
 	public static NumericFilter containsFilter(List<Number> numbers) {
