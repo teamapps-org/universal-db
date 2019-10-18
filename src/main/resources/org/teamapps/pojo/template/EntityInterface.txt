@@ -16,7 +16,7 @@ public interface {type} extends Entity<{type}> {
         return new {udbType}();
     }
 
-    default {type} create(int id) {
+    static {type} create(int id) {
         return new {udbType}(id, true);
     }
 
