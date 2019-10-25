@@ -57,7 +57,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 		this.fileDataIndex = fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getPath(), name) : null;
 		this.metaDataIndex = fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table) : null;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
-		this.filePath = getFQN().toLowerCase().replace('.', '/');
+		this.filePath = getFQN().replace('.', '/');
 		this.fileStore = fileStore;
 	}
 
