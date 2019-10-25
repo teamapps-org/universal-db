@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 public class S3Test {
 
-	private final static String S3_URL = "https://play.min.io";
+	private final static String S3_URL = "https://play.min.io:9000";
 	private final static String S3_KEY = "Q3AM3UQ867SPQQA43P2F";
 	private final static String S3_SECRET = "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG";
 
