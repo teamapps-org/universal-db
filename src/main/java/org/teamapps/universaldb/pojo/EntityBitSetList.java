@@ -70,12 +70,22 @@ public class EntityBitSetList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public Object[] toArray() {
-		return new Object[0];
+		List<ENTITY> list = new ArrayList<>();
+		checkIdsArray();
+		for (int id : ids) {
+			list.add(entityBuilder.build(id));
+		}
+		return list.toArray();
 	}
 
 	@Override
 	public <T> T[] toArray(T[] a) {
-		return null;
+		List<ENTITY> list = new ArrayList<>();
+		checkIdsArray();
+		for (int id : ids) {
+			list.add(entityBuilder.build(id));
+		}
+		return list.toArray(a);
 	}
 
 	@Override
