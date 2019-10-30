@@ -218,6 +218,18 @@ public class TableFieldTest {
 	}
 
 	@Test
+	public void testBinaryField() throws IOException {
+		FieldTest record = FieldTest.create();
+		byte[] bytes = {123, 1, 101, 64, 44, 33};
+		record.setBinaryField(bytes);
+		assertEquals(bytes.length, record.getBinaryField().length);
+		record.save();
+		assertEquals(bytes.length, record.getBinaryField().length);
+		assertEquals(bytes[4], record.getBinaryField()[4]);
+	}
+
+
+		@Test
 	public void testSingleReference() throws IOException {
 		FieldTest table1 = FieldTest.create().setTextField("Test").save();
 		FieldTest table2 = FieldTest.create();

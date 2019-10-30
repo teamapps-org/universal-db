@@ -10,6 +10,7 @@ import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.index.reference.multi.*;
 import org.teamapps.universaldb.index.reference.single.*;
+import org.teamapps.universaldb.index.binary.*;
 
 import java.util.*;
 import java.util.function.Function;

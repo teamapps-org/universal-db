@@ -41,10 +41,11 @@ public enum ColumnType {
 	TIME(13),
 	DATE_TIME(14),
 	LOCAL_DATE(15),
-	ENUM(16), //todo
+	ENUM(16),
+	BINARY(17),
 
-	CURRENCY(17), //todo
-	DYNAMIC_CURRENCY(18) //todo
+	CURRENCY(18), //todo
+	DYNAMIC_CURRENCY(19) //todo
 
 	;
 
@@ -99,6 +100,8 @@ public enum ColumnType {
 				return IndexType.TEXT;
 			case FILE:
 				return IndexType.FILE;
+			case BINARY:
+				return IndexType.BINARY;
 			case SINGLE_REFERENCE:
 				return IndexType.REFERENCE;
 			case MULTI_REFERENCE:

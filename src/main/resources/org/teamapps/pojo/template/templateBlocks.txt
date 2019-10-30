@@ -31,6 +31,9 @@ protected static {type} {name};
 {INTERFACE_GET_METHOD_FILE}#
     FileValue get{name}();
 #
+{INTERFACE_GET_METHOD_BINARY}#
+    byte[] get{name}();
+#
 {INTERFACE_GET_METHOD_SINGLE_REFERENCE}#
     {reference} get{name}();
 #
@@ -98,6 +101,9 @@ protected static {type} {name};
 #
 {INTERFACE_SET_METHOD_FILE}#
     {type} set{name}(File value);
+#
+{INTERFACE_SET_METHOD_BINARY}#
+    {type} set{name}(byte[] value);
 #
 {INTERFACE_SET_METHOD_SINGLE_REFERENCE}#
     {type} set{name}({reference} value);
@@ -237,6 +243,16 @@ protected static {type} {name};
 	public FileValue get{name}() {
 		if (isChanged({name2})) {
 			return (FileValue) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_BINARY}#
+	@Override
+	public byte[] get{name}() {
+		if (isChanged({name2})) {
+			return (byte[]) getChangedValue({name2});
 		} else {
 			return {name2}.getValue(getId());
 		}
@@ -459,6 +475,13 @@ protected static {type} {name};
 	public {type} set{name}(File value) {
 	    FileValue storeFile = {name2}.storeFile(value);
 		setChangeValue(this.{name2}, storeFile, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_BINARY}#
+	@Override
+	public {type} set{name}(byte[] value) {
+		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
 #

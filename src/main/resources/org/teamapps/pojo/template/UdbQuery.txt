@@ -9,6 +9,7 @@ import org.teamapps.universaldb.index.file.*;
 import org.teamapps.universaldb.index.enumeration.*;
 import org.teamapps.universaldb.index.reference.multi.*;
 import org.teamapps.universaldb.index.reference.single.*;
+import org.teamapps.universaldb.index.binary.*;
 import org.teamapps.universaldb.pojo.*;
 import org.teamapps.universaldb.pojo.template.*;
 import org.teamapps.universaldb.transaction.*;

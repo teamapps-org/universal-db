@@ -124,6 +124,11 @@ public class Table implements MappedObject {
 		return this;
 	}
 
+	public Table addBinary(String name) {
+		addColumn(name, ColumnType.BINARY);
+		return this;
+	}
+
 	public Table addTimestamp(String name) {
 		addColumn(name, ColumnType.TIMESTAMP);
 		return this;

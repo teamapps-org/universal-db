@@ -40,6 +40,7 @@ public class Model implements SchemaInfoProvider {
 				.addLocalDate("localDateField")
 				.addEnum("enumField", "firstValue", "secondValue", "thirdValue", "forthValue", "fifthValue")
 				.addFile("fileField")
+				.addBinary("binaryField")
 				.addReference("singleReferenceField", table, false, "backRefSingleReferenceField")
 				.addReference("backRefSingleReferenceField", table, false, "singleReferenceField")
 				.addReference("singleReferenceNoBackRefField", table, false )

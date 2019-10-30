@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index;
 
+import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.util.DataStreamUtil;
 import org.teamapps.universaldb.index.bool.BitSetBooleanIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
@@ -75,6 +76,9 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 			case FILE:
 				column = new FileIndex(name, table, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
 				break;
+			case BINARY:
+				column = new BinaryIndex(name, table);
+				break;
 		}
 		return column;
 	}
@@ -111,6 +115,9 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 					} else {
 						return fileValue.getUuid();
 					}
+				case BINARY:
+					byte[] byteValue = (byte[]) value;
+					return byteValue.length + " bytes";
 			}
 			return value.toString();
 		}

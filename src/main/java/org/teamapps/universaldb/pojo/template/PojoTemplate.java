@@ -20,6 +20,8 @@
 package org.teamapps.universaldb.pojo.template;
 
 import org.teamapps.universaldb.index.ColumnType;
+import org.teamapps.universaldb.index.binary.BinaryFilter;
+import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.schema.Table;
@@ -309,6 +311,8 @@ public class PojoTemplate {
 				return MultiReferenceIndex.class.getSimpleName();
 			case FILE:
 				return FileIndex.class.getSimpleName();
+			case BINARY:
+				return BinaryIndex.class.getSimpleName();
 		}
 		return null;
 	}
@@ -327,6 +331,8 @@ public class PojoTemplate {
 				return TextFilter.class.getSimpleName();
 			case FILE:
 				return FileFilter.class.getSimpleName();
+			case BINARY:
+				return BinaryFilter.class.getSimpleName();
 			case SINGLE_REFERENCE:
 				return NumericFilter.class.getSimpleName();
 			case MULTI_REFERENCE:
