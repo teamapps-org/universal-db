@@ -20,22 +20,34 @@
 package org.teamapps.universaldb.index.file;
 
 import java.io.File;
+import java.nio.file.Files;
 
 public class LocalFileStore extends AbstractFileStore {
 
 	private final File storePath;
+	private final boolean encrypt;
 
 	public LocalFileStore(File storePath) {
 		this.storePath = storePath;
+		this.encrypt = false;
+	}
+
+	public LocalFileStore(File storePath, boolean encrypt) {
+		this.storePath = storePath;
+		this.encrypt = encrypt;
 	}
 
 	@Override
 	public File getFile(String path, String uuid, String hash) {
 		try {
 			File filePath = createPathFromUuid(path, uuid);
-			File tempFile = File.createTempFile("temp", ".bin");
-			FileUtil.decryptAndDecompress(filePath, tempFile, hash);
-			return tempFile;
+			if (encrypt) {
+				File tempFile = File.createTempFile("temp", ".bin");
+				FileUtil.decryptAndDecompress(filePath, tempFile, hash);
+				return tempFile;
+			} else {
+				return filePath;
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -46,7 +58,11 @@ public class LocalFileStore extends AbstractFileStore {
 	public void setFile(String path, String uuid, String hash, File file) {
 		try {
 			File storeFile = createPathFromUuid(path, uuid);
-			FileUtil.compressAndEncrypt(file, storeFile, hash);
+			if (encrypt) {
+				FileUtil.compressAndEncrypt(file, storeFile, hash);
+			} else {
+				Files.copy(file.toPath(), storeFile.toPath());
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

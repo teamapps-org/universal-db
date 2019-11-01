@@ -11,6 +11,8 @@ import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.index.reference.multi.*;
 import org.teamapps.universaldb.index.reference.single.*;
 import org.teamapps.universaldb.index.binary.*;
+import org.teamapps.universaldb.query.*;
+
 
 import java.util.*;
 import java.util.function.Function;
@@ -32,5 +34,8 @@ public interface {query} {
     {type} executeExpectSingleton();
 
     List<{type}> execute(String sortFieldName, boolean ascending, String ... path);
+
+    List<{type}> execute(int startIndex, int length, Sorting sorting);
+
 }
 

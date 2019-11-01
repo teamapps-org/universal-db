@@ -18,6 +18,7 @@ import org.teamapps.universaldb.query.*;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 {imports}
 
 public class {udbQuery} extends AbstractUdbQuery implements {query} {
@@ -44,23 +45,13 @@ public class {udbQuery} extends AbstractUdbQuery implements {query} {
 
 	@Override
 	public List<{type}> execute() {
-	    BitSet result;
-	    if (getFilter() != null) {
-	        result = getFilter().filter({udbType}.table.getRecordBitSet());
-	    } else {
-	        result = {udbType}.table.getRecordBitSet();
-	    }
+        BitSet result = filter({udbType}.table.getRecordBitSet());
         return new EntityBitSetList<>({type}.getBuilder(), result);
 	}
 
     @Override
     public {type} executeExpectSingleton() {
-        BitSet result;
-        if (getFilter() != null) {
-            result = getFilter().filter({udbType}.table.getRecordBitSet());
-        } else {
-            result = {udbType}.table.getRecordBitSet();
-        }
+        BitSet result = filter({udbType}.table.getRecordBitSet());
         int id = result.nextSetBit(1);
         if (id < 0) {
             return null;
@@ -71,13 +62,23 @@ public class {udbQuery} extends AbstractUdbQuery implements {query} {
 
 	@Override
     public List<{type}> execute(String sortFieldName, boolean ascending, String ... path) {
-        BitSet result;
-        if (getFilter() != null) {
-            result = getFilter().filter({udbType}.table.getRecordBitSet());
-        } else {
-            result = {udbType}.table.getRecordBitSet();
-        }
+        BitSet result = filter({udbType}.table.getRecordBitSet());
         return {udbType}.sort(result, sortFieldName, ascending, path);
+    }
+
+    @Override
+    public List<{type}> execute(int startIndex, int length, Sorting sorting) {
+        if (sorting == null) {
+            return execute().stream()
+                    .skip(startIndex)
+                    .limit(length)
+                    .collect(Collectors.toList());
+        } else {
+            return execute(sorting.getSortFieldName(), sorting.getSortDirection().isAscending(), sorting.getSortFieldPath()).stream()
+                    .skip(startIndex)
+                    .limit(length)
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
