@@ -16,7 +16,8 @@ import org.teamapps.universaldb.record.*;
 
 import java.util.*;
 import java.time.*;
-import java.io.File;
+import java.io.*;
+import java.util.function.Supplier;
 {imports}
 
 public class {udbType} extends AbstractUdbEntity<{type}> implements {type}, EntityBuilder<{type}> {

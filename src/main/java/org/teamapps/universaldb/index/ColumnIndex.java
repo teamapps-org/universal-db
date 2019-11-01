@@ -77,7 +77,7 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 				column = new FileIndex(name, table, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
 				break;
 			case BINARY:
-				column = new BinaryIndex(name, table);
+				column = new BinaryIndex(name, table, false);
 				break;
 		}
 		return column;

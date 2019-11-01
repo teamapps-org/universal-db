@@ -23,16 +23,13 @@ import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
-import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
-import org.teamapps.universaldb.index.text.TextSearchIndex;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +52,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 		this.hashIndex = new TextIndex(name + "-file-hash", table, false);
 		this.sizeIndex = new LongIndex(name + "-file-size", table);
 		this.fileDataIndex = fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getPath(), name) : null;
-		this.metaDataIndex = fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table) : null;
+		this.metaDataIndex = fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table, true) : null;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
 		this.filePath = getFQN().replace('.', '/');
 		this.fileStore = fileStore;

@@ -33,8 +33,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TableFieldTest {
 
@@ -226,6 +225,8 @@ public class TableFieldTest {
 		record.save();
 		assertEquals(bytes.length, record.getBinaryField().length);
 		assertEquals(bytes[4], record.getBinaryField()[4]);
+		assertEquals(6, record.getBinaryFieldLength());
+		assertNotNull(record.getBinaryFieldInputStreamSupplier());
 	}
 
 

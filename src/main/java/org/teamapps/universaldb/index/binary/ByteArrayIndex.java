@@ -34,12 +34,14 @@ public class ByteArrayIndex {
 
 	private final File path;
 	private final String name;
+	private final boolean compressContent;
 	private MappedBuffer[] buffers;
 	private MappedBuffer currentBuffer;
 
-	public ByteArrayIndex(File path, String name) {
+	public ByteArrayIndex(File path, String name, boolean compressContent) {
 		this.path = path;
 		this.name = name;
+		this.compressContent = compressContent;
 		init();
 	}
 
@@ -77,6 +79,12 @@ public class ByteArrayIndex {
 		return buffers[MappedBuffer.getBufferIndex(index)];
 	}
 
+	public int getByteArrayLength(long index) {
+		MappedBuffer buffer = getBufferForIndex(index);
+		int position = MappedBuffer.getBlockPosition(index);
+		return buffer.readInt(position);
+	}
+
 	public byte[] getByteArray(long index) {
 		MappedBuffer buffer = getBufferForIndex(index);
 		int position = MappedBuffer.getBlockPosition(index);
@@ -86,14 +94,20 @@ public class ByteArrayIndex {
 		}
 		byte[] bytes = new byte[len];
 		buffer.readBytes(position + 4, bytes);
-		return decompress(bytes);
+		if (compressContent) {
+			return decompress(bytes);
+		} else {
+			return bytes;
+		}
 	}
 
 	public long setByteArray(byte[] bytes) {
 		if (bytes == null || bytes.length == 0) {
 			return 0;
 		}
-		bytes = compress(bytes);
+		if (compressContent) {
+			bytes = compress(bytes);
+		}
 		if (currentBuffer.getRemainingSize() < bytes.length + 4) {
 			addBuffer();
 		}
@@ -111,7 +125,8 @@ public class ByteArrayIndex {
 		int position = MappedBuffer.getBlockPosition(index);
 		int len = buffer.readInt(position);
 		len = Math.abs(len) * -1;
-
+		buffer.writeInt(len, position);
+		//todo reuse space
 	}
 
 	public static byte[] compress(byte[] data) {

@@ -23,21 +23,22 @@ import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.BitSet;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 
 	private final LongIndex positionIndex;
 	private final ByteArrayIndex byteArrayIndex;
+	private final boolean compressContent;
 
-	public BinaryIndex(String name, TableIndex table) {
+	public BinaryIndex(String name, TableIndex table, boolean compressContent) {
 		super(name, table, FullTextIndexingOptions.NOT_INDEXED);
+		this.compressContent = compressContent;
 		positionIndex = new LongIndex(name, table);
-		byteArrayIndex = new ByteArrayIndex(getPath(), name);
+		byteArrayIndex = new ByteArrayIndex(getPath(), name, this.compressContent);
 	}
 
 	@Override
@@ -58,6 +59,22 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	@Override
 	public void removeValue(int id) {
 		setValue(id, null);
+	}
+
+	public int getLength(int id) {
+		long index = positionIndex.getValue(id);
+		if (index > 0) {
+			return byteArrayIndex.getByteArrayLength(index);
+		} else {
+			return 0;
+		}
+	}
+
+	public Supplier<InputStream> getInputStreamSupplier(int id) {
+		return () -> {
+			byte[] value = getValue(id);
+			return new ByteArrayInputStream(value);
+		};
 	}
 
 	public byte[] getValue(int id) {
