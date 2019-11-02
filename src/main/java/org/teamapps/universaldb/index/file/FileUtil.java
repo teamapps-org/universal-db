@@ -30,11 +30,14 @@ import com.optimaize.langdetect.text.CommonTextObjectFactories;
 import com.optimaize.langdetect.text.TextObject;
 import com.optimaize.langdetect.text.TextObjectFactory;
 import org.apache.commons.io.IOUtils;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.apache.tika.sax.WriteOutContentHandler;
+import org.xml.sax.SAXException;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -117,7 +120,13 @@ public class FileUtil {
 			Metadata meta = new Metadata();
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
 			Parser parser = new AutoDetectParser();
-			parser.parse(bis, handler, meta, new ParseContext());
+			try {
+				parser.parse(bis, handler, meta, new ParseContext());
+			} catch (SAXException e) {
+				if (!e.getClass().toString().contains("WriteLimitReachedException")){
+					throw e;
+				}
+			}
 			String[] propertyNames = meta.names();
 			Arrays.sort(propertyNames);
 			FileMetaData metaData = new FileMetaData(file.getName(), file.length());
@@ -129,8 +138,8 @@ public class FileUtil {
 				}
 			}
 			metaData.setTextContent(handler.toString());
-			String contentLanguage = getFileContentLanguage(metaData.getTextContent());
-			metaData.setLanguage(contentLanguage);
+			//String contentLanguage = getFileContentLanguage(metaData.getTextContent());
+			//metaData.setLanguage(contentLanguage);
 			String fileHash = FileUtil.createFileHash(file);
 			metaData.setHash(fileHash);
 			return metaData;

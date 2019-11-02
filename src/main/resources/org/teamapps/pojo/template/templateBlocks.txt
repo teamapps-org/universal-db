@@ -108,6 +108,9 @@ protected static {type} {name};
 {INTERFACE_SET_METHOD_FILE}#
     {type} set{name}(File value);
 #
+{INTERFACE_SET_METHOD_FILE_2}#
+    {type} set{name}(File value, String fileName);
+#
 {INTERFACE_SET_METHOD_BINARY}#
     {type} set{name}(byte[] value);
 #
@@ -503,6 +506,14 @@ protected static {type} {name};
 	@Override
 	public {type} set{name}(File value) {
 	    FileValue storeFile = {name2}.storeFile(value);
+		setChangeValue(this.{name2}, storeFile, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_FILE_2}#
+	@Override
+	public {type} set{name}(File value, String fileName) {
+	    FileValue storeFile = {name2}.storeFile(value, fileName);
 		setChangeValue(this.{name2}, storeFile, table);
 		return this;
 	}

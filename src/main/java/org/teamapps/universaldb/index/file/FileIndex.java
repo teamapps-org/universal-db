@@ -122,10 +122,14 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	}
 
 	public FileValue storeFile(File file) {
+		return storeFile(file, file.getName());
+	}
+
+	public FileValue storeFile(File file, String fileName) {
 		if (file == null) {
 			return null;
 		}
-		FileValue fileValue = new FileValue(file);
+		FileValue fileValue = new FileValue(file, fileName);
 		return storeFile(fileValue);
 	}
 

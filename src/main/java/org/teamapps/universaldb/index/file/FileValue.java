@@ -37,9 +37,14 @@ public class FileValue {
 	private Supplier<File> fileSupplier;
 
 	public FileValue(File file) {
+		this(file, file.getName());
+	}
+
+	public FileValue(File file, String fileName) {
 		uuid = "ta" + UUID.randomUUID().toString().replace("-", "").toLowerCase();
 		hash = FileUtil.createFileHash(file);
 		size = file.length();
+		metaData = new FileMetaData(fileName, size);
 		fileSupplier = () -> file;
 	}
 
@@ -69,6 +74,22 @@ public class FileValue {
 
 	public long getSize() {
 		return size;
+	}
+
+	public String getFileName() {
+		return metaData != null ? metaData.getName() : null;
+	}
+
+	public String getMimeType() {
+		return metaData != null ? metaData.getMimeType() : null;
+	}
+
+	public String getFileExtension() {
+		return metaData != null ? metaData.getFileExtension() : null;
+	}
+
+	public String getContentSnipped(int maxLength) {
+		return metaData != null ? metaData.getContentSnipped(maxLength) : null;
 	}
 
 	public FileMetaData getMetaData() {

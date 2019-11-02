@@ -123,6 +123,23 @@ public class FileMetaData {
 		return name;
 	}
 
+	public String getFileExtension() {
+		if (name == null || !name.contains(".")) {
+			return null;
+		} else {
+			return name.substring(name.lastIndexOf('.'), name.length());
+		}
+	}
+
+	public String getContentSnipped(int maxLength) {
+		if (textContent == null) {
+			return null;
+		} else {
+			int len = Math.min(maxLength, textContent.length());
+			return textContent.substring(0, len);
+		}
+	}
+
 	public long getSize() {
 		return size;
 	}
