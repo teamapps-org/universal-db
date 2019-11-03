@@ -58,16 +58,7 @@ public class CollectionTextSearchIndex {
 			idField = new NumericDocValuesField(ID, 0);
 			fieldType = SearchIndexUtil.createIndexFieldType();
 
-			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				if (writer != null && writer.isOpen()) {
-					try {
-						writer.commit();
-						writer.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}));
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> commit(true)));
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -158,13 +149,14 @@ public class CollectionTextSearchIndex {
 		return null;
 	}
 
-	public void commit(boolean close) {
+	public synchronized void commit(boolean close) {
 		try {
 			if (writer != null && writer.isOpen()) {
 				writer.commit();
 				if (close) {
 					writer.close();
 				}
+				writer = null;
 			}
 		} catch (Throwable e) {
 			e.printStackTrace();

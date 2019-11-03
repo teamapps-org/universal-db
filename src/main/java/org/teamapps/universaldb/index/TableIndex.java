@@ -317,7 +317,9 @@ public class TableIndex implements MappedObject {
 	public void close() {
 		try {
 			log.info("Shutdown on collection:" + name);
-			collectionTextSearchIndex.commit(true);
+			if (collectionTextSearchIndex != null) {
+				collectionTextSearchIndex.commit(true);
+			}
 			for (ColumnIndex column : columnIndices) {
 				column.close();
 			}
