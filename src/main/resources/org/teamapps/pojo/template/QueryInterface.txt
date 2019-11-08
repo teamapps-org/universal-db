@@ -26,6 +26,8 @@ public interface {query} {
 
     {query} fullTextFilter(TextFilter textFilter, String... fieldNames);
 
+    {query} parseFullTextFilter(String query, String... fieldNames);
+
 {methods}
     {query} andOr({query}... queries);
 

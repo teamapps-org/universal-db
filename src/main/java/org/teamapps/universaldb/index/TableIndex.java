@@ -29,6 +29,7 @@ import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.query.AndFilter;
 import org.teamapps.universaldb.query.Filter;
 import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.OrFilter;
@@ -151,31 +152,76 @@ public class TableIndex implements MappedObject {
 	}
 
 	public Filter createFullTextFilter(String query, String... fieldNames) {
-		OrFilter orFilter = new OrFilter();
+		AndFilter andFilter = new AndFilter();
 		if (query == null || query.isBlank()) {
-			return orFilter;
+			return andFilter;
 		}
-		String[] parts = query.split(" ");
+		String[] terms = query.split(" ");
+		for (String term : terms) {
+			if (!term.isBlank()) {
+				boolean isNegation = term.startsWith("!");
+				TextFilter textFilter = parseTextFilter(term);
+				Filter fullTextFilter = createFullTextFilter(textFilter, !isNegation, fieldNames);
+				andFilter.and(fullTextFilter);
+			}
+		}
+		return andFilter;
+	}
 
-
-		return orFilter;
+	private TextFilter parseTextFilter(String term) {
+		boolean negation = false;
+		boolean similar = false;
+		boolean startsWith = false;
+		if (term.startsWith("!")) {
+			negation = true;
+			term = term.substring(1);
+		}
+		if (term.endsWith("+")) {
+			similar = true;
+			term = term.substring(0, term.length() - 1);
+		}
+		if (term.endsWith("*")) {
+			startsWith = true;
+			term = term.substring(0, term.length() - 1);
+		}
+		if (similar) {
+			return negation ? TextFilter.termNotSimilarFilter(term) : TextFilter.termSimilarFilter(term);
+		} else if (startsWith) {
+			return negation ? TextFilter.termStartsNotWithFilter(term) : TextFilter.termStartsWithFilter(term);
+		} else {
+			return negation ? TextFilter.termContainsNotFilter(term) : TextFilter.termContainsFilter(term);
+		}
 	}
 
 	public Filter createFullTextFilter(TextFilter textFilter, String... fieldNames) {
-		OrFilter orFilter = new OrFilter();
+		return createFullTextFilter(textFilter, true, fieldNames);
+	}
+
+	public Filter createFullTextFilter(TextFilter textFilter, boolean orQuery, String... fieldNames) {
+		Filter filter = orQuery ? new OrFilter() : new AndFilter();
 		if (fieldNames == null || fieldNames.length == 0) {
 			columnIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT).forEach(columnIndex -> {
-				orFilter.or(new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter));
+				IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter);
+				if (orQuery) {
+					filter.or(indexFilter);
+				} else {
+					filter.and(indexFilter);
+				}
 			});
 		} else {
 			for (String fieldName : fieldNames) {
 				ColumnIndex columnIndex = columnIndexByName.get(fieldName);
 				if (columnIndex != null && columnIndex.getType() == IndexType.TEXT) {
-					orFilter.or(new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter));
+					IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter);
+					if (orQuery) {
+						filter.or(indexFilter);
+					} else {
+						filter.and(indexFilter);
+					}
 				}
 			}
 		}
-		return orFilter;
+		return filter;
 	}
 
 	public List<SortEntry> sortRecords(String columnName, BitSet records, boolean ascending, SingleReferenceIndex... path) {

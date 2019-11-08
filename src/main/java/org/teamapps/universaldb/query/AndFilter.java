@@ -68,7 +68,6 @@ public class AndFilter implements Filter {
         for (List<Filter> filters : mappedFilters) {
             IndexPath path = filters.get(0).getPath();
             if (path == null) {
-                //todo: check: this should never happen!?
                 for (Filter filter : filters) {
                     result.and(filter.filter(result));
                 }
