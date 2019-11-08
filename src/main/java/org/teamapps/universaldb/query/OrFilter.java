@@ -92,24 +92,28 @@ public class OrFilter implements Filter {
                     TableIndex table = collectionFullTextFilters.get(0).getColumnIndex().getTable();
                     BitSet reduced = table.getCollectionTextSearchIndex().filter(localRecords, textFilters, false);
 
-                    BitSet fullTextResult = null;
-                    for (IndexFilter filter : Filter.getCollectionFullTextFiltersWithLocalIndexFilterPart(filters)) {
-                        ColumnIndex columnIndex = filter.getColumnIndex();
-                        if (columnIndex instanceof TextIndex) {
-                            TextIndex textIndex = (TextIndex) columnIndex;
-                            BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
-                            if (fullTextResult == null) {
-                                fullTextResult = fullTextReduced;
-                            } else {
-                                fullTextResult.or(fullTextReduced);
+                    List<IndexFilter> secondaryFilter = Filter.getCollectionFullTextFiltersWithLocalIndexFilterPart(filters);
+                    if (!secondaryFilter.isEmpty()) {
+                        BitSet fullTextResult = null;
+                        for (IndexFilter filter : secondaryFilter) {
+                            ColumnIndex columnIndex = filter.getColumnIndex();
+                            if (columnIndex instanceof TextIndex) {
+                                TextIndex textIndex = (TextIndex) columnIndex;
+                                BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
+                                if (fullTextResult == null) {
+                                    fullTextResult = fullTextReduced;
+                                } else {
+                                    fullTextResult.or(fullTextReduced);
+                                }
+                            } else if (columnIndex instanceof FileIndex) {
+                                FileIndex fileIndex = (FileIndex) columnIndex;
+                                //todo
                             }
-                        } else if (columnIndex instanceof FileIndex) {
-                            FileIndex fileIndex = (FileIndex) columnIndex;
-                            //todo
                         }
+                        localResult = fullTextResult;
+                    } else {
+                        localResult = reduced;
                     }
-
-                    localResult = fullTextResult;
                 }
 
                 for (Filter filter : Filter.getNonCollectionFullTextFilters(filters)) {

@@ -44,6 +44,14 @@ public class AbstractUdbQuery {
 		filter.prependPath(path);
 	}
 
+	public void and(Filter filter) {
+		if (this.filter == null) {
+			this.filter = filter;
+		} else {
+			this.filter = filter.and(filter);
+		}
+	}
+
 	public void and(IndexFilter andFilter) {
 		if (filter == null) {
 			filter = andFilter;

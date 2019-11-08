@@ -24,6 +24,8 @@ public interface {query} {
         return new {udbQuery}();
     }
 
+    {query} fullTextFilter(TextFilter textFilter, String... fieldNames);
+
 {methods}
     {query} andOr({query}... queries);
 

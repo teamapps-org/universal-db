@@ -28,10 +28,9 @@ import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
-import org.teamapps.universaldb.index.text.CharIndex;
-import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
-import org.teamapps.universaldb.index.text.TextIndex;
-import org.teamapps.universaldb.index.text.TextValue;
+import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.query.IndexFilter;
+import org.teamapps.universaldb.query.OrFilter;
 import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.schema.Table;
 
@@ -148,6 +147,23 @@ public class TableIndex implements MappedObject {
 		columnIndexByName.put(index.getName(), index);
 		fileFieldNames = null;
 		textFields = null;
+	}
+
+	public OrFilter createFullTextFilter(TextFilter textFilter, String... fieldNames) {
+		OrFilter orFilter = new OrFilter();
+		if (fieldNames == null || fieldNames.length == 0) {
+			columnIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT).forEach(columnIndex -> {
+				orFilter.or(new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter));
+			});
+		} else {
+			for (String fieldName : fieldNames) {
+				ColumnIndex columnIndex = columnIndexByName.get(fieldName);
+				if (columnIndex != null && columnIndex.getType() == IndexType.TEXT) {
+					orFilter.or(new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter));
+				}
+			}
+		}
+		return orFilter;
 	}
 
 	public List<SortEntry> sortRecords(String columnName, BitSet records, boolean ascending, SingleReferenceIndex... path) {

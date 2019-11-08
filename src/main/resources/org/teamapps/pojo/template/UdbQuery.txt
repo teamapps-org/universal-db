@@ -26,6 +26,12 @@ public class {udbQuery} extends AbstractUdbQuery implements {query} {
     public {udbQuery}() {
     }
 
+	@Override
+	public {query} fullTextFilter(TextFilter textFilter, String... fieldNames) {
+    	and({udbType}.table.createFullTextFilter(textFilter, fieldNames));
+		return this;
+	}
+
 {methods}
 	@Override
 	public {udbQuery} andOr({query} ... queries) {
