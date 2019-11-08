@@ -69,6 +69,9 @@ public class OrFilter implements Filter {
     @Override
     public BitSet filter(BitSet input) {
         List<List<Filter>> mappedFilters = Filter.mapFiltersByPathAndExpense(filters);
+        if (mappedFilters.isEmpty()) {
+            return input;
+        }
         BitSet result = null;
         for (List<Filter> filters : mappedFilters) {
             IndexPath path = filters.get(0).getPath();

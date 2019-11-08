@@ -43,12 +43,20 @@ public class AbstractUdbQuery {
 	public void prependPath(IndexPath path) {
 		filter.prependPath(path);
 	}
-
-	public void and(Filter filter) {
-		if (this.filter == null) {
-			this.filter = filter;
+	
+	public void or(Filter orFilter) {
+		if (filter == null) {
+			filter = orFilter;
 		} else {
-			this.filter = filter.and(filter);
+			filter = filter.or(orFilter);
+		}
+	}
+
+	public void and(Filter andFilter) {
+		if (filter == null) {
+			filter = andFilter;
+		} else {
+			filter = filter.and(andFilter);
 		}
 	}
 

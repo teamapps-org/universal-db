@@ -29,6 +29,7 @@ import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.query.Filter;
 import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.OrFilter;
 import org.teamapps.universaldb.schema.Column;
@@ -149,7 +150,18 @@ public class TableIndex implements MappedObject {
 		textFields = null;
 	}
 
-	public OrFilter createFullTextFilter(TextFilter textFilter, String... fieldNames) {
+	public Filter createFullTextFilter(String query, String... fieldNames) {
+		OrFilter orFilter = new OrFilter();
+		if (query == null || query.isBlank()) {
+			return orFilter;
+		}
+		String[] parts = query.split(" ");
+
+
+		return orFilter;
+	}
+
+	public Filter createFullTextFilter(TextFilter textFilter, String... fieldNames) {
 		OrFilter orFilter = new OrFilter();
 		if (fieldNames == null || fieldNames.length == 0) {
 			columnIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT).forEach(columnIndex -> {

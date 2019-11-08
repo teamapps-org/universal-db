@@ -168,9 +168,11 @@ public class PojoCodeGenerator {
 
 		for (Column column : table.getColumns()) {
 			tpl.addSubQueryInterfaceMethod(column, query);
-			tpl.addQueryInterfaceMethod(column, query);
+			tpl.addQueryInterfaceMethod(column, query, false);
+			tpl.addQueryInterfaceMethod(column, query, true);
 			udbTpl.addUdbSubQueryMethod(column, query, type);
-			udbTpl.addUdbQueryMethod(column, query, type);
+			udbTpl.addUdbQueryMethod(column, query, type, false);
+			udbTpl.addUdbQueryMethod(column, query, type, true);
 		}
 
 		tpl.writeTemplate(query, dbPojoDir);

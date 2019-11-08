@@ -178,13 +178,13 @@ public class PojoTemplate {
 		return true;
 	}
 
-	public void addQueryInterfaceMethod(Column column, String query) {
+	public void addQueryInterfaceMethod(Column column, String query, boolean orQuery) {
+		String name = orQuery ? "or" + firstUpper(column.getName()) : column.getName();
 		if (column.getType() == ColumnType.ENUM) {
-			String enumType = firstUpper(column.getName());
-			String method = "\t" + query + " " + column.getName() + "(EnumFilterType filterType, " +  firstUpper(column.getName()) + " ... enums);";
+			String method = "\t" + query + " " + name + "(EnumFilterType filterType, " +  firstUpper(column.getName()) + " ... enums);";
 			methods.add(method);
 		} else {
-			String method = "\t" + query + " " + column.getName() + "(" + getFilterTypeName(column.getType()) + " filter);";
+			String method = "\t" + query + " " + name + "(" + getFilterTypeName(column.getType()) + " filter);";
 			methods.add(method);
 		}
 	}
@@ -250,11 +250,11 @@ public class PojoTemplate {
 
 	}
 
-	public void addUdbQueryMethod(Column column, String query, String type) {
+	public void addUdbQueryMethod(Column column, String query, String type, boolean orQuery) {
 		String name = column.getName();
-		String tpl = blocks.get("QUERY_METHOD");
+		String tpl = orQuery ? blocks.get("QUERY_METHOD_OR") : blocks.get("QUERY_METHOD");
 		if (column.getType() == ColumnType.ENUM) {
-			tpl = blocks.get("QUERY_ENUMS");
+			tpl = orQuery ? blocks.get("QUERY_ENUMS_OR") : blocks.get("QUERY_ENUMS");
 			tpl = TemplateUtil.setValue(tpl, "enumType", firstUpper(column.getName()));
 		}
 		tpl = TemplateUtil.setValue(tpl, "query", query);

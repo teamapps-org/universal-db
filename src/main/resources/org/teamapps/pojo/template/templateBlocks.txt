@@ -681,10 +681,24 @@ protected static {type} {name};
 		return this;
 	}
 #
+{QUERY_METHOD_OR}#
+	@Override
+	public {query} or{name}({filter} filter) {
+		or({udbType}.{name2}.createFilter(filter));
+		return this;
+	}
+#
 {QUERY_ENUMS}#
 	@Override
 	public {query} {name2}(EnumFilterType filterType, {enumType}... enums) {
 		and({udbType}.{name2}.createFilter(NumericFilter.createEnumFilter(filterType, enums)));
+		return this;
+	}
+#
+{QUERY_ENUMS_OR}#
+	@Override
+	public {query} or{name}(EnumFilterType filterType, {enumType}... enums) {
+		or({udbType}.{name2}.createFilter(NumericFilter.createEnumFilter(filterType, enums)));
 		return this;
 	}
 #
