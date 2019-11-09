@@ -23,6 +23,7 @@ package org.teamapps.universaldb.pojo;
 import org.teamapps.universaldb.record.EntityBuilder;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EntityArrayList<ENTITY> implements List<ENTITY> {
 
@@ -163,6 +164,6 @@ public class EntityArrayList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public List<ENTITY> subList(int fromIndex, int toIndex) {
-		return null;
+		return stream().skip(fromIndex).limit(toIndex - fromIndex).collect(Collectors.toList());
 	}
 }
