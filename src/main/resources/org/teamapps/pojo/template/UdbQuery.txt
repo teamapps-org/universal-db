@@ -3,6 +3,7 @@ package {package};
 import org.teamapps.universaldb.*;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.translation.*;
 import org.teamapps.universaldb.index.bool.*;
 import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.file.*;

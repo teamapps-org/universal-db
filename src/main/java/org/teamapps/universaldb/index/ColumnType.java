@@ -33,19 +33,20 @@ public enum ColumnType {
 	FLOAT(5),
 	DOUBLE(6),
 	TEXT(7),
-	FILE(8),
-	SINGLE_REFERENCE(9),
-	MULTI_REFERENCE(10),
-	TIMESTAMP(11),
-	DATE(12),
-	TIME(13),
-	DATE_TIME(14),
-	LOCAL_DATE(15),
-	ENUM(16),
-	BINARY(17),
+	TRANSLATABLE_TEXT(8),
+	FILE(9),
+	SINGLE_REFERENCE(10),
+	MULTI_REFERENCE(11),
+	TIMESTAMP(12),
+	DATE(13),
+	TIME(14),
+	DATE_TIME(15),
+	LOCAL_DATE(16),
+	ENUM(17),
+	BINARY(18),
 
-	CURRENCY(18), //todo
-	DYNAMIC_CURRENCY(19) //todo
+	CURRENCY(19), //todo
+	DYNAMIC_CURRENCY(20) //todo
 
 	;
 
@@ -98,6 +99,8 @@ public enum ColumnType {
 				return IndexType.DOUBLE;
 			case TEXT:
 				return IndexType.TEXT;
+			case TRANSLATABLE_TEXT:
+				return IndexType.TRANSLATABLE_TEXT;
 			case FILE:
 				return IndexType.FILE;
 			case BINARY:

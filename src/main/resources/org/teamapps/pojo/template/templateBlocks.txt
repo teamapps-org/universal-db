@@ -28,6 +28,9 @@ protected static {type} {name};
 {INTERFACE_GET_METHOD_TEXT}#
     String get{name}();
 #
+{INTERFACE_GET_METHOD_TRANSLATABLE_TEXT}#
+    TranslatableText get{name}();
+#
 {INTERFACE_GET_METHOD_FILE}#
     FileValue get{name}();
 #
@@ -104,6 +107,9 @@ protected static {type} {name};
 #
 {INTERFACE_SET_METHOD_TEXT}#
     {type} set{name}(String value);
+#
+{INTERFACE_SET_METHOD_TRANSLATABLE_TEXT}#
+    {type} set{name}(TranslatableText value);
 #
 {INTERFACE_SET_METHOD_FILE}#
     {type} set{name}(File value);
@@ -242,6 +248,16 @@ protected static {type} {name};
 	public String get{name}() {
 		if (isChanged({name2})) {
 			return (String) getChangedValue({name2});
+		} else {
+			return {name2}.getValue(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_TRANSLATABLE_TEXT}#
+	@Override
+	public TranslatableText get{name}() {
+		if (isChanged({name2})) {
+			return (TranslatableText) getChangedValue({name2});
 		} else {
 			return {name2}.getValue(getId());
 		}
@@ -498,6 +514,13 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_TEXT}#
 	@Override
 	public {type} set{name}(String value) {
+		setChangeValue(this.{name2}, value, table);
+		return this;
+	}
+#
+{ENTITY_SET_METHOD_TRANSLATABLE_TEXT}#
+	@Override
+	public {type} set{name}(TranslatableText value) {
 		setChangeValue(this.{name2}, value, table);
 		return this;
 	}

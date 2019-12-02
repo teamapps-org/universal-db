@@ -119,6 +119,11 @@ public class Table implements MappedObject {
 		return this;
 	}
 
+	public Table addTranslatableText(String name) {
+		addColumn(name, ColumnType.TRANSLATABLE_TEXT);
+		return this;
+	}
+
 	public Table addFile(String name) {
 		addColumn(name, ColumnType.FILE);
 		return this;

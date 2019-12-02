@@ -19,13 +19,12 @@
  */
 package org.teamapps.universaldb.generator;
 
+import org.teamapps.universaldb.index.ColumnType;
+import org.teamapps.universaldb.pojo.template.PojoTemplate;
+import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.schema.Database;
 import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.schema.Column;
-import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.schema.Table;
-import org.teamapps.universaldb.schema.TableOption;
-import org.teamapps.universaldb.pojo.template.PojoTemplate;
 
 import java.io.File;
 import java.io.IOException;

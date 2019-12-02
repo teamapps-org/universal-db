@@ -16,6 +16,10 @@ public class TranslatableText {
     private String encodedValue;
     private Map<String, String> translationMap;
 
+    public static TranslatableText create(String originalText, String originalLanguage) {
+        return new TranslatableText(originalText, originalLanguage);
+    }
+
     public TranslatableText() {
     }
 
@@ -44,14 +48,28 @@ public class TranslatableText {
         this.translationMap = translationMap;
     }
 
+    public String getText() {
+        if (originalText == null) {
+            parseOriginalValue();
+        }
+        return originalText;
+    }
+
+    public String getOriginalLanguage() {
+        if (originalLanguage == null) {
+            parseOriginalValue();
+        }
+        return originalLanguage;
+    }
+
     public String getText(String language) {
         String translation = getTranslation(language);
-        return translation != null ? translation : originalText;
+        return translation != null ? translation : getText();
     }
 
     public String getText(List<String> rankedLanguages) {
         String translation = getTranslation(rankedLanguages);
-        return translation != null ? translation : originalText;
+        return translation != null ? translation : getText();
     }
 
     public String getTranslation(String language) {
@@ -75,11 +93,12 @@ public class TranslatableText {
         return null;
     }
 
-    public void setTranslation(String translation, String language) {
+    public TranslatableText setTranslation(String translation, String language) {
         if (translation == null || translation.isEmpty() || language == null || language.length() != 2) {
-            return;
+            return this;
         }
         getTranslationMap().put(language, translation);
+        return this;
     }
 
     public String translationLookup(String language) {
@@ -91,6 +110,20 @@ public class TranslatableText {
             return createTranslationValue(originalText, originalLanguage, translationMap);
         } else {
             return encodedValue;
+        }
+    }
+
+    private void parseOriginalValue() {
+        if (encodedValue == null) {
+            return;
+        }
+        int pos = -1;
+        if((pos = encodedValue.indexOf(DELIMITER, pos + 1)) >= 0 && pos < encodedValue.length() - 7) {
+            int end = encodedValue.indexOf(DELIMITER, pos + 1);
+            if (end > pos) {
+                originalLanguage = encodedValue.substring(pos + DELIMITER.length(), pos + DELIMITER.length() + 2);
+                originalText = encodedValue.substring(pos +  DELIMITER.length() + 3, end);
+            }
         }
     }
 
@@ -158,56 +191,4 @@ public class TranslatableText {
         return sb.toString();
     }
 
-
-
-
-
-
-    public static void main(String[] args) {
-        String val = "this is a very long piece of text and it will not end so soon. But some other texts will follow.";
-        long time = System.currentTimeMillis();
-        int count = 100_000;
-        int languages = 50;
-        List<TranslatableText> translatableTexts = new ArrayList<>();
-        List<String> userLang = Arrays.asList("99",  "11", "22", "33", "44");
-
-        for (int i = 0; i < count; i++) {
-            TranslatableText value = new TranslatableText();
-            for (int j = 0; j < languages; j++) {
-                String l = j < 10 ? "0" + j : "" + j;
-                value.setTranslation(i + val + " lang:" + l, l);
-            }
-            String encodedValue = value.getEncodedValue();
-            translatableTexts.add(new TranslatableText(encodedValue));
-        }
-        System.out.println("TIME:" + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
-        for (TranslatableText value : translatableTexts) {
-            String translation = value.translationLookup("30");
-            if (translation == null || translation.isEmpty()) {
-                System.out.println("ERROR");
-            }
-        }
-        System.out.println("TIME:" + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
-        for (TranslatableText value : translatableTexts) {
-            String translation = value.getTranslation("49");
-            if (translation == null || translation.isEmpty()) {
-                System.out.println("ERROR");
-            }
-        }
-        System.out.println("TIME:" + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
-        for (TranslatableText value : translatableTexts) {
-            String translation = value.getTranslation(userLang);
-            if (translation == null || translation.isEmpty()) {
-                System.out.println("ERROR");
-            }
-        }
-        System.out.println("TIME:" + (System.currentTimeMillis() - time));
-
-    }
 }

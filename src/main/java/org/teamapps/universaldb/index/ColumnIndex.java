@@ -20,6 +20,7 @@
 package org.teamapps.universaldb.index;
 
 import org.teamapps.universaldb.index.binary.BinaryIndex;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.util.DataStreamUtil;
 import org.teamapps.universaldb.index.bool.BitSetBooleanIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
@@ -67,6 +68,9 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 				break;
 			case TEXT:
 				column = new TextIndex(name, table, table.getCollectionTextSearchIndex());
+				break;
+			case TRANSLATABLE_TEXT:
+				column = new TranslatableTextIndex(name, table, table.getCollectionTextSearchIndex());
 				break;
 			case REFERENCE:
 				column = new SingleReferenceIndex(name, table);

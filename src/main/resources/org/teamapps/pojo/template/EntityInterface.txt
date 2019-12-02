@@ -3,6 +3,7 @@ package {package};
 import org.teamapps.universaldb.pojo.*;
 import org.teamapps.universaldb.record.*;
 import org.teamapps.universaldb.index.file.FileValue;
+import org.teamapps.universaldb.index.translation.*;
 import java.util.*;
 import java.time.*;
 import java.io.*;

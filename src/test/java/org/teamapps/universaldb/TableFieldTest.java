@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.teamapps.datamodel.testdb1.EnumField;
 import org.teamapps.datamodel.testdb1.FieldTest;
+import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.pojo.Entity;
 
 import java.io.File;
@@ -103,6 +104,21 @@ public class TableFieldTest {
 		assertEquals("abc", table.getTextField());
 		table.save();
 		assertEquals("abc", table.getTextField());
+	}
+
+	@Test
+	public void testTranslatableTextField() {
+		FieldTest table = FieldTest.create();
+		table.setTranslatableText(TranslatableText.create("original", "en").setTranslation("translated-de", "de").setTranslation("translated-fr", "fr"));
+		assertEquals("original", table.getTranslatableText().getText());
+		assertEquals("translated-de", table.getTranslatableText().getText("de"));
+		assertEquals("translated-fr", table.getTranslatableText().getText("fr"));
+		assertEquals("original", table.getTranslatableText().getText("es"));
+		table.save();
+		assertEquals("original", table.getTranslatableText().getText());
+		assertEquals("translated-de", table.getTranslatableText().getText("de"));
+		assertEquals("translated-fr", table.getTranslatableText().getText("fr"));
+		assertEquals("original", table.getTranslatableText().getText("es"));
 	}
 
 	@Test

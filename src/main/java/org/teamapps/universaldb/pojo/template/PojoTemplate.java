@@ -22,6 +22,8 @@ package org.teamapps.universaldb.pojo.template;
 import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.index.binary.BinaryFilter;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
+import org.teamapps.universaldb.index.translation.TranslatableTextFilter;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.schema.Table;
@@ -305,6 +307,8 @@ public class PojoTemplate {
 				return DoubleIndex.class.getSimpleName();
 			case TEXT:
 				return TextIndex.class.getSimpleName();
+			case TRANSLATABLE_TEXT:
+				return TranslatableTextIndex.class.getSimpleName();
 			case REFERENCE:
 				return SingleReferenceIndex.class.getSimpleName();
 			case MULTI_REFERENCE:
@@ -329,6 +333,8 @@ public class PojoTemplate {
 				return NumericFilter.class.getSimpleName();
 			case TEXT:
 				return TextFilter.class.getSimpleName();
+			case TRANSLATABLE_TEXT:
+				return TranslatableTextFilter.class.getSimpleName();
 			case FILE:
 				return FileFilter.class.getSimpleName();
 			case BINARY:

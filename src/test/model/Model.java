@@ -33,6 +33,7 @@ public class Model implements SchemaInfoProvider {
 				.addFloat("floatField")
 				.addDouble("doubleField")
 				.addText("textField")
+				.addTranslatableText("translatableText")
 				.addTimestamp("timestampField")
 				.addTime("timeField")
 				.addDate("dateField")
@@ -48,6 +49,7 @@ public class Model implements SchemaInfoProvider {
 				.addReference("backRefMultiReferenceField", table, true, "multiReferenceField")
 				.addReference("parent", table, false, "children")
 				.addReference("children", table, true, "parent");
+
 
 		return schema.getSchema();
 	}
