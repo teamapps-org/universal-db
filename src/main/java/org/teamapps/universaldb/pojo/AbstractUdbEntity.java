@@ -49,18 +49,26 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private Transaction transaction;
 
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, String ... path) {
+		return sort(table, list, sortFieldName, ascending, null, path);
+	}
+
+	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, Locale locale, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
 		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
 		List<SortEntry<ENTITY>> sortEntries = SortEntry.createSortEntries(list, referencePath);
-		sortEntries = column.sortRecords(sortEntries, ascending);
+		sortEntries = column.sortRecords(sortEntries, ascending, locale);
 		return sortEntries.stream().map(SortEntry::getEntity).collect(Collectors.toList());
 	}
 
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, String ... path) {
+		return sort(table, builder, recordIds, sortFieldName, ascending, null, path);
+	}
+
+	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, Locale locale, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
 		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(recordIds, referencePath);
-		sortEntries = column.sortRecords(sortEntries, ascending);
+		sortEntries = column.sortRecords(sortEntries, ascending, locale);
 		List<ENTITY> list = new ArrayList<>();
 		for (SortEntry entry : sortEntries) {
 			list.add(builder.build(entry.getId()));

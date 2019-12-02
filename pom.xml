@@ -15,12 +15,13 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.1.8-SNAPSHOT</version>
+    <version>0.2.1-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -205,50 +206,57 @@
                     </modelClasses>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
-                <configuration>
-                    <!-- see https://docs.sonatype.org/display/Repository/How+To+Generate+PGP+Signatures+With+Maven -->
-                    <mavenExecutorId>forked-path</mavenExecutorId>
-                    <useReleaseProfile>false</useReleaseProfile>
-                    <!--<arguments>-Psonatype-oss-release -D${gpg.arguments}</arguments>-->
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <tagNameFormat>v@{version}</tagNameFormat>
-                    <releaseProfiles>javadoc-jar,sources-jar,license-handling</releaseProfiles>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.8</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
     <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>2.5.3</version>
+                        <configuration>
+                            <!-- see https://docs.sonatype.org/display/Repository/How+To+Generate+PGP+Signatures+With+Maven -->
+                            <mavenExecutorId>forked-path</mavenExecutorId>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <!--<arguments>-Psonatype-oss-release -D${gpg.arguments}</arguments>-->
+                            <autoVersionSubmodules>true</autoVersionSubmodules>
+                            <tagNameFormat>v@{version}</tagNameFormat>
+                            <releaseProfiles>javadoc-jar,sources-jar,license-handling</releaseProfiles>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>javadoc-jar</id>
             <build>
@@ -323,8 +331,10 @@
                             <organizationName>TeamApps.org</organizationName>
                             <inceptionYear>2014</inceptionYear>
                             <licenseName>apache_v2</licenseName>
-                            <processStartTag>========================LICENSE_START=================================</processStartTag>
-                            <processEndTag>=========================LICENSE_END==================================</processEndTag>
+                            <processStartTag>========================LICENSE_START=================================
+                            </processStartTag>
+                            <processEndTag>=========================LICENSE_END==================================
+                            </processEndTag>
                             <sectionDelimiter>---</sectionDelimiter>
                             <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
                             <canUpdateCopyright>true</canUpdateCopyright>

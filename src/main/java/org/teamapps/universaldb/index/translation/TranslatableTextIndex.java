@@ -17,26 +17,26 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.text;
+package org.teamapps.universaldb.index.translation;
 
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.text.*;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class TextIndex extends AbstractIndex<String, TextFilter> {
+public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TranslatableTextFilter> {
 
 	private final LongIndex positionIndex;
 	private final CharIndex charIndex;
 	private final TextSearchIndex searchIndex;
 	private final CollectionTextSearchIndex collectionSearchIndex;
 
-	public TextIndex(String name, TableIndex table, CollectionTextSearchIndex collectionSearchIndex) {
+	public TranslatableTextIndex(String name, TableIndex table, CollectionTextSearchIndex collectionSearchIndex) {
 		super(name, table, FullTextIndexingOptions.INDEXED);
 		this.positionIndex = new LongIndex(name, table);
 		this.charIndex = table.getCollectionCharIndex();
@@ -44,7 +44,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
-	public TextIndex(String name, TableIndex table, boolean withLocalSearchIndex) {
+	public TranslatableTextIndex(String name, TableIndex table, boolean withLocalSearchIndex) {
 		super(name, table, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
 		this.positionIndex = new LongIndex(name, table);
 		this.charIndex = table.getCollectionCharIndex();
@@ -60,26 +60,26 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		return collectionSearchIndex;
 	}
 
-	public boolean isFilteredByCollectionTextIndex(TextFilter filter) {
+	public boolean isFilteredByCollectionTextIndex(TranslatableTextFilter filter) {
 		return collectionSearchIndex != null && filter.getFilterType().containsFullTextPart();
 	}
 
-	public boolean isFilteredExclusivelyByCollectionTextIndex(TextFilter filter) {
+	public boolean isFilteredExclusivelyByCollectionTextIndex(TranslatableTextFilter filter) {
 		return collectionSearchIndex != null && filter.getFilterType().isFullTextIndexExclusive();
 	}
 
 	@Override
 	public IndexType getType() {
-		return IndexType.TEXT;
+		return IndexType.TRANSLATABLE_TEXT;
 	}
 
 	@Override
-	public String getGenericValue(int id) {
+	public TranslatableText getGenericValue(int id) {
 		return getValue(id);
 	}
 
 	@Override
-	public void setGenericValue(int id, String value) {
+	public void setGenericValue(int id, TranslatableText value) {
 		setValue(id, value);
 	}
 
@@ -88,15 +88,25 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		setValue(id, null);
 	}
 
-	public String getValue(int id) {
+	public String getTranslatedValue(int id, String language) {
+		TranslatableText value = getValue(id);
+		return value != null ? value.translationLookup(language) : null;
+	}
+
+	public String getTranslatedValue(int id, List<String> languages) {
+		TranslatableText value = getValue(id);
+		return value != null ? value.getTranslation(languages) : null;
+	}
+
+	public TranslatableText getValue(int id) {
 		long index = positionIndex.getValue(id);
 		if (index == 0) {
 			return null;
 		}
-		return charIndex.getText(index);
+		return new TranslatableText(charIndex.getText(index));
 	}
 
-	public void setValue(int id, String value) {
+	public void setValue(int id, TranslatableText value) {
 		boolean update = false;
 		if (searchIndex != null && positionIndex.getValue(id) > 0) {
 			update = true;
@@ -105,41 +115,36 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		if (index != 0) {
 			charIndex.removeText(index);
 		}
-		if (value != null && !value.isEmpty()) {
-			index = charIndex.setText(value);
+		String encodedValue = value != null ? value.getEncodedValue() : null;
+		if (encodedValue != null) {
+			index = charIndex.setText(encodedValue);
 			positionIndex.setValue(id, index);
 		} else {
 			positionIndex.setValue(id, 0);
 		}
 		if (searchIndex != null) {
-			if (!update && (value == null || value.isEmpty())) {
+			if (!update && encodedValue == null) {
 				return;
 			} else {
-				String textValue = value == null ? "" : value;
-				searchIndex.addValue(id, textValue, update);
+				searchIndex.addValue(id, value, update);
 			}
 		}
 	}
 
 	@Override
-	public void writeTransactionValue(String value, DataOutputStream dataOutputStream) throws IOException {
-		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+	public void writeTransactionValue(TranslatableText value, DataOutputStream dataOutputStream) throws IOException {
 		dataOutputStream.writeInt(getMappingId());
 		dataOutputStream.writeByte(DataType.STRING.getId());
-		dataOutputStream.writeInt(bytes.length);
-		dataOutputStream.write(bytes);
+		value.writeValues(dataOutputStream);
 	}
 
 	@Override
-	public String readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		int length = dataInputStream.readInt();
-		byte[] bytes = new byte[length];
-		dataInputStream.read(bytes);
-		return new String(bytes, StandardCharsets.UTF_8);
+	public TranslatableText readTransactionValue(DataInputStream dataInputStream) throws IOException {
+		return new TranslatableText(dataInputStream);
 	}
 
 	@Override
-	public BitSet filter(BitSet records, TextFilter textFilter) {
+	public BitSet filter(BitSet records, TranslatableTextFilter textFilter) {
 		return filter(records, textFilter, true);
 	}
 
@@ -161,11 +166,13 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		charIndex.drop();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) { //todo add locale/language to sorting
 		int order = ascending ? 1 : -1;
+		String language = locale.getLanguage();
+
 		sortEntries.sort((o1, o2) -> {
-			String value1 = getValue(o1.getLeafId());
-			String value2 = getValue(o2.getLeafId());
+			String value1 = getTranslatedValue(o1.getLeafId(), language);
+			String value2 = getTranslatedValue(o2.getLeafId(), language);
 			if (value1 == null || value2 == null) {
 				if (value1 == null && value2 == null) {
 					return 0;
@@ -180,37 +187,37 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		return sortEntries;
 	}
 
-	public BitSet filter(BitSet records, TextFilter textFilter, boolean performLocalFullTextSearch) {
+	public BitSet filter(BitSet records, TranslatableTextFilter translatableTextFilter, boolean performLocalFullTextSearch) {
 		BitSet fullTextResult = records;
 		if (performLocalFullTextSearch) {
-			if (textFilter.getFilterType().containsFullTextPart()) {
+			if (translatableTextFilter.getFilterType().containsFullTextPart()) {
 				if (searchIndex != null) {
-					fullTextResult = searchIndex.filter(records, textFilter);
+					fullTextResult = searchIndex.filter(records, translatableTextFilter);
 				} else if (collectionSearchIndex != null) {
-					fullTextResult = collectionSearchIndex.filter(records, Collections.singletonList(TextFieldFilter.create(textFilter, getName())), true);
+					fullTextResult = collectionSearchIndex.filter(records, Collections.emptyList(), Collections.singletonList(TranslatableTextFieldFilter.create(translatableTextFilter, getName())), true);
 				} else {
 					return null;
 				}
-				if (!textFilter.getFilterType().containsIndexPart()) {
+				if (!translatableTextFilter.getFilterType().containsIndexPart()) {
 					return fullTextResult;
 				}
 			}
 		}
 
-		if (textFilter.getFilterType().containsIndexPart()) {
-			switch (textFilter.getFilterType()) {
+		if (translatableTextFilter.getFilterType().containsIndexPart()) {
+			switch (translatableTextFilter.getFilterType()) {
 				case EMPTY:
 					return filterEmpty(records);
 				case NOT_EMPTY:
 					return filterNotEmpty(records);
 				case TEXT_EQUALS:
-					return filterEquals(fullTextResult, textFilter.getValue());
+					return filterEquals(fullTextResult, translatableTextFilter.getValue(), translatableTextFilter.getLanguage());
 				case TEXT_NOT_EQUALS:
-					return filterNotEquals(fullTextResult, textFilter.getValue());
+					return filterNotEquals(fullTextResult, translatableTextFilter.getValue(), translatableTextFilter.getLanguage());
 				case TEXT_BYTE_LENGTH_GREATER:
-					return filterLengthGreater(records, Integer.parseInt(textFilter.getValue()));
+					return filterLengthGreater(records, Integer.parseInt(translatableTextFilter.getValue()));
 				case TEXT_BYTE_LENGTH_SMALLER:
-					return filterLengthSmaller(records, Integer.parseInt(textFilter.getValue()));
+					return filterLengthSmaller(records, Integer.parseInt(translatableTextFilter.getValue()));
 				default:
 					return null;
 			}
@@ -269,22 +276,22 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	}
 
 
-	private BitSet filterEquals(BitSet bitSet, String value) {
+	private BitSet filterEquals(BitSet bitSet, String value, String language) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			String text = getValue(id);
-			if (Objects.equals(text, value)) {
+			TranslatableText translatableText = getValue(id);
+			if (Objects.equals(translatableText.translationLookup(language), value)) {
 				result.set(id);
 			}
 		}
 		return result;
 	}
 
-	private BitSet filterNotEquals(BitSet bitSet, String value) {
+	private BitSet filterNotEquals(BitSet bitSet, String value, String language) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			String text = getValue(id);
-			if (!Objects.equals(text, value)) {
+			TranslatableText translatableText = getValue(id);
+			if (!Objects.equals(translatableText.translationLookup(language), value)) {
 				result.set(id);
 			}
 		}

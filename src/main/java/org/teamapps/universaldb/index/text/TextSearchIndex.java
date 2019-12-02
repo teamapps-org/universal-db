@@ -27,10 +27,13 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.teamapps.universaldb.index.file.FileUtil;
+import org.teamapps.universaldb.index.translation.TranslatableTextFilter;
+import org.teamapps.universaldb.index.translation.TranslatableText;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.Map;
 
 public class TextSearchIndex {
 
@@ -43,6 +46,7 @@ public class TextSearchIndex {
 	private Field valueField;
 	private IndexWriter writer;
 	private Analyzer queryAnalyzer;
+	private FieldType fieldType;
 
 	public TextSearchIndex(File path, String name) {
 		try {
@@ -57,7 +61,8 @@ public class TextSearchIndex {
 
 			idSearchField = new StringField(ID, "", Field.Store.NO);
 			idField = new NumericDocValuesField(ID, 0);
-			valueField = new Field(VALUE, "", SearchIndexUtil.createIndexFieldType());
+			fieldType = SearchIndexUtil.createIndexFieldType();
+			valueField = new Field(VALUE, "", fieldType);
 
 			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				if (writer != null && writer.isOpen()) {
@@ -95,6 +100,34 @@ public class TextSearchIndex {
 		}
 	}
 
+	public void addValue(int id, TranslatableText value, boolean update) {
+		try {
+			idSearchField.setStringValue("" + id);
+			idField.setLongValue(id);
+
+			Document doc = new Document();
+			doc.add(idSearchField);
+			doc.add(idField);
+			//doc.add(valueField);
+			//valueField.setStringValue(value);
+			Map<String, String> translationMap = value.getTranslationMap();
+			for (String language : translationMap.keySet()) {
+				String translationValue = translationMap.get(language) != null ? translationMap.get(language) : "";
+				Field field = new Field(VALUE + "_" + language, translationValue, fieldType);
+				doc.add(field);
+			}
+
+			if (update) {
+				Term term = new Term(ID, "" + id);
+				writer.updateDocument(term, doc);
+			} else {
+				writer.addDocument(doc);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void removeValue(int id) {
 		try {
 			Term term = new Term(ID, "" + id);
@@ -113,6 +146,25 @@ public class TextSearchIndex {
 			IndexSearcher searcher = new IndexSearcher(reader);
 			SearchCollector collector = new SearchCollector();
 			Query query = SearchIndexUtil.createQuery(textFilter.getFilterType(), VALUE, textFilter.getValue(), queryAnalyzer);
+			searcher.search(query, collector);
+			BitSet resultIds = collector.getResultIds();
+			resultIds.and(bitSet);
+			return resultIds;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public BitSet filter(BitSet bitSet, TranslatableTextFilter textFilter) {
+		try {
+			if (textFilter == null) {
+				return bitSet;
+			}
+			DirectoryReader reader = DirectoryReader.open(writer, false, false);
+			IndexSearcher searcher = new IndexSearcher(reader);
+			SearchCollector collector = new SearchCollector();
+			Query query = SearchIndexUtil.createQuery(textFilter.getFilterType(), VALUE + "_" + textFilter.getLanguage(), textFilter.getValue(), queryAnalyzer);
 			searcher.search(query, collector);
 			BitSet resultIds = collector.getResultIds();
 			resultIds.and(bitSet);

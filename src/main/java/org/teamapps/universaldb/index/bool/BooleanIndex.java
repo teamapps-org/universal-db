@@ -27,6 +27,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Locale;
 
 public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 
@@ -129,7 +130,7 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		return dataInputStream.readBoolean();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			boolean value1 = getValue(o1.getLeafId());

@@ -37,6 +37,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.PrimitiveIterator;
 
 public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
@@ -165,7 +166,7 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 		dataOutputStream.writeInt(getMappingId());
 	}
 
-	List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending);
+	List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale);
 
 	BitSet filter(BitSet records, FILTER filter);
 

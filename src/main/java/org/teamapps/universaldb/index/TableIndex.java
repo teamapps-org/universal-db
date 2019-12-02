@@ -29,6 +29,7 @@ import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.query.AndFilter;
 import org.teamapps.universaldb.query.Filter;
 import org.teamapps.universaldb.query.IndexFilter;
@@ -61,6 +62,7 @@ public class TableIndex implements MappedObject {
 	private ReferenceBlockChain referenceBlockChain;
 	private List<String> fileFieldNames;
 	private List<TextIndex> textFields;
+	private List<TranslatableTextIndex> translatedTextFields;
 	private int mappingId;
 
 	public TableIndex(DatabaseIndex database, String name, TableConfig tableConfig) {
@@ -236,7 +238,7 @@ public class TableIndex implements MappedObject {
 		}
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(records, path);
 
-		return column.sortRecords(sortEntries, ascending);
+		return column.sortRecords(sortEntries, ascending, null);
 	}
 
 	public int createRecord(int recordId, int correlationId, boolean update) {
@@ -259,16 +261,21 @@ public class TableIndex implements MappedObject {
 		return id;
 	}
 
-	public void updateFullTextIndex(int id, List<TextValue> values, boolean update) {
+	public void updateFullTextIndex(int id, List<FullTextIndexValue> values, boolean update) {
 		if (update) {
-			Set<String> textFieldNames = values.stream().map(TextValue::getFieldName).collect(Collectors.toSet());
-			List<TextValue> recordTextValues = new ArrayList<>(values);
+			Set<String> textFieldNames = values.stream().map(FullTextIndexValue::getFieldName).collect(Collectors.toSet());
+			List<FullTextIndexValue> recordFullTextIndexValues = new ArrayList<>(values);
 			for (TextIndex textField : getTextFields()) {
 				if (!textFieldNames.contains(textField.getName())) {
-					recordTextValues.add(new TextValue(textField.getName(), textField.getValue(id)));
+					recordFullTextIndexValues.add(new FullTextIndexValue(textField.getName(), textField.getValue(id)));
 				}
 			}
-			collectionTextSearchIndex.setRecordValues(id, recordTextValues, true);
+			for (TranslatableTextIndex translatableTextIndex : getTranslatedTextFields()) {
+				if (!textFieldNames.contains(translatableTextIndex.getName())) {
+					recordFullTextIndexValues.add(new FullTextIndexValue(translatableTextIndex.getName(), translatableTextIndex.getValue(id)));
+				}
+			}
+			collectionTextSearchIndex.setRecordValues(id, recordFullTextIndexValues, true);
 		} else {
 			collectionTextSearchIndex.setRecordValues(id, values, false);
 		}
@@ -333,6 +340,16 @@ public class TableIndex implements MappedObject {
 					.collect(Collectors.toList());
 		}
 		return textFields;
+	}
+
+	private List<TranslatableTextIndex> getTranslatedTextFields() {
+		if (translatedTextFields == null) {
+			translatedTextFields = columnIndices.stream()
+					.filter(index -> index.getType() == IndexType.TRANSLATABLE_TEXT)
+					.map(index -> (TranslatableTextIndex) index)
+					.collect(Collectors.toList());
+		}
+		return translatedTextFields;
 	}
 
 	public BitSet getRecordBitSet() {

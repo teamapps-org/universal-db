@@ -26,6 +26,7 @@ import org.teamapps.universaldb.transaction.DataType;
 import java.io.*;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
@@ -115,7 +116,7 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	}
 
 	@Override
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		return sortEntries;
 	}
 

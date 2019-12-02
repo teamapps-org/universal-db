@@ -26,10 +26,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.BitSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> {
 
@@ -95,7 +92,7 @@ public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> {
 		return dataInputStream.readFloat();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			float value1 = getValue(o1.getLeafId());

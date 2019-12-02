@@ -24,10 +24,11 @@ import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.TableConfig;
 import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.schema.Table;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.ColumnIndex;
-import org.teamapps.universaldb.index.text.TextValue;
+import org.teamapps.universaldb.index.text.FullTextIndexValue;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -203,12 +204,18 @@ public class TransactionRecord {
 			recordValue.persistChange(recordId, recordIdByCorrelationId);
 		}
 		if (!deleteRecord) {
-			List<TextValue> textValues = recordValues.stream()
-					.filter(value -> value.getColumn().getType() == IndexType.TEXT)
-					.map(value -> new TextValue(value.getColumn().getName(), (String) value.getValue()))
+			List<FullTextIndexValue> fullTextIndexValues = recordValues.stream()
+					.filter(value -> value.getColumn().getType() == IndexType.TEXT || value.getColumn().getType() == IndexType.TRANSLATABLE_TEXT)
+					.map(value -> {
+						if (value.getColumn().getType() == IndexType.TEXT) {
+							return new FullTextIndexValue(value.getColumn().getName(), (String) value.getValue());
+						} else {
+							return new FullTextIndexValue(value.getColumn().getName(), (TranslatableText) value.getValue());
+						}
+					})
 					.collect(Collectors.toList());
-			if (!textValues.isEmpty()) {
-				tableIndex.updateFullTextIndex(recordId, textValues, update);
+			if (!fullTextIndexValues.isEmpty()) {
+				tableIndex.updateFullTextIndex(recordId, fullTextIndexValues, update);
 			}
 		}
 	}

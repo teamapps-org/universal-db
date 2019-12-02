@@ -27,6 +27,8 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.teamapps.universaldb.index.file.FileUtil;
+import org.teamapps.universaldb.index.translation.TranslatableTextFieldFilter;
+import org.teamapps.universaldb.index.translation.TranslatableText;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,16 +67,26 @@ public class CollectionTextSearchIndex {
 		}
 	}
 
-	public void setRecordValues(int id, List<TextValue> values, boolean update) {
+	public void setRecordValues(int id, List<FullTextIndexValue> values, boolean update) {
 		try {
 			idSearchField.setStringValue("" + id);
 			idField.setLongValue(id);
 			Document doc = new Document();
 			doc.add(idSearchField);
 			doc.add(idField);
-			for (TextValue textValue : values) {
-				Field field = new Field(textValue.getFieldName(), textValue.getValue(), fieldType);
-				doc.add(field);
+			for (FullTextIndexValue fullTextIndexValue : values) {
+				if (fullTextIndexValue.getTranslatableText()) {
+					TranslatableText translatableText = fullTextIndexValue.getTranslationValue();
+					Map<String, String> translationMap = translatableText.getTranslationMap();
+					for (String language : translationMap.keySet()) {
+						String value = translationMap.get(language) != null ? translationMap.get(language) : "";
+						Field field = new Field(fullTextIndexValue.getFieldName() + "_" + language, value, fieldType);
+						doc.add(field);
+					}
+				} else {
+					Field field = new Field(fullTextIndexValue.getFieldName(), fullTextIndexValue.getValue(), fieldType);
+					doc.add(field);
+				}
 			}
 			if (update) {
 				Term term = new Term(ID, "" + id);
@@ -148,6 +160,39 @@ public class CollectionTextSearchIndex {
 		}
 		return null;
 	}
+
+	public BitSet filter(BitSet bitSet, List<TextFieldFilter> filters, List<TranslatableTextFieldFilter> translationFilters, boolean andFilter) {
+		try {
+			if (filters.isEmpty() && translationFilters.isEmpty()) {
+				return bitSet;
+			}
+			DirectoryReader reader = DirectoryReader.open(writer, false, false);
+			IndexSearcher searcher = new IndexSearcher(reader);
+			SearchCollector collector = new SearchCollector();
+
+			BooleanClause.Occur occur = andFilter ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+
+			BooleanQuery.Builder fieldQueries = new BooleanQuery.Builder();
+			for (TextFieldFilter filter : filters) {
+				Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
+				fieldQueries.add(query, occur);
+			}
+			for (TranslatableTextFieldFilter filter : translationFilters) {
+				Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName() + "_" + filter.getLanguage(), filter.getValue(), queryAnalyzer);
+				fieldQueries.add(query, occur);
+			}
+
+			BooleanQuery query = fieldQueries.build();
+			searcher.search(query, collector);
+			BitSet resultIds = collector.getResultIds();
+			resultIds.and(bitSet);
+			return resultIds;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 
 	public synchronized void commit(boolean close) {
 		try {

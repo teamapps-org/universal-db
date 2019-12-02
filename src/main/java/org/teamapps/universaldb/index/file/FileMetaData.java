@@ -20,7 +20,7 @@
 package org.teamapps.universaldb.index.file;
 
 import org.teamapps.universaldb.util.DataStreamUtil;
-import org.teamapps.universaldb.index.text.TextValue;
+import org.teamapps.universaldb.index.text.FullTextIndexValue;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -104,18 +104,18 @@ public class FileMetaData {
 				.collect(Collectors.toList());
 	}
 
-	public List<TextValue> getFullTextIndexData() {
-		List<TextValue> values = new ArrayList<>();
-		values.add(new TextValue(FIELD_NAME, name));
-		values.add(new TextValue(FIELD_MIME_TYPE, mimeType));
-		values.add(new TextValue(FIELD_HASH, hash));
-		values.add(new TextValue(FIELD_CONTENT, textContent));
-		values.add(new TextValue(FIELD_LANGUAGE, language));
+	public List<FullTextIndexValue> getFullTextIndexData() {
+		List<FullTextIndexValue> values = new ArrayList<>();
+		values.add(new FullTextIndexValue(FIELD_NAME, name));
+		values.add(new FullTextIndexValue(FIELD_MIME_TYPE, mimeType));
+		values.add(new FullTextIndexValue(FIELD_HASH, hash));
+		values.add(new FullTextIndexValue(FIELD_CONTENT, textContent));
+		values.add(new FullTextIndexValue(FIELD_LANGUAGE, language));
 		StringBuilder sb = new StringBuilder();
 		for (FileMetaDataEntry metaDataEntry : entries) {
 			sb.append(metaDataEntry.getValue()).append(" ");
 		}
-		values.add(new TextValue(FIELD_META, sb.toString()));
+		values.add(new FullTextIndexValue(FIELD_META, sb.toString()));
 		return values;
 	}
 

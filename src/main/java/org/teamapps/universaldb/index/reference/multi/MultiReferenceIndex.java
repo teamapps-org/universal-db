@@ -334,7 +334,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		return MultiReferenceValue.create(dataInputStream);
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			int value1 = getReferencesCount(o1.getLeafId());

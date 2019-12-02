@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
@@ -174,7 +175,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	}
 
 	@Override
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		return sortEntries;
 	}
 

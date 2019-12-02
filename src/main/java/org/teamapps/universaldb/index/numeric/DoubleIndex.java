@@ -80,7 +80,7 @@ public class DoubleIndex extends AbstractBufferIndex<Double, NumericFilter> {
 		getBuffer(index).putDouble(position, value, ByteOrder.LITTLE_ENDIAN);
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			double value1 = getValue(o1.getLeafId());

@@ -26,10 +26,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.BitSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> {
 
@@ -95,7 +92,7 @@ public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> {
 		return dataInputStream.readLong();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			long value1 = getValue(o1.getLeafId());
