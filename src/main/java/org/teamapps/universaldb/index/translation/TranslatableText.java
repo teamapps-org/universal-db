@@ -118,7 +118,7 @@ public class TranslatableText {
             return;
         }
         int pos = -1;
-        if((pos = encodedValue.indexOf(DELIMITER, pos + 1)) >= 0 && pos < encodedValue.length() - 7) {
+        if((pos = encodedValue.indexOf(DELIMITER, pos + 1)) >= 0 && pos < encodedValue.length() - DELIMITER.length()) {
             int end = encodedValue.indexOf(DELIMITER, pos + 1);
             if (end > pos) {
                 originalLanguage = encodedValue.substring(pos + DELIMITER.length(), pos + DELIMITER.length() + 2);
@@ -165,7 +165,7 @@ public class TranslatableText {
     private Map<String, String> parseEncodedTranslation(String text) {
         Map<String, String> map = new HashMap<>();
         int pos = -1;
-        while((pos = text.indexOf(DELIMITER, pos + 1)) >= 0 && pos < text.length() - 7) {
+        while((pos = text.indexOf(DELIMITER, pos + 1)) >= 0 && pos < text.length() - DELIMITER.length()) {
             int end = text.indexOf(DELIMITER, pos + 1);
             if (end > pos) {
                 String language = text.substring(pos + DELIMITER.length(), pos + DELIMITER.length() + 2);

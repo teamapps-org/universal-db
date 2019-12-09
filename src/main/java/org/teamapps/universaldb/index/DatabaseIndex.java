@@ -65,6 +65,10 @@ public class DatabaseIndex implements MappedObject {
 			}
 			localTable.merge(table);
 		}
+		for (TableIndex table : tables) {
+			table.checkFullTextIndex();
+		}
+
 	}
 
 	public String getName() {

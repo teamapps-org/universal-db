@@ -38,6 +38,7 @@ public class CollectionTextSearchIndex {
 
 	public static final String ID = "id";
 
+	private String name;
 	private File dir;
 	private IndexWriter writer;
 	private Analyzer queryAnalyzer;
@@ -47,6 +48,7 @@ public class CollectionTextSearchIndex {
 
 	public CollectionTextSearchIndex(File path, String name) {
 		try {
+			this.name = name;
 			dir = new File(path, name);
 			Directory directory = FSDirectory.open(dir.toPath());
 			Analyzer analyzer = new StandardAnalyzer();
@@ -200,12 +202,21 @@ public class CollectionTextSearchIndex {
 				writer.commit();
 				if (close) {
 					writer.close();
+					writer = null;
 				}
-				writer = null;
 			}
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}
+	}
+
+	public int getMaxDoc() {
+		return writer.getDocStats().maxDoc;
+	}
+
+	public void deleteAllDocuments() throws IOException {
+		writer.deleteAll();
+		writer.commit();
 	}
 
 	public void drop() {

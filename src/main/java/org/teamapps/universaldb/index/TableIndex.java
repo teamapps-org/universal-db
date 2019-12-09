@@ -38,6 +38,7 @@ import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.schema.Table;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -111,6 +112,35 @@ public class TableIndex implements MappedObject {
 			collectionTextSearchIndex = new CollectionTextSearchIndex(path, "coll-text");
 		}
 		return collectionTextSearchIndex;
+	}
+
+	public void checkFullTextIndex() {
+		if (getCount() > collectionTextSearchIndex.getMaxDoc()) {
+			long time = System.currentTimeMillis();
+			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAC-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
+			recreateFullTextIndex();
+			log.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
+		}
+	}
+
+	private void recreateFullTextIndex() {
+		try {
+			collectionTextSearchIndex.deleteAllDocuments();
+			BitSet bitSet = records.getBitSet();
+			for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
+				List<FullTextIndexValue> values = new ArrayList<>();
+				for (TextIndex textField : getTextFields()) {
+					values.add(new FullTextIndexValue(textField.getName(), textField.getValue(id)));
+				}
+				for (TranslatableTextIndex translatableTextIndex : getTranslatedTextFields()) {
+					values.add(new FullTextIndexValue(translatableTextIndex.getName(), translatableTextIndex.getValue(id)));
+				}
+				collectionTextSearchIndex.setRecordValues(id, values, false);
+			}
+			collectionTextSearchIndex.commit(false);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 
