@@ -188,6 +188,15 @@ public class TextSearchIndex {
 		}
 	}
 
+	public int getMaxDoc() {
+		return writer.getDocStats().maxDoc;
+	}
+
+	public void deleteAllDocuments() throws IOException {
+		writer.deleteAll();
+		writer.commit();
+	}
+
 	public void drop() {
 		commit(true);
 		FileUtil.deleteFileRecursive(dir);

@@ -51,6 +51,7 @@ public class CollectionTextSearchIndex {
 			this.name = name;
 			dir = new File(path, name);
 			Directory directory = FSDirectory.open(dir.toPath());
+
 			Analyzer analyzer = new StandardAnalyzer();
 			queryAnalyzer = new StandardAnalyzer();
 			IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
@@ -156,6 +157,7 @@ public class CollectionTextSearchIndex {
 			searcher.search(query, collector);
 			BitSet resultIds = collector.getResultIds();
 			resultIds.and(bitSet);
+			reader.close();
 			return resultIds;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -188,6 +190,7 @@ public class CollectionTextSearchIndex {
 			searcher.search(query, collector);
 			BitSet resultIds = collector.getResultIds();
 			resultIds.and(bitSet);
+			reader.close();
 			return resultIds;
 		} catch (IOException e) {
 			e.printStackTrace();
