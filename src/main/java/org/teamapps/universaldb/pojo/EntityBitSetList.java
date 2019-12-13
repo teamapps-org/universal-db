@@ -61,7 +61,9 @@ public class EntityBitSetList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public boolean contains(Object o) {
-		throw new UnsupportedOperationException();
+		Entity entity = (Entity) o;
+		int id = entity.getId();
+		return records.get(id);
 	}
 
 	@Override
@@ -152,12 +154,20 @@ public class EntityBitSetList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public int indexOf(Object o) {
-		throw new UnsupportedOperationException();
+		checkIdsArray();
+		Entity entity = (Entity) o;
+		int id = entity.getId();
+		for (int i = 0; i < ids.length; i++) {
+			if (ids[i] == id) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	@Override
 	public int lastIndexOf(Object o) {
-		throw new UnsupportedOperationException();
+		return indexOf(o);
 	}
 
 	@Override

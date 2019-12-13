@@ -56,7 +56,7 @@ public class EntityArrayList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public boolean contains(Object o) {
-		throw new UnsupportedOperationException();
+		return indexOf(o) >= 0;
 	}
 
 	@Override
@@ -94,7 +94,12 @@ public class EntityArrayList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
+		for (Object o : c) {
+			if (indexOf(o) < 0) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
@@ -144,12 +149,19 @@ public class EntityArrayList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public int indexOf(Object o) {
-		throw new UnsupportedOperationException();
+		Entity entity = (Entity) o;
+		int id = entity.getId();
+		for (int i = 0; i < recordIds.length; i++) {
+			if (recordIds[i] == id) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	@Override
 	public int lastIndexOf(Object o) {
-		throw new UnsupportedOperationException();
+		return indexOf(o); //list may not contain the same entity twice
 	}
 
 	@Override

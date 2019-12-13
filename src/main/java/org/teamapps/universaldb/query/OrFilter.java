@@ -51,12 +51,6 @@ public class OrFilter implements Filter {
     public Filter or(Filter filter) {
         if (filter != null) {
             filters.add(filter);
-//            if (filter instanceof OrFilter) {
-//                OrFilter orFilter = (OrFilter) filter;
-//                filters.addAll(orFilter.getFilters()); //todo: reference is lost, later changes are ignored! -> use flatten filter!
-//            } else {
-//                filters.add(filter);
-//            }
         }
         return this;
     }
@@ -110,7 +104,7 @@ public class OrFilter implements Filter {
                                 }
                             } else if (columnIndex instanceof FileIndex) {
                                 FileIndex fileIndex = (FileIndex) columnIndex;
-                                //todo
+                                //currently file index maintains its own index...
                             }
                         }
                         localResult = fullTextResult;

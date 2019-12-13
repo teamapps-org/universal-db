@@ -46,12 +46,6 @@ public class AndFilter implements Filter {
     public Filter and(Filter filter) {
         if (filter != null) {
             filters.add(filter);
-//            if (filter instanceof AndFilter) {
-//                AndFilter andFilter = (AndFilter) filter;
-//                filters.addAll(andFilter.getFilters()); //todo: reference is lost, later changes are ignored! -> use flatten filter!
-//            } else {
-//                filters.add(filter);
-//            }
         }
         return this;
     }
@@ -92,7 +86,7 @@ public class AndFilter implements Filter {
                         localRecords = textIndex.filter(localRecords, (TextFilter) filter.getFilter(), false);
                     } else if (columnIndex instanceof FileIndex) {
                         FileIndex fileIndex = (FileIndex) columnIndex;
-                        //todo
+                        //currently file index maintains its own index...
                     }
                 }
 
