@@ -115,6 +115,9 @@ public class TableIndex implements MappedObject {
 	}
 
 	public void checkFullTextIndex() {
+		if (collectionTextSearchIndex == null) {
+			return;
+		}
 		if (getCount() > collectionTextSearchIndex.getMaxDoc()) {
 			long time = System.currentTimeMillis();
 			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAC-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
