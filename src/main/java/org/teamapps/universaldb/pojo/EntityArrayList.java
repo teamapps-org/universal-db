@@ -166,12 +166,12 @@ public class EntityArrayList<ENTITY> implements List<ENTITY> {
 
 	@Override
 	public ListIterator<ENTITY> listIterator() {
-		throw new UnsupportedOperationException();
+		return new ArrayList<>(this).listIterator();
 	}
 
 	@Override
 	public ListIterator<ENTITY> listIterator(int index) {
-		throw new UnsupportedOperationException();
+		return new ArrayList<>(this).listIterator(index);
 	}
 
 	@Override
