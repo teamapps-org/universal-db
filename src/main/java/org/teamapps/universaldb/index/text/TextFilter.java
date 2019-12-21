@@ -34,6 +34,10 @@ public class TextFilter {
 		return new TextFilter(TextFilterType.TEXT_EQUALS, value);
 	}
 
+	public static TextFilter textEqualsIgnoreCaseFilter(String value) {
+		return new TextFilter(TextFilterType.TEXT_EQUALS_IGNORE_CASE, value);
+	}
+
 	public static TextFilter textNotEqualsFilter(String value) {
 		return new TextFilter(TextFilterType.TEXT_NOT_EQUALS, value);
 	}

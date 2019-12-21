@@ -64,6 +64,7 @@ public class SearchIndexUtil {
 				case TEXT_BYTE_LENGTH_SMALLER:
 					return null;
 				case TEXT_EQUALS:
+				case TEXT_EQUALS_IGNORE_CASE:
 				case TERM_EQUALS:
 					termQueries.add(new TermQuery(term), BooleanClause.Occur.MUST);
 					break;

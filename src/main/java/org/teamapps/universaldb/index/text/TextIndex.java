@@ -205,6 +205,8 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 					return filterNotEmpty(records);
 				case TEXT_EQUALS:
 					return filterEquals(fullTextResult, textFilter.getValue());
+				case TEXT_EQUALS_IGNORE_CASE:
+					return filterEqualsIgnoreCase(fullTextResult, textFilter.getValue());
 				case TEXT_NOT_EQUALS:
 					return filterNotEquals(fullTextResult, textFilter.getValue());
 				case TEXT_BYTE_LENGTH_GREATER:
@@ -274,6 +276,20 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 			String text = getValue(id);
 			if (Objects.equals(text, value)) {
+				result.set(id);
+			}
+		}
+		return result;
+	}
+
+	private BitSet filterEqualsIgnoreCase(BitSet bitSet, String value) {
+		BitSet result = new BitSet();
+		if (value == null) {
+			return result;
+		}
+		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
+			String text = getValue(id);
+			if (value.equalsIgnoreCase(text)) {
 				result.set(id);
 			}
 		}

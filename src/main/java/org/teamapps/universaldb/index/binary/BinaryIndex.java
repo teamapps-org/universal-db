@@ -74,7 +74,11 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	public Supplier<InputStream> getInputStreamSupplier(int id) {
 		return () -> {
 			byte[] value = getValue(id);
-			return new ByteArrayInputStream(value);
+			if (value == null) {
+				return null;
+			} else {
+				return new ByteArrayInputStream(value);
+			}
 		};
 	}
 
