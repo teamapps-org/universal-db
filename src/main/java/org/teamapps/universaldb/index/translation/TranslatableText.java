@@ -29,11 +29,20 @@ import java.util.*;
 public class TranslatableText {
 
     private final static String DELIMITER = "\n<=@#!=>\n";
+    public static boolean REPAIR_ENCODED_TEXTS = false;
 
     private String originalText;
     private String originalLanguage;
     private String encodedValue;
     private Map<String, String> translationMap;
+
+    public static boolean isTranslatableText(String encodedValue) {
+        if (encodedValue == null || (encodedValue.startsWith(DELIMITER) && encodedValue.endsWith(DELIMITER))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public static TranslatableText create(String originalText, String originalLanguage) {
         return new TranslatableText(originalText, originalLanguage);
@@ -48,8 +57,14 @@ public class TranslatableText {
     }
 
     public TranslatableText(String encodedValue) {
-        if (encodedValue != null && (!encodedValue.startsWith(DELIMITER) || !encodedValue.endsWith(DELIMITER))) {
-            throw new RuntimeException("Error: invalid translation encoding:" + encodedValue);
+        if (!isTranslatableText(encodedValue)) {
+            if (REPAIR_ENCODED_TEXTS) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(DELIMITER).append("en").append(":").append(encodedValue).append(DELIMITER);;
+                encodedValue = sb.toString();
+            } else {
+                throw new RuntimeException("Error: invalid translation encoding:" + encodedValue);
+            }
         }
         this.encodedValue = encodedValue;
     }
