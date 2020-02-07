@@ -169,7 +169,7 @@ public class OrFilter implements Filter {
         StringBuilder sb = new StringBuilder();
         sb.append(getExplainTabs(level)).append("OR (").append("\n");
         for (Filter filter : filters) {
-            sb.append(explain(level + 1));
+            sb.append(filter.explain(level + 1));
         }
         sb.append(getExplainTabs(level)).append(")").append("\n");
         return sb.toString();

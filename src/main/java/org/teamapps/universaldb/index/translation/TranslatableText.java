@@ -54,6 +54,8 @@ public class TranslatableText {
     public TranslatableText(String originalText, String originalLanguage) {
         this.originalText = originalText;
         this.originalLanguage = originalLanguage;
+        this.translationMap = new HashMap<>();
+        translationMap.put(originalLanguage, originalText);
     }
 
     public TranslatableText(String encodedValue) {

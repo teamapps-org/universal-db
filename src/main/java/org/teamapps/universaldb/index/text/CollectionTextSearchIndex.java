@@ -78,14 +78,16 @@ public class CollectionTextSearchIndex {
 			doc.add(idSearchField);
 			doc.add(idField);
 			for (FullTextIndexValue fullTextIndexValue : values) {
-				if (fullTextIndexValue.getTranslatableText()) {
-					TranslatableText translatableText = fullTextIndexValue.getTranslationValue();
+				if (fullTextIndexValue.isTranslatableText()) {
+					TranslatableText translatableText = fullTextIndexValue.getTranslatableText();
 					Map<String, String> translationMap = translatableText.getTranslationMap();
 					for (String language : translationMap.keySet()) {
 						String value = translationMap.get(language) != null ? translationMap.get(language) : "";
 						Field field = new Field(fullTextIndexValue.getFieldName() + "_" + language, value, fieldType);
 						doc.add(field);
 					}
+					Field field = new Field(fullTextIndexValue.getFieldName(), translatableText.getText(), fieldType);
+					doc.add(field);
 				} else {
 					Field field = new Field(fullTextIndexValue.getFieldName(), fullTextIndexValue.getValue(), fieldType);
 					doc.add(field);
@@ -182,8 +184,12 @@ public class CollectionTextSearchIndex {
 				fieldQueries.add(query, occur);
 			}
 			for (TranslatableTextFieldFilter filter : translationFilters) {
+				BooleanQuery.Builder translatableQueries = new BooleanQuery.Builder();
+				Query originalLanguage = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
 				Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName() + "_" + filter.getLanguage(), filter.getValue(), queryAnalyzer);
-				fieldQueries.add(query, occur);
+				translatableQueries.add(originalLanguage, BooleanClause.Occur.SHOULD);
+				translatableQueries.add(query, BooleanClause.Occur.SHOULD);
+				fieldQueries.add(translatableQueries.build(), occur);
 			}
 
 			BooleanQuery query = fieldQueries.build();

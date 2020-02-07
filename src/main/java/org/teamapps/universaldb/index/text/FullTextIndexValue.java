@@ -51,11 +51,11 @@ public class FullTextIndexValue {
 		return value;
 	}
 
-	public TranslatableText getTranslationValue() {
+	public TranslatableText getTranslatableText() {
 		return translatableText;
 	}
 
-	public boolean getTranslatableText() {
+	public boolean isTranslatableText() {
 		return translatableText != null;
 	}
 }

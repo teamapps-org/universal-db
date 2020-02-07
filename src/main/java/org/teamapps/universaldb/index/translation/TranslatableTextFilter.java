@@ -104,6 +104,6 @@ public class TranslatableTextFilter {
 
 	@Override
 	public String toString() {
-		return filterType + ":" + value;
+		return filterType + " [" + language + "]" + ":" + value;
 	}
 }

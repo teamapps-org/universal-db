@@ -36,13 +36,20 @@ public class TranslatableTextTest {
         assertEquals("text-de", text.getText("de"));
         assertEquals("text-fr", text.getText("fr"));
 
+        assertTrue(text.getTranslationMap().containsKey("de"));
+        assertTrue(text.getTranslationMap().containsKey("en"));
+
+
         String encodedValue = text.getEncodedValue();
         assertNotNull(encodedValue);
-        TranslatableText parsedText = new TranslatableText(encodedValue);
+        text = new TranslatableText(encodedValue);
         assertEquals("text-en", text.getText("en"));
         assertEquals("text-en", text.getText("xx"));
         assertEquals("text-de", text.getText("de"));
         assertEquals("text-fr", text.getText("fr"));
+
+        assertTrue(text.getTranslationMap().containsKey("de"));
+        assertTrue(text.getTranslationMap().containsKey("en"));
 
     }
 

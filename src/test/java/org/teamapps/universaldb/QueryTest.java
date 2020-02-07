@@ -31,6 +31,8 @@ import org.teamapps.universaldb.index.file.FileDataField;
 import org.teamapps.universaldb.index.file.FileFilter;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
+import org.teamapps.universaldb.index.translation.TranslatableText;
+import org.teamapps.universaldb.index.translation.TranslatableTextFilter;
 
 import java.io.File;
 import java.io.IOException;
@@ -202,7 +204,80 @@ public class QueryTest {
 		values = FieldTest.filter().textField(TextFilter.termSimilarFilter("Grest777")).execute();
 		assertTrue(check(values, 777));
 
+		values = FieldTest.filter().fullTextFilter(TextFilter.termContainsFilter("Test123 abc")).execute();
+		assertTrue(check(values, 123));
+
+		values = FieldTest.filter().fullTextFilter(TextFilter.textEqualsFilter("Test123 abc")).execute();
+		assertTrue(check(values, 123));
+
+
+		values = FieldTest.filter().fullTextFilter(TextFilter.termContainsFilter("Test123 abc"), FieldTest.FIELD_TEXT_FIELD).execute();
+		assertTrue(check(values, 123));
+
 	}
+
+	@Test
+	public void testTranslatableText() {
+
+		int size = 1000;
+		long longOffset = 1000_000_000_000L;
+
+		for (int i = 1; i <= size; i++) {
+			FieldTest table = FieldTest.create();
+			table.setShortField((short) i);
+			table.setIntField(i);
+			table.setLongField(longOffset + i);
+			table.setTextField("Test" + i + " abc");
+			table.setTranslatableText(new TranslatableText("En" + i + "xval","en").setTranslation("De" + i + "xval", "de").setTranslation("Fr" + i + "xval", "fr"));
+			table.save();
+		}
+		List<FieldTest> values;
+
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("xval", "de")).execute();
+		assertEquals(1000, values.size());
+
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("de", "de")).execute();
+		assertEquals(1000, values.size());
+
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("fr", "de")).execute();
+		assertEquals(0, values.size());
+
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("xval", "xy")).execute();
+		assertEquals(1000, values.size());
+
+
+		values = FieldTest.filter().textField(TextFilter.textEqualsFilter("Test99 abc")).execute();
+		assertTrue(check(values, 99));
+
+		values = FieldTest.filter().textField(TextFilter.termEqualsFilter("Test99")).execute();
+		assertTrue(check(values, 99));
+
+		values = FieldTest.filter().textField(TextFilter.termEqualsFilter("abc")).execute();
+		assertEquals(1000, values.size());
+
+		values = FieldTest.filter().textField(TextFilter.termStartsWithFilter("Test99")).execute();
+		assertEquals(11, values.size());
+
+		values = FieldTest.filter().textField(TextFilter.termStartsWithFilter("Test777")).execute();
+		assertTrue(check(values, 777));
+
+		values = FieldTest.filter().textField(TextFilter.termEqualsFilter("Test777")).execute();
+		assertTrue(check(values, 777));
+
+		values = FieldTest.filter().textField(TextFilter.termSimilarFilter("Grest777")).execute();
+		assertTrue(check(values, 777));
+
+		values = FieldTest.filter().fullTextFilter(TextFilter.textEqualsFilter("Test123 abc")).execute();
+		assertTrue(check(values, 123));
+
+		values = FieldTest.filter().fullTextFilter(TextFilter.termContainsFilter("Test123 abc")).execute();
+		assertTrue(check(values, 123));
+
+		values = FieldTest.filter().fullTextFilter(TextFilter.termContainsFilter("Test123 abc"), FieldTest.FIELD_TEXT_FIELD).execute();
+		assertTrue(check(values, 123));
+
+	}
+
 
 	@Test
 	public void testFileQuery() throws IOException {
