@@ -321,7 +321,7 @@ public class TableIndex implements MappedObject {
 			return true;
 		} else {
 			for (ColumnIndex columnIndex : columnIndices) {
-				columnIndex.setGenericValue(id, null);
+				columnIndex.removeValue(id);
 			}
 			collectionTextSearchIndex.delete(id, getFileFieldNames());
 			return false;
