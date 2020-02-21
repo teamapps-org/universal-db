@@ -49,6 +49,12 @@ protected static {type} {name};
 {INTERFACE_GET_METHOD_MULTI_REFERENCE}#
     List<{reference}> get{name}();
 #
+{INTERFACE_GET_METHOD_MULTI_REFERENCE_2}#
+    int get{name}Count();
+#
+{INTERFACE_GET_METHOD_MULTI_REFERENCE_3}#
+    BitSet get{name}AsBitSet();
+#
 {INTERFACE_GET_METHOD_TIMESTAMP}#
     Instant get{name}();
 #
@@ -332,6 +338,28 @@ protected static {type} {name};
 			} else {
 				return Collections.emptyList();
 			}
+		}
+	}
+#
+{ENTITY_GET_METHOD_MULTI_REFERENCE_2}#
+	@Override
+	public int get{name}Count() {
+		if (isChanged({name2})) {
+            return get{name}().size();
+		} else {
+            return {name2}.getReferencesCount(getId());
+		}
+	}
+#
+{ENTITY_GET_METHOD_MULTI_REFERENCE_3}#
+	@Override
+	public BitSet get{name}AsBitSet() {
+		if (isChanged({name2})) {
+            BitSet bitSet = new BitSet();
+            get{name}().stream().map(e -> e.getId()).forEach(id -> bitSet.set(id));
+            return bitSet;
+		} else {
+            return {name2}.getReferencesAsBitSet(getId());
 		}
 	}
 #

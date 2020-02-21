@@ -20,7 +20,7 @@
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.2.11-SNAPSHOT</version>
+    <version>0.2.13-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
