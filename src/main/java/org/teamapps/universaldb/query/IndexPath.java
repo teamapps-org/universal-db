@@ -23,6 +23,7 @@ import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
 import java.util.PrimitiveIterator;
@@ -42,6 +43,18 @@ public class IndexPath implements Comparable<IndexPath>{
 	public IndexPath() {
 		localPath = true;
 		createPathId();
+	}
+
+	public IndexPath copy() {
+		IndexPath copy = new IndexPath();
+		copy.localPath = localPath;
+		copy.cyclicPath = cyclicPath;
+		copy.pathId = pathId;
+		copy.forwardMultiPath = forwardMultiPath;
+		copy.forwardSinglePath = forwardSinglePath;
+		copy.backwardMultiPath = backwardMultiPath;
+		copy.backwardSinglePath = backwardSinglePath;
+		return copy;
 	}
 
 	public boolean isSamePath(IndexPath path) {
@@ -363,5 +376,26 @@ public class IndexPath implements Comparable<IndexPath>{
 		int expense = getExpense();
 		int otherExpense = o.getExpense();
 		return expense - otherExpense;
+	}
+
+	@Override
+	public String toString() {
+		if (isLocalPath()) {
+			return "empty";
+		} else {
+			StringBuilder sb = new StringBuilder();
+			int pathLength = forwardSinglePath.length;
+			for (int i = 0; i < pathLength; i++) {
+				sb.append("->");
+				if (forwardSinglePath[i] != null) {
+					SingleReferenceIndex index = forwardSinglePath[i];
+					sb.append("[").append(index.getReferencedTable().getName()).append("].").append(index.getName());
+				} else {
+					MultiReferenceIndex index = forwardMultiPath[i];
+					sb.append("[").append(index.getReferencedTable().getName()).append("].").append(index.getName()).append("[mul]");
+				}
+			}
+			return sb.toString();
+		}
 	}
 }

@@ -91,11 +91,12 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 
 	@Override
 	public void prependPath(IndexPath path) {
+		IndexPath copy = path.copy();
 		if (indexPath == null) {
-			indexPath = path;
+			indexPath = copy;
 		} else {
-			path.addPath(indexPath);
-			indexPath = path;
+			copy.addPath(indexPath);
+			indexPath = copy;
 		}
 	}
 
@@ -103,6 +104,9 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 	public String explain(int level) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getExplainTabs(level));
+		if (indexPath != null && !indexPath.isLocalPath()) {
+			sb.append(indexPath).append(": ");
+		}
 		sb.append(columnIndex.getFQN()).append(": ").append(filter);
 		sb.append("\n");
 		return sb.toString();

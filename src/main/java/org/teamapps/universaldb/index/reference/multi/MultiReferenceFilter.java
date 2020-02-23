@@ -130,6 +130,10 @@ public class MultiReferenceFilter {
 
 	@Override
 	public String toString() {
-		return type + ":" + referencesSet;
+		if (countFilter > 0) {
+			return type + ":" + countFilter;
+		} else {
+			return type + ":" + referencesSet;
+		}
 	}
 }

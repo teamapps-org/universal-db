@@ -140,6 +140,10 @@ public class NumericFilter {
 
 	@Override
 	public String toString() {
-		return filterType + ":" + value1 + "," + value2;
+		if (value2 == null) {
+			return filterType + ":" + value1;
+		} else {
+			return filterType + ":" + value1 + "," + value2;
+		}
 	}
 }
