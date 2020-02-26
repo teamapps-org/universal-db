@@ -50,6 +50,16 @@ public class Model implements SchemaInfoProvider {
 				.addReference("parent", table, false, "children")
 				.addReference("children", table, true, "parent");
 
+		Table person = database.addTable("person");
+		Table company = database.addTable("company");
+		person
+				.addText("firstName")
+				.addText("lastName")
+				.addReference("company", company, false, "employees");
+
+		company
+				.addText("name")
+				.addReference("employees", person, true, "company");
 
 		return schema.getSchema();
 	}

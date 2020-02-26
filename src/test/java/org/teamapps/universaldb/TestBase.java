@@ -23,6 +23,7 @@ import com.google.common.io.Files;
 import org.apache.commons.io.IOUtils;
 import org.teamapps.datamodel.SchemaInfo;
 import org.teamapps.datamodel.testdb1.FieldTest;
+import org.teamapps.universaldb.pojo.Entity;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -66,6 +67,19 @@ public class TestBase {
 		Set<Integer> set = new HashSet<>(integers);
 		for (FieldTest value : values) {
 			if (!set.contains(value.getIntField())){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static boolean compareEntities(List<? extends Entity> list, Entity ... entities) {
+		if (list.size() != entities.length) {
+			return false;
+		}
+		Set<? extends Entity> set = new HashSet<>(list);
+		for (Entity entity : entities) {
+			if (!set.contains(entity)) {
 				return false;
 			}
 		}

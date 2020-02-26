@@ -268,6 +268,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 				removeCyclicReferences(id, removeReferences);
 			}
 			referenceBlockChain.removeAll(index);
+			entryIndex.setValue(id, 0);
 		}
 	}
 
