@@ -287,7 +287,21 @@ public class PojoTemplate {
 	}
 
 	public String createConstantName(String s) {
-		return s.replaceAll("(.)(\\p{Upper})", "$1_$2").toUpperCase();
+		if (isConstant(s)) {
+			return s;
+		} else {
+			return s.replaceAll("(.)(\\p{Upper})", "$1_$2").toUpperCase();
+		}
+	}
+
+	private static boolean isConstant(String s) {
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c != '_' && !Character.isUpperCase(c) && !Character.isDigit(c)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public String getIndexTypeName(ColumnType type) {
