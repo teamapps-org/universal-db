@@ -52,6 +52,7 @@ public class Model implements SchemaInfoProvider {
 
 		Table person = database.addTable("person");
 		Table company = database.addTable("company");
+		Table contract = database.addTable("contract");
 		person
 				.addText("firstName")
 				.addText("lastName")
@@ -59,7 +60,13 @@ public class Model implements SchemaInfoProvider {
 
 		company
 				.addText("name")
-				.addReference("employees", person, true, "company");
+				.addReference("employees", person, true, "company")
+				.addReference("companyContracts", contract, true, "companies");
+
+		contract
+				.addEnum("contractType", "typeA", "typeB", "typeC")
+				.addText("title")
+				.addReference("companies", company, true, "companyContracts");
 
 		return schema.getSchema();
 	}

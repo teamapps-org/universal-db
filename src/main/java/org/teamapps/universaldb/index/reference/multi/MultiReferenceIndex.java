@@ -225,7 +225,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 			Set<Integer> addSet = new HashSet<>();
 			while (iterator.hasNext()) {
 				int reference = iterator.nextInt();
-				if (addSet.contains(reference)) {
+				if (addSet.contains(reference)) { //todo: check this!!!
 					references.remove(reference);
 					addSet.add(reference);
 				}

@@ -130,7 +130,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return id;
 	}
 
-	private int getCorrelationId() {
+	protected int getCorrelationId() {
 		return correlationId;
 	}
 
@@ -147,19 +147,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 		checkChangeSet();
 		entityChangeSet.addChangeValue(index, recordReference);
-		entityChangeSet.setReferenceChange(index, entity);
-	}
-
-	protected void setReferenceChangeValue(ColumnIndex index, Entity reference, TableIndex tableIndex) {
-		AbstractUdbEntity entity = (AbstractUdbEntity) reference;
-		if (entity.getId() == 0) {
-			if (entity.getTransaction() == null) {
-				throw new RuntimeException("ERROR: Cannot add unsaved new entity:" + entity);
-			} else {
-
-			}
-		}
-		checkChangeSet();
 		entityChangeSet.setReferenceChange(index, entity);
 	}
 
@@ -325,9 +312,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	@Override
 	public void clearChanges() {
 		entityChangeSet = null;
-		if (transaction != null) {
-			//todo remove changes from transaction
-		}
 	}
 
 	@Override
@@ -347,9 +331,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			this.transaction = transaction;
 			boolean update = !createEntity;
 			TransactionRecord transactionRecord = new TransactionRecord(tableIndex, id, correlationId, transaction.getUserId(), update, false, strictChangeVerification);
-			entityChangeSet.setTransactionRecordValues(transactionRecord);
+//			entityChangeSet.setTransactionRecordValues(transactionRecord);
+			entityChangeSet.setTransactionRecordValues(transaction, transactionRecord, strictChangeVerification);
 			transaction.addTransactionRecord(transactionRecord);
-			entityChangeSet = null;
+			clearChanges();
 			//createEntity = false;
 		}
 	}
@@ -365,10 +350,17 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
+	protected TableIndex retrieveTableIndex() {
+		if (this.entityChangeSet != null) {
+			return entityChangeSet.retrieveTableIndex();
+		}
+		return null;
+	}
+
 	public void delete(Transaction transaction, TableIndex tableIndex) {
 		TransactionRecord transactionRecord = new TransactionRecord(tableIndex, id, 0, transaction.getUserId(), true);
 		transaction.addTransactionRecord(transactionRecord);
-		entityChangeSet = null;
+		clearChanges();
 	}
 
 	public void delete(TableIndex tableIndex) {

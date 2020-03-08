@@ -20,11 +20,17 @@
 package org.teamapps.universaldb.pojo;
 
 import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
+import org.teamapps.universaldb.transaction.Transaction;
 import org.teamapps.universaldb.transaction.TransactionRecord;
 import org.teamapps.universaldb.transaction.TransactionRecordValue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class EntityChangeSet {
@@ -58,6 +64,46 @@ public class EntityChangeSet {
 
 	public boolean isChanged(ColumnIndex columnIndex) {
 		return changeMap.containsKey(columnIndex.getMappingId());
+	}
+
+	public void setTransactionRecordValues(Transaction transaction, TransactionRecord transactionRecord, boolean strictChangeVerification) {
+		List<AbstractUdbEntity> uncommittedEntityReferences = new ArrayList<>();
+		for (TransactionRecordValue recordValue : changeMap.values()) {
+			transactionRecord.addRecordValue(recordValue);
+			if (recordValue.getColumn().getType() == IndexType.MULTI_REFERENCE) {
+				MultiReferenceEditValue editValue = (MultiReferenceEditValue) recordValue.getValue();
+				for (RecordReference recordReference : editValue.getAddReferences()) {
+					Entity entity = entityByReference.get(recordReference);
+					if (entity.getId() == 0) {
+						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+					}
+				}
+				for (RecordReference recordReference : editValue.getSetReferences()) {
+					Entity entity = entityByReference.get(recordReference);
+					if (entity.getId() == 0) {
+						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+					}
+				}
+			} else if (recordValue.getColumn().getType() == IndexType.REFERENCE) {
+				AbstractUdbEntity udbEntity = getReferenceChange(recordValue.getColumn());
+				if (udbEntity.getId() == 0) {
+					uncommittedEntityReferences.add(udbEntity);
+				}
+			}
+		}
+		for (AbstractUdbEntity entity : uncommittedEntityReferences) {
+			TableIndex tableIndex = entity.retrieveTableIndex();
+			if (tableIndex == null) {
+				System.out.println("Missing table index for uncommitted entity reference:" + entity);
+			} else {
+				entity.save(transaction, tableIndex, strictChangeVerification);
+			}
+		}
+	}
+
+	protected TableIndex retrieveTableIndex() {
+		TransactionRecordValue recordValue = changeMap.values().iterator().next();
+		return recordValue.getColumn().getTable();
 	}
 
 	public void setTransactionRecordValues(TransactionRecord transactionRecord) {

@@ -50,6 +50,8 @@ public class TransactionRecord {
 	private final long recordTransactionId;
 	private List<TransactionRecordValue> recordValues;
 
+	private boolean transactionProcessingStarted = false;
+
 	public TransactionRecord(TableIndex tableIndex, int recordId, int correlationId, int userId) {
 		this(tableIndex, recordId, correlationId, userId, recordId > 0, false, false);
 	}
@@ -167,6 +169,11 @@ public class TransactionRecord {
 	}
 
 	public void persistChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
+		if (transactionProcessingStarted) {
+			//make sure that a record that has been processed because of a reference ist not processed again
+			return;
+		}
+		transactionProcessingStarted = true;
 		boolean processChanges = true;
 		if (deleteRecord) {
 			processChanges = tableIndex.deleteRecord(recordId);

@@ -43,17 +43,19 @@ public class ClusterTransaction {
 
 	private List<TransactionRecord> transactionRecords;
 	private Map<Integer, Integer> recordIdByCorrelationId;
+	private Map<Integer, TransactionRecord> transactionRecordByCorrelationId;
 
 	public ClusterTransaction(int userId) {
 		this(transactionRequestIdGenerator.incrementAndGet(), userId);
 	}
 
-	public ClusterTransaction(long transactionRequestId, int userId) {
+	private ClusterTransaction(long transactionRequestId, int userId) {
 		this.transactionRequestId = transactionRequestId;
 		this.timestamp = System.currentTimeMillis();
 		this.userId = userId;
 		transactionRecords = new ArrayList<>();
 		recordIdByCorrelationId = new HashMap<>();
+		transactionRecordByCorrelationId = new HashMap<>();
 	}
 
 	public ClusterTransaction(TransactionPacket packet, DataBaseMapper dataBaseMapper) throws IOException {
@@ -61,12 +63,13 @@ public class ClusterTransaction {
 		this.transactionId = packet.getTransactionId();
 		this.timestamp = packet.getTimestamp();
 		this.userId = packet.getUserId();
-
-		transactionRecords = new ArrayList<>();
+		this.transactionRecordByCorrelationId = new HashMap<>();
+		this.transactionRecords = new ArrayList<>();
 		DataInputStream dataInputStream = new DataInputStream(new ByteArrayInputStream(packet.getTransactionData()));
 		int records = dataInputStream.readInt();
 		for (int i = 0; i < records; i++) {
-			transactionRecords.add(new TransactionRecord(dataInputStream, dataBaseMapper));
+			TransactionRecord transactionRecord = new TransactionRecord(dataInputStream, dataBaseMapper);
+			addTransactionRecord(transactionRecord);
 		}
 
 		recordIdByCorrelationId = new HashMap<>();
@@ -93,14 +96,16 @@ public class ClusterTransaction {
 		return new TransactionRequest(this);
 	}
 
-	public TransactionRecord addTransactionRecord(TableIndex tableIndex, int recordId, int correlationId, boolean strictChangeVerification) {
-		TransactionRecord transactionRecord = new TransactionRecord(tableIndex, recordId, correlationId, userId, recordId > 0, false, strictChangeVerification);
-		return addTransactionRecord(transactionRecord);
-	}
-
-	public TransactionRecord addTransactionRecord(TransactionRecord transactionRecord) {
+	public void addTransactionRecord(TransactionRecord transactionRecord) {
+		if (transactionRecord.getRecordId() == 0) {
+			if (transactionRecordByCorrelationId.containsKey(transactionRecord.getCorrelationId())) {
+				log.info("Omitted repeated transaction record processing steps - this log just indicates that the processed entity referenced an uncommitted entity");
+				return;
+			} else {
+				transactionRecordByCorrelationId.put(transactionRecord.getCorrelationId(), transactionRecord);
+			}
+		}
 		transactionRecords.add(transactionRecord);
-		return transactionRecord;
 	}
 
 	public long getTransactionRequestId() {
