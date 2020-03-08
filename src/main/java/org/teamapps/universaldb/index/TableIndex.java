@@ -29,6 +29,7 @@ import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.query.AndFilter;
 import org.teamapps.universaldb.query.Filter;
@@ -120,7 +121,7 @@ public class TableIndex implements MappedObject {
 		}
 		if (getCount() > collectionTextSearchIndex.getMaxDoc()) {
 			long time = System.currentTimeMillis();
-			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAC-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
+			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
 			recreateFullTextIndex();
 			log.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
 		}
@@ -133,12 +134,20 @@ public class TableIndex implements MappedObject {
 			for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 				List<FullTextIndexValue> values = new ArrayList<>();
 				for (TextIndex textField : getTextFields()) {
-					values.add(new FullTextIndexValue(textField.getName(), textField.getValue(id)));
+					String value = textField.getValue(id);
+					if (value != null) {
+						values.add(new FullTextIndexValue(textField.getName(), value));
+					}
 				}
 				for (TranslatableTextIndex translatableTextIndex : getTranslatedTextFields()) {
-					values.add(new FullTextIndexValue(translatableTextIndex.getName(), translatableTextIndex.getValue(id)));
+					TranslatableText value = translatableTextIndex.getValue(id);
+					if (value != null) {
+						values.add(new FullTextIndexValue(translatableTextIndex.getName(), value));
+					}
 				}
-				collectionTextSearchIndex.setRecordValues(id, values, false);
+				if (!values.isEmpty()) {
+					collectionTextSearchIndex.setRecordValues(id, values, false);
+				}
 			}
 			collectionTextSearchIndex.commit(false);
 		} catch (IOException e) {
@@ -357,7 +366,7 @@ public class TableIndex implements MappedObject {
 
 	private List<String> getFileFieldNames() {
 		if (fileFieldNames == null) {
-			fileFieldNames =  columnIndices.stream()
+			fileFieldNames = columnIndices.stream()
 					.filter(index -> index.getType() == IndexType.FILE)
 					.map(ColumnIndex::getName)
 					.collect(Collectors.toList());
@@ -390,7 +399,7 @@ public class TableIndex implements MappedObject {
 	}
 
 	public BitSet getDeletedRecordsBitSet() {
-		if (!keepDeletedRecords){
+		if (!keepDeletedRecords) {
 			return null;
 		}
 		return (BitSet) deletedRecords.getBitSet().clone();
