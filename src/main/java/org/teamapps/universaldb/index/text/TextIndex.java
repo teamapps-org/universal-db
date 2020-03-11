@@ -27,6 +27,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.Collator;
 import java.util.*;
 
 public class TextIndex extends AbstractIndex<String, TextFilter> {
@@ -175,7 +176,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 					return order;
 				}
 			}
-			return value1.compareToIgnoreCase(value2);
+			return value1.compareToIgnoreCase(value2) * order;
 		});
 		return sortEntries;
 	}

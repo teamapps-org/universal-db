@@ -182,7 +182,7 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 					return order;
 				}
 			}
-			return value1.compareToIgnoreCase(value2);
+			return value1.compareToIgnoreCase(value2) * order;
 		});
 		return sortEntries;
 	}
