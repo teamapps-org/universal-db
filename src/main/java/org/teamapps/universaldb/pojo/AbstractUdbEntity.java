@@ -42,6 +42,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private static final AtomicInteger correlationIdGenerator = new AtomicInteger();
 	private static final int MAX_CORRELATION_ID = 2_000_000_000;
 
+	private final TableIndex tableIndex;
 	private int id;
 	private boolean createEntity;
 	private int correlationId;
@@ -99,12 +100,14 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return column;
 	}
 
-	public AbstractUdbEntity() {
+	public AbstractUdbEntity(TableIndex tableIndex) {
+		this.tableIndex = tableIndex;
 		createEntity = true;
 		createCorrelationId();
 	}
 
-	public AbstractUdbEntity(int id, boolean createEntity) {
+	public AbstractUdbEntity(TableIndex tableIndex, int id, boolean createEntity) {
+		this.tableIndex = tableIndex;
 		this.id = id;
 		this.createEntity = createEntity;
 		if (createEntity) {
@@ -335,7 +338,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			entityChangeSet.setTransactionRecordValues(transaction, transactionRecord, strictChangeVerification);
 			transaction.addTransactionRecord(transactionRecord);
 			clearChanges();
-			//createEntity = false;
 		}
 	}
 
@@ -350,11 +352,8 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected TableIndex retrieveTableIndex() {
-		if (this.entityChangeSet != null) {
-			return entityChangeSet.retrieveTableIndex();
-		}
-		return null;
+	protected TableIndex getTableIndex() {
+		return tableIndex;
 	}
 
 	public void delete(Transaction transaction, TableIndex tableIndex) {

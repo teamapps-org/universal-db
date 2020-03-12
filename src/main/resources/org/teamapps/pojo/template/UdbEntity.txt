@@ -46,10 +46,11 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type}, Enti
     }
 
     public {udbType}() {
+        super(table);
     }
 
     public {udbType}(int id, boolean createEntity) {
-        super(id, createEntity);
+        super(table, id, createEntity);
     }
 
     @Override

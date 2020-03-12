@@ -70,7 +70,8 @@ public class EntityChangeSet {
 		List<AbstractUdbEntity> uncommittedEntityReferences = new ArrayList<>();
 		for (TransactionRecordValue recordValue : changeMap.values()) {
 			transactionRecord.addRecordValue(recordValue);
-			if (recordValue.getColumn().getType() == IndexType.MULTI_REFERENCE) {
+			ColumnIndex column = recordValue.getColumn();
+			if (column.getType() == IndexType.MULTI_REFERENCE) {
 				MultiReferenceEditValue editValue = (MultiReferenceEditValue) recordValue.getValue();
 				for (RecordReference recordReference : editValue.getAddReferences()) {
 					Entity entity = entityByReference.get(recordReference);
@@ -84,30 +85,17 @@ public class EntityChangeSet {
 						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
 					}
 				}
-			} else if (recordValue.getColumn().getType() == IndexType.REFERENCE) {
-				AbstractUdbEntity udbEntity = getReferenceChange(recordValue.getColumn());
+			} else if (column.getType() == IndexType.REFERENCE) {
+				AbstractUdbEntity udbEntity = getReferenceChange(column);
 				if (udbEntity.getId() == 0) {
 					uncommittedEntityReferences.add(udbEntity);
 				}
 			}
 		}
 		for (AbstractUdbEntity entity : uncommittedEntityReferences) {
-			TableIndex tableIndex = entity.retrieveTableIndex();
-			if (tableIndex == null) {
-				System.out.println("Missing table index for uncommitted entity reference:" + entity);
-			} else {
-				entity.save(transaction, tableIndex, strictChangeVerification);
-			}
+			TableIndex tableIndex = entity.getTableIndex();
+			entity.save(transaction, tableIndex, strictChangeVerification);
 		}
-	}
-
-	protected TableIndex retrieveTableIndex() {
-		TransactionRecordValue recordValue = changeMap.values().iterator().next();
-		return recordValue.getColumn().getTable();
-	}
-
-	public void setTransactionRecordValues(TransactionRecord transactionRecord) {
-		changeMap.values().forEach(transactionRecord::addRecordValue);
 	}
 
 	public void setReferenceChange(ColumnIndex index, AbstractUdbEntity reference) {
