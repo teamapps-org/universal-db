@@ -20,7 +20,7 @@
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.3.2-SNAPSHOT</version>
+    <version>0.3.3-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -52,7 +52,7 @@
         <apache-commons-io>2.6</apache-commons-io>
         <junit.version>4.13</junit.version>
         <tika-version>1.23</tika-version>
-        <lucene-version>8.4.1</lucene-version>
+        <lucene-version>8.2.0</lucene-version>
     </properties>
 
     <distributionManagement>
