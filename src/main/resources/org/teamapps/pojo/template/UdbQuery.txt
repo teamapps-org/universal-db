@@ -73,6 +73,11 @@ public class {udbQuery} extends AbstractUdbQuery implements {query} {
         }
     }
 
+    @Override
+    public BitSet executeToBitSet() {
+        return filter({udbType}.table.getRecordBitSet());
+    }
+
 	@Override
     public List<{type}> execute(String sortFieldName, boolean ascending, String ... path) {
         BitSet result = filter({udbType}.table.getRecordBitSet());
