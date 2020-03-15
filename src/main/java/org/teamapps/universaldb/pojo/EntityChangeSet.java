@@ -71,6 +71,9 @@ public class EntityChangeSet {
 		for (TransactionRecordValue recordValue : changeMap.values()) {
 			transactionRecord.addRecordValue(recordValue);
 			ColumnIndex column = recordValue.getColumn();
+			if (recordValue.getValue() == null) {
+				continue;
+			}
 			if (column.getType() == IndexType.MULTI_REFERENCE) {
 				MultiReferenceEditValue editValue = (MultiReferenceEditValue) recordValue.getValue();
 				for (RecordReference recordReference : editValue.getAddReferences()) {
