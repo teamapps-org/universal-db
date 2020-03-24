@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,8 @@
 package org.teamapps.universaldb;
 
 
-import org.teamapps.universaldb.cluster.Cluster;
-import org.teamapps.universaldb.cluster.ClusterConfig;
+import org.teamapps.universaldb.distribute.*;
+import org.teamapps.universaldb.distribute.TransactionReader;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.LocalFileStore;
@@ -33,216 +33,235 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
-public class UniversalDB implements DataBaseMapper, TransactionHandler {
+public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 
-    private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
-    private static final ThreadLocal<Transaction> THREAD_LOCAL_TRANSACTION = new ThreadLocal<>();
+	private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
+	private static final ThreadLocal<Transaction> THREAD_LOCAL_TRANSACTION = new ThreadLocal<>();
 
-    private final File storagePath;
-    private final TransactionStore transactionStore;
-    private final Map<Integer, DatabaseIndex> databaseById = new HashMap<>();
-    private final Map<Integer, TableIndex> tableById = new HashMap<>();
-    private final Map<Integer, ColumnIndex> columnById = new HashMap<>();
-    private final SchemaIndex schemaIndex;
-    private Cluster cluster;
+	private final File storagePath;
+	private final Map<Integer, DatabaseIndex> databaseById = new HashMap<>();
+	private final Map<Integer, TableIndex> tableById = new HashMap<>();
+	private final Map<Integer, ColumnIndex> columnById = new HashMap<>();
+	private final SchemaIndex schemaIndex;
+
+	private TransactionStore transactionStore;
+	private SchemaStats schemaStats;
+    private TransactionWriter transactionWriter;
+    private TransactionReader transactionReader;
+    private TransactionHead transactionHead;
 
     public static int getUserId() {
-        return THREAD_LOCAL_USER_ID.get();
-    }
+		return THREAD_LOCAL_USER_ID.get();
+	}
 
-    public static void setUserId(int userId) {
-        THREAD_LOCAL_USER_ID.set(userId);
-    }
+	public static void setUserId(int userId) {
+		THREAD_LOCAL_USER_ID.set(userId);
+	}
 
-    public static void startThreadLocalTransaction() {
-        THREAD_LOCAL_TRANSACTION.set(Transaction.create());
-    }
+	public static void startThreadLocalTransaction() {
+		THREAD_LOCAL_TRANSACTION.set(Transaction.create());
+	}
 
-    public static Transaction getThreadLocalTransaction() {
-        return THREAD_LOCAL_TRANSACTION.get();
-    }
+	public static Transaction getThreadLocalTransaction() {
+		return THREAD_LOCAL_TRANSACTION.get();
+	}
 
-    public static void executeThreadLocalTransaction() {
-        Transaction transaction = THREAD_LOCAL_TRANSACTION.get();
-        transaction.execute();
-        THREAD_LOCAL_TRANSACTION.set(null);
-    }
+	public static void executeThreadLocalTransaction() {
+		Transaction transaction = THREAD_LOCAL_TRANSACTION.get();
+		transaction.execute();
+		THREAD_LOCAL_TRANSACTION.set(null);
+	}
 
-    public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider) throws Exception {
-        LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
-        return new UniversalDB(storagePath, schemaInfoProvider, fileStore,null);
-    }
+	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider) throws Exception {
+		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
+	}
 
-    public static UniversalDB createStandalone(File storagePath, Schema schema) throws IOException {
-        return new UniversalDB(storagePath, schema, null);
-    }
+	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, FileStore fileStore) throws Exception {
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
+	}
 
-    public static UniversalDB createClusterNode(File storagePath, Schema schema, ClusterConfig clusterConfig) throws IOException {
-        return new UniversalDB(storagePath, schema, clusterConfig);
-    }
-
-    public static UniversalDB createClusterNode(File storagePath, ClusterConfig clusterConfig) throws IOException {
-        return new UniversalDB(storagePath, new Schema(), clusterConfig);
-    }
-
-    public UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, ClusterConfig clusterConfig) throws Exception {
-        this.storagePath = storagePath;
-        this.transactionStore = new TransactionStore(storagePath);
-        Transaction.setDataBase(this);
-
-        Schema schema = Schema.parse(schemaInfo.getSchema());
-        String pojoPath = schema.getPojoNamespace();
-        this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
+	public static UniversalDB createClusterNode(File storagePath, SchemaInfoProvider schemaInfoProvider, ClusterSetConfig clusterConfig) throws Exception {
+		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, clusterConfig);
+	}
 
 
-        schemaIndex.setFileStore(fileStore);
+	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore) throws Exception {
+		this.storagePath = storagePath;
+		this.transactionStore = new TransactionStore(storagePath);
+		Transaction.setDataBase(this);
 
-        mapSchema(schema);
+		Schema schema = Schema.parse(schemaInfo.getSchema());
+		String pojoPath = schema.getPojoNamespace();
+		this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
 
-        for (DatabaseIndex database : schemaIndex.getDatabases()) {
-            String path = pojoPath + "." + database.getName().toLowerCase();
-            for (TableIndex table : database.getTables()) {
-                String tableName = table.getName();
-                String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
-                Class<?>  schemaClass = Class.forName(className);
-                Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
-                method.setAccessible(true);
-                method.invoke(null, table);
-            }
-        }
 
-        if (clusterConfig != null) {
-            cluster = new Cluster(clusterConfig, this);
-        }
-    }
+		schemaIndex.setFileStore(fileStore);
 
-    private UniversalDB(File storagePath, Schema schema, ClusterConfig clusterConfig) throws IOException {
-        this.storagePath = storagePath;
-        this.transactionStore = new TransactionStore(storagePath);
-        this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
+		mapSchema(schema);
 
-        mapSchema(schema);
-        if (clusterConfig != null) {
-            cluster = new Cluster(clusterConfig, this);
-        }
-    }
+		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+			String path = pojoPath + "." + database.getName().toLowerCase();
+			for (TableIndex table : database.getTables()) {
+				String tableName = table.getName();
+				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
+				Class<?> schemaClass = Class.forName(className);
+				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
+				method.setAccessible(true);
+				method.invoke(null, table);
+			}
+		}
 
-    private void mapSchema(Schema schema) throws IOException {
-        Schema localSchema = transactionStore.getSchema();
-        if (localSchema != null) {
-            if (!localSchema.isCompatibleWith(schema)) {
-                throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
-            }
-            localSchema.merge(schema);
-            transactionStore.saveSchema(localSchema);
+
+	}
+
+	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, ClusterSetConfig clusterConfig) throws Exception {
+		this.storagePath = storagePath;
+		this.schemaStats = new SchemaStats(storagePath);
+		Transaction.setDataBase(this);
+
+		Schema schema = Schema.parse(schemaInfo.getSchema());
+		String pojoPath = schema.getPojoNamespace();
+		this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
+
+		schemaIndex.setFileStore(fileStore);
+
+		mapSchema(schema);
+
+		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+			String path = pojoPath + "." + database.getName().toLowerCase();
+			for (TableIndex table : database.getTables()) {
+				String tableName = table.getName();
+				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
+				Class<?> schemaClass = Class.forName(className);
+				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
+				method.setAccessible(true);
+				method.invoke(null, table);
+			}
+		}
+
+        transactionWriter = new TransactionWriter(clusterConfig.getKafkaConfig(),
+                schemaStats.getClientId(),
+                clusterConfig.getSharedSecret(),
+                "test");
+
+        transactionReader = new TransactionReader(clusterConfig.getKafkaConfig(),
+                clusterConfig.getZookeeperConfig(),
+                schemaStats.getGroupId(),
+                clusterConfig.getSharedSecret(),
+                "test",
+                this,
+                transactionWriter.getTransactionMap(),
+				this);
+
+        transactionHead = new TransactionHead(clusterConfig.getZookeeperConfig(),
+                clusterConfig.getKafkaConfig(),
+                schemaStats.getClientId(),
+                schemaStats.getGroupId(),
+                clusterConfig.getSharedSecret(),
+                "test",
+                this,
+				this);
+
+	}
+
+//    private UniversalDB(File storagePath, Schema schema, ClusterConfig clusterConfig) throws IOException {
+//        this.storagePath = storagePath;
+//        this.transactionStore = new TransactionStore(storagePath);
+//        this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
+//
+//        mapSchema(schema);
+//        if (clusterConfig != null) {
+//            cluster = new Cluster(clusterConfig, this);
+//        }
+//    }
+
+	private void mapSchema(Schema schema) throws IOException {
+		Schema localSchema = transactionStore.getSchema();
+		if (localSchema != null) {
+			if (!localSchema.isCompatibleWith(schema)) {
+				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
+			}
+			localSchema.merge(schema);
+			transactionStore.saveSchema(localSchema);
+		} else {
+			localSchema = schema;
+			transactionStore.saveSchema(localSchema);
+		}
+		localSchema.mapSchema();
+		schemaIndex.merge(localSchema);
+
+		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+			databaseById.put(database.getMappingId(), database);
+			for (TableIndex table : database.getTables()) {
+				tableById.put(table.getMappingId(), table);
+				for (ColumnIndex columnIndex : table.getColumnIndices()) {
+					columnById.put(columnIndex.getMappingId(), columnIndex);
+				}
+			}
+		}
+	}
+
+	public void executeTransaction(ClusterTransaction transaction) throws IOException {
+		if (transactionWriter != null) {
+			executeClusterTransaction(transaction);
+		} else {
+			executeStandaloneTransaction(transaction);
+		}
+	}
+
+	private synchronized void executeStandaloneTransaction(ClusterTransaction transaction) throws IOException {
+		TransactionRequest request = transaction.createRequest();
+		transactionStore.executeTransaction(request);
+	}
+
+	private void executeClusterTransaction(ClusterTransaction transaction) throws IOException {
+		TransactionExecutionResult transactionExecutionResult = transactionWriter.writeTransaction(transaction);
+		transactionExecutionResult.waitForExecution();
+	}
+
+
+	public void synchronizeTransaction(ClusterTransaction transaction) throws IOException {
+		transactionStore.synchronizeTransaction(transaction);
+	}
+
+	public SchemaIndex getSchemaIndex() {
+		return schemaIndex;
+	}
+
+	@Override
+	public DatabaseIndex getDatabaseById(int mappingId) {
+		return databaseById.get(mappingId);
+	}
+
+	@Override
+	public TableIndex getCollectionIndexById(int mappingId) {
+		return tableById.get(mappingId);
+	}
+
+	@Override
+	public ColumnIndex getColumnById(int mappingId) {
+		return columnById.get(mappingId);
+	}
+
+    @Override
+    public long getNextTransactionId() {
+        if (schemaStats != null) {
+            return schemaStats.getNextTransactionId();
         } else {
-            localSchema = schema;
-            transactionStore.saveSchema(localSchema);
-        }
-        localSchema.mapSchema();
-        schemaIndex.merge(localSchema);
-
-        for (DatabaseIndex database : schemaIndex.getDatabases()) {
-            databaseById.put(database.getMappingId(), database);
-            for (TableIndex table : database.getTables()) {
-                tableById.put(table.getMappingId(), table);
-                for (ColumnIndex columnIndex : table.getColumnIndices()) {
-                    columnById.put(columnIndex.getMappingId(), columnIndex);
-                }
-            }
+            return transactionStore.getNextTransactionId();
         }
     }
 
-    public synchronized void executeTransaction(ClusterTransaction transaction) throws IOException {
-        TransactionRequest request = transaction.createRequest();
-        if (cluster != null) {
-            cluster.executeTransaction(request);
-        } else {
-            transactionStore.executeTransaction(request);
-        }
-    }
-
-    public void synchronizeTransaction(ClusterTransaction transaction) throws IOException {
-        transactionStore.synchronizeTransaction(transaction);
-    }
-
-    public SchemaIndex getSchemaIndex() {
-        return schemaIndex;
-    }
-
-    @Override
-    public DatabaseIndex getDatabaseById(int mappingId) {
-        return databaseById.get(mappingId);
-    }
-
-    @Override
-    public TableIndex getCollectionIndexById(int mappingId) {
-        return tableById.get(mappingId);
-    }
-
-    @Override
-    public ColumnIndex getColumnById(int mappingId) {
-        return columnById.get(mappingId);
-    }
-
-    @Override
-    public long getCurrentTransactionId() {
-        return transactionStore.getCurrentTransactionId();
-    }
-
-    @Override
-    public long getLastTransactionId() {
-        return transactionStore.getLastTransactionId();
-    }
-
-    @Override
-    public long getTransactionCount() {
-        return transactionStore.getTransactionCount();
-    }
-
-    @Override
-    public Schema getSchema() {
-        return transactionStore.getSchema();
-    }
-
-    @Override
-    public void updateSchema(Schema schema) throws IOException {
-        mapSchema(schema);
-    }
-
-    @Override
-    public Iterator<byte[]> getTransactions(long startTransaction, long lastTransaction) {
-        if (startTransaction == 0) {
-            startTransaction = 8;
-        }
-        return transactionStore.getTransactions(startTransaction, lastTransaction);
-    }
-
-    @Override
-    public void handleTransactionSynchronizationPacket(TransactionPacket packet) {
-        try {
-            ClusterTransaction transaction = new ClusterTransaction(packet, this);
-            synchronizeTransaction(transaction);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public DataBaseMapper getDatabaseMapper() {
-        return this;
-    }
-
-    @Override
-    public TransactionIdProvider getTransactionIdProvider() {
-        return transactionStore;
-    }
-
-    @Override
-    public void executeTransactionRequest(TransactionRequest transactionRequest) throws IOException {
-        transactionStore.executeTransaction(transactionRequest);
-    }
+	@Override
+	public long getLastCommittedTransactionId() {
+		if (schemaStats != null) {
+			return schemaStats.getLastCommittedTransactionId();
+		} else {
+			return transactionStore.getLastCommittedTransactionId();
+		}
+	}
 }

@@ -21,5 +21,7 @@ package org.teamapps.universaldb.transaction;
 
 public interface TransactionIdProvider {
 
+	long getLastCommittedTransactionId();
+
 	long getNextTransactionId();
 }

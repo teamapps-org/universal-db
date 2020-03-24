@@ -43,8 +43,6 @@ public interface TransactionHandler {
 
 	DataBaseMapper getDatabaseMapper();
 
-	TransactionIdProvider getTransactionIdProvider();
-
 	void executeTransactionRequest(TransactionRequest transactionRequest) throws IOException;
 
 }

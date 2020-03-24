@@ -213,5 +213,11 @@ public class ClusterTransaction {
 		}
 	}
 
+	public Map<Integer, Integer> getRecordIdByCorrelationId() {
+		return recordIdByCorrelationId;
+	}
 
+	public void setRecordIdByCorrelationId(Map<Integer, Integer> recordIdByCorrelationId) {
+		this.recordIdByCorrelationId = recordIdByCorrelationId;
+	}
 }

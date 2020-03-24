@@ -47,7 +47,7 @@ public class S3Test {
 	public static void init() throws Exception {
 		File tempDir = Files.createTempDir();
 		fileStore = new CachingS3FileStore(tempDir, "test-bucket", S3_URL, S3_KEY, S3_SECRET);
-		new UniversalDB(tempDir, new SchemaInfo(), fileStore, null);
+		UniversalDB.createStandalone(tempDir, new SchemaInfo(), fileStore);
 	}
 
 

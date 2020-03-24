@@ -260,6 +260,11 @@ public class TransactionStore implements TransactionIdProvider {
         return currentTransactionId;
     }
 
+    @Override
+    public long getLastCommittedTransactionId() {
+        return lastTransactionId;
+    }
+
     protected static boolean newTransactionFileRequired(int filePosition, int packetSize) {
         return 1L + filePosition + packetSize >= MAX_TRANSACTION_FILE_SIZE;
     }
