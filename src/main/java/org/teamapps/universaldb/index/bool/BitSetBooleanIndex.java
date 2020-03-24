@@ -30,7 +30,7 @@ public class BitSetBooleanIndex extends BooleanIndex {
 	public BitSetBooleanIndex(String name, TableIndex table) {
 		super(name, table);
 		bitSet = new BitSet();
-		for (int i = 1; i <= getMaximumId() * 8; i++) {
+		for (int i = 0; i <= getMaximumId() * 8; i++) {
 			bitSet.set(i, super.getValue(i));
 		}
 	}

@@ -119,12 +119,16 @@ public class TableIndex implements MappedObject {
 		if (collectionTextSearchIndex == null) {
 			return;
 		}
-		if (getCount() > collectionTextSearchIndex.getMaxDoc()) {
+		if (!records.getValue(0) && getCount() > 0) {
 			long time = System.currentTimeMillis();
 			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
 			recreateFullTextIndex();
 			log.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
 		}
+		if (getCount() > collectionTextSearchIndex.getMaxDoc()) {
+			//todo check if necessary - null values?
+		}
+		records.setValue(0, false);
 	}
 
 	private void recreateFullTextIndex() {
@@ -453,6 +457,8 @@ public class TableIndex implements MappedObject {
 			if (collectionTextSearchIndex != null) {
 				collectionTextSearchIndex.commit(true);
 			}
+			records.setValue(0, true);
+			records.close();
 			for (ColumnIndex column : columnIndices) {
 				column.close();
 			}

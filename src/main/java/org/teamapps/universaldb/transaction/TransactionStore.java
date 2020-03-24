@@ -127,15 +127,6 @@ public class TransactionStore implements TransactionIdProvider {
         return null;
     }
 
-//    public void writeTransaction(Transaction transaction) throws IOException {
-//        TransactionRequest transactionRequest = transaction.createRequest();
-//        if (cluster != null) {
-//
-//        } else {
-//            executeTransaction(transactionRequest);
-//        }
-//    }
-
     public void synchronizeTransaction(ClusterTransaction transaction) throws IOException {
         TransactionRequest transactionRequest = transaction.createRequest();
         executeTransaction(transactionRequest);

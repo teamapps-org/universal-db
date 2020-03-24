@@ -129,6 +129,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 
 		schemaIndex.setFileStore(fileStore);
 
+		//todo fix missing transactionStore
 		mapSchema(schema);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
