@@ -1,3 +1,22 @@
+/*-
+ * ========================LICENSE_START=================================
+ * UniversalDB
+ * ---
+ * Copyright (C) 2014 - 2020 TeamApps.org
+ * ---
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
 package org.teamapps.universaldb;
 
 import org.agrona.concurrent.AtomicBuffer;
@@ -20,13 +39,17 @@ public class SchemaStats implements TransactionIdProvider {
 
 	private static final int CLIENT_ID_POS = 100;
 	private static final int GROUP_ID_POS = 200;
-	private static final int SCHEMA_POS = 300;
+	private static final int HEAD_CLIENT_ID_POS = 300;
+	private static final int HEAD_GROUP_ID_POS = 400;
+	private static final int SCHEMA_POS = 500;
 
 	private final File path;
 	private AtomicBuffer buffer;
 	private Schema schema;
 	private final String clientId;
 	private final String groupId;
+	private final String headClientId;
+	private final String headGroupId;
 	private long startupCount;
 
 	public SchemaStats(File path) {
@@ -40,11 +63,17 @@ public class SchemaStats implements TransactionIdProvider {
 		if (readInt(CLIENT_ID_POS) == 0) {
 			clientId = UUID.randomUUID().toString().replace("-", "");
 			groupId = UUID.randomUUID().toString().replace("-", "");
+			headClientId = UUID.randomUUID().toString().replace("-", "");
+			headGroupId = UUID.randomUUID().toString().replace("-", "");
 			writeString(CLIENT_ID_POS, clientId);
 			writeString(GROUP_ID_POS, groupId);
+			writeString(HEAD_CLIENT_ID_POS, headClientId);
+			writeString(HEAD_GROUP_ID_POS, headGroupId);
 		} else {
 			clientId = readString(CLIENT_ID_POS);
 			groupId = readString(GROUP_ID_POS);
+			headClientId = readString(HEAD_CLIENT_ID_POS);
+			headGroupId = readString(HEAD_GROUP_ID_POS);
 		}
 		startupCount = readLong(START_UP_COUNT_POS) + 1;
 		writeLong(START_UP_COUNT_POS, startupCount);
@@ -77,6 +106,14 @@ public class SchemaStats implements TransactionIdProvider {
 
 	public String getGroupId() {
 		return groupId;
+	}
+
+	public String getHeadClientId() {
+		return headClientId;
+	}
+
+	public String getHeadGroupId() {
+		return headGroupId;
 	}
 
 	public long getStartupCount() {

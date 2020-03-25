@@ -1,3 +1,22 @@
+/*-
+ * ========================LICENSE_START=================================
+ * UniversalDB
+ * ---
+ * Copyright (C) 2014 - 2020 TeamApps.org
+ * ---
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
 package org.teamapps.universaldb.distribute;
 
 import org.apache.kafka.clients.consumer.*;
@@ -22,7 +41,7 @@ public class TransactionReader {
 
 	public static final String RESOLVED_SUFFIX = "resolved";
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private final String clientId;
+	private final String headProducerClientId;
 	private final String sharedSecret;
 	private final DataBaseMapper dataBaseMapper;
 	private final Consumer<byte[], byte[]> consumer;
@@ -31,35 +50,32 @@ public class TransactionReader {
 	private final Map<TransactionMessageKey, TransactionExecutionResult> transactionMap;
 	private final TransactionIdProvider transactionIdProvider;
 
-	public TransactionReader(String brokerConfig,
-							 String clientId,
-							 String groupId,
-							 String sharedSecret,
-							 String topicPrefix,
+	public TransactionReader(ClusterSetConfig clusterConfig,
 							 DataBaseMapper dataBaseMapper,
 							 Map<TransactionMessageKey, TransactionExecutionResult> transactionMap,
 							 TransactionIdProvider transactionIdProvider
 	) {
-		this.clientId = clientId;
-		this.sharedSecret = sharedSecret;
+		this.headProducerClientId = clusterConfig.getHeadProducerClientId();
+		this.sharedSecret = clusterConfig.getSharedSecret();
 		this.dataBaseMapper = dataBaseMapper;
 		this.transactionMap = transactionMap;
 		this.transactionIdProvider = transactionIdProvider;
 		Properties consumerProps = new Properties();
-		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerConfig);
-		consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-		consumerProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, groupId);
+		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
+		consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, clusterConfig.getConsumerGroupId());
+		consumerProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, clusterConfig.getConsumerGroupId());
 		consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10_000);
 		consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
 		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); //"latest"
 
-		topic = topicPrefix + "-" + RESOLVED_SUFFIX;
+		topic = clusterConfig.getTopicPrefix() + "-" + RESOLVED_SUFFIX;
 		topicPartition = new TopicPartition(topic, 0);
 		consumer = new KafkaConsumer<>(consumerProps);
 		consumer.subscribe(Collections.singletonList(topic));
 		//consumer.seek(topicPartition, 0);
+		new Thread(() -> start()).start();
 	}
 
 	private void start() {
@@ -83,6 +99,8 @@ public class TransactionReader {
 			TransactionPacket transactionPacket = new TransactionPacket(bytes);
 			ClusterTransaction transaction = new ClusterTransaction(transactionPacket, dataBaseMapper);
 
+			logger.info("Client reader - received new transaction:" + messageKey);
+
 			if (transaction.getTransactionId() == transactionIdProvider.getLastCommittedTransactionId() + 1) {
 				commitTransactions(transaction, messageKey);
 			} else {
@@ -92,10 +110,10 @@ public class TransactionReader {
 	}
 
 	private void commitTransactions(ClusterTransaction transaction, TransactionMessageKey messageKey) {
-		if (!clientId.equals(messageKey.getHeadClientId())) {
+		if (!headProducerClientId.equals(messageKey.getHeadClientId())) {
 			transaction.executeResolvedTransaction();
 		}
-		if (messageKey.getClientId().equals(clientId)) {
+		if (messageKey.getClientId().equals(headProducerClientId)) {
 			TransactionExecutionResult executionResult = transactionMap.remove(messageKey);
 			executionResult.handleSuccess(transaction.getRecordIdByCorrelationId());
 		}

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -114,8 +114,32 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 				method.invoke(null, table);
 			}
 		}
+	}
 
+	private void mapSchema(Schema schema) throws IOException {
+		Schema localSchema = transactionStore.getSchema();
+		if (localSchema != null) {
+			if (!localSchema.isCompatibleWith(schema)) {
+				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
+			}
+			localSchema.merge(schema);
+			transactionStore.saveSchema(localSchema);
+		} else {
+			localSchema = schema;
+			transactionStore.saveSchema(localSchema);
+		}
+		localSchema.mapSchema();
+		schemaIndex.merge(localSchema);
 
+		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+			databaseById.put(database.getMappingId(), database);
+			for (TableIndex table : database.getTables()) {
+				tableById.put(table.getMappingId(), table);
+				for (ColumnIndex columnIndex : table.getColumnIndices()) {
+					columnById.put(columnIndex.getMappingId(), columnIndex);
+				}
+			}
+		}
 	}
 
 	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, ClusterSetConfig clusterConfig) throws Exception {
@@ -129,8 +153,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 
 		schemaIndex.setFileStore(fileStore);
 
-		//todo fix missing transactionStore
-		mapSchema(schema);
+		mapSchemaForCluster(schema);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			String path = pojoPath + "." + database.getName().toLowerCase();
@@ -144,53 +167,36 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 			}
 		}
 
-        transactionWriter = new TransactionWriter(clusterConfig.getKafkaConfig(),
-                schemaStats.getClientId(),
-                clusterConfig.getSharedSecret(),
-                "test");
+		clusterConfig.setProducerClientId(schemaStats.getClientId());
+		clusterConfig.setConsumerGroupId(schemaStats.getGroupId());
+		clusterConfig.setHeadProducerClientId(schemaStats.getHeadClientId());
+		clusterConfig.setHeadConsumerGroupId(schemaStats.getHeadGroupId());
 
-        transactionReader = new TransactionReader(clusterConfig.getKafkaConfig(),
-                clusterConfig.getZookeeperConfig(),
-                schemaStats.getGroupId(),
-                clusterConfig.getSharedSecret(),
-                "test",
+        transactionWriter = new TransactionWriter(clusterConfig);
+
+        transactionReader = new TransactionReader(clusterConfig,
                 this,
                 transactionWriter.getTransactionMap(),
 				this);
 
-        transactionHead = new TransactionHead(clusterConfig.getZookeeperConfig(),
-                clusterConfig.getKafkaConfig(),
-                schemaStats.getClientId(),
-                schemaStats.getGroupId(),
-                clusterConfig.getSharedSecret(),
-                "test",
+        transactionHead = new TransactionHead(clusterConfig,
                 this,
 				this);
 
 	}
 
-//    private UniversalDB(File storagePath, Schema schema, ClusterConfig clusterConfig) throws IOException {
-//        this.storagePath = storagePath;
-//        this.transactionStore = new TransactionStore(storagePath);
-//        this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
-//
-//        mapSchema(schema);
-//        if (clusterConfig != null) {
-//            cluster = new Cluster(clusterConfig, this);
-//        }
-//    }
-
-	private void mapSchema(Schema schema) throws IOException {
-		Schema localSchema = transactionStore.getSchema();
+	//todo this should be merged with standalone db merging
+	private void mapSchemaForCluster(Schema schema) throws IOException {
+		Schema localSchema = schemaStats.getSchema();
 		if (localSchema != null) {
 			if (!localSchema.isCompatibleWith(schema)) {
 				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
 			}
 			localSchema.merge(schema);
-			transactionStore.saveSchema(localSchema);
+			schemaStats.saveSchema(localSchema);
 		} else {
 			localSchema = schema;
-			transactionStore.saveSchema(localSchema);
+			schemaStats.saveSchema(localSchema);
 		}
 		localSchema.mapSchema();
 		schemaIndex.merge(localSchema);
@@ -222,15 +228,6 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 	private void executeClusterTransaction(ClusterTransaction transaction) throws IOException {
 		TransactionExecutionResult transactionExecutionResult = transactionWriter.writeTransaction(transaction);
 		transactionExecutionResult.waitForExecution();
-	}
-
-
-	public void synchronizeTransaction(ClusterTransaction transaction) throws IOException {
-		transactionStore.synchronizeTransaction(transaction);
-	}
-
-	public SchemaIndex getSchemaIndex() {
-		return schemaIndex;
 	}
 
 	@Override

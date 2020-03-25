@@ -1,3 +1,22 @@
+/*-
+ * ========================LICENSE_START=================================
+ * UniversalDB
+ * ---
+ * Copyright (C) 2014 - 2020 TeamApps.org
+ * ---
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * =========================LICENSE_END==================================
+ */
 package org.teamapps.universaldb.distribute;
 
 import org.apache.kafka.clients.producer.*;
@@ -25,16 +44,12 @@ public class TransactionWriter implements Callback {
 	private long packetKey;
 	private final Map<TransactionMessageKey, TransactionExecutionResult> transactionMap = new ConcurrentHashMap<>();
 
-	public TransactionWriter(String brokerConfig,
-							 String clientId,
-							 String sharedSecret,
-							 String topicPrefix
-	) {
-		this.clientId = clientId;
-		this.sharedSecret = sharedSecret;
-		this.topic = topicPrefix + "-" + UNRESOLVED_SUFFIX;
+	public TransactionWriter(ClusterSetConfig clusterConfig) {
+		this.clientId = clusterConfig.getProducerClientId();
+		this.sharedSecret = clusterConfig.getSharedSecret();
+		this.topic = clusterConfig.getTopicPrefix() + "-" + UNRESOLVED_SUFFIX;
 		Properties producerProps = new Properties();
-		producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerConfig);
+		producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
 		producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
 		producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 		producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
@@ -50,6 +65,7 @@ public class TransactionWriter implements Callback {
 		TransactionExecutionResult result = new TransactionExecutionResult();
 		transactionMap.put(messageKey, result);
 		producer.send(new ProducerRecord<>(topic, messageKey.getBytes(), bytes), this);
+		logger.info("Client writer - sent transaction:" + messageKey);
 		return result;
 	}
 
