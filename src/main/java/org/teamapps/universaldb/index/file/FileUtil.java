@@ -111,7 +111,8 @@ public class FileUtil {
 		inflaterInputStream.close();
 	}
 
-	public static FileMetaData parseFileMetaData(File file) {
+
+	public static FileMetaData parseFileMetaData(File file, FileMetaData metaData) {
 		try {
 			if (file == null || !file.exists()) {
 				return null;
@@ -129,7 +130,9 @@ public class FileUtil {
 			}
 			String[] propertyNames = meta.names();
 			Arrays.sort(propertyNames);
-			FileMetaData metaData = new FileMetaData(file.getName(), file.length());
+			if (metaData == null) {
+				metaData = new FileMetaData(file.getName(), file.length());
+			}
 			for (String name : propertyNames) {
 				String value = meta.get(name);
 				metaData.addMetaDataEntry(name, value);

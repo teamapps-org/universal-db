@@ -142,7 +142,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 			return null;
 		}
 		if (fullTextIndexingOptions.isIndex()) {
-			FileMetaData metaData = FileUtil.parseFileMetaData(fileValue.retrieveFile());
+			FileMetaData metaData = FileUtil.parseFileMetaData(fileValue.retrieveFile(), fileValue.getMetaData());
 			fileValue.setMetaData(metaData);
 		}
 		fileStore.setFile(filePath, fileValue.getUuid(), fileValue.getHash(), fileValue.retrieveFile());
