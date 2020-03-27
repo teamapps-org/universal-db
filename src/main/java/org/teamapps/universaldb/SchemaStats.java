@@ -36,11 +36,14 @@ public class SchemaStats implements TransactionIdProvider {
 	private static final int LAST_TRANSACTION_ID_POS = 24;
 	private static final int LAST_TRANSACTION_TIMESTAMP_POS = 32;
 	private static final int START_UP_COUNT_POS = 40;
+	private static final int TRANSACTION_OFFSET_POS = 48;
+	private static final int MASTER_TRANSACTION_OFFSET_POS = 56;
+
 
 	private static final int CLIENT_ID_POS = 100;
 	private static final int GROUP_ID_POS = 200;
-	private static final int HEAD_CLIENT_ID_POS = 300;
-	private static final int HEAD_GROUP_ID_POS = 400;
+	private static final int MASTER_CLIENT_ID_POS = 300;
+	private static final int MASTER_GROUP_ID_POS = 400;
 	private static final int SCHEMA_POS = 500;
 
 	private final File path;
@@ -48,8 +51,8 @@ public class SchemaStats implements TransactionIdProvider {
 	private Schema schema;
 	private final String clientId;
 	private final String groupId;
-	private final String headClientId;
-	private final String headGroupId;
+	private final String masterClientId;
+	private final String masterGroupId;
 	private long startupCount;
 
 	public SchemaStats(File path) {
@@ -63,17 +66,17 @@ public class SchemaStats implements TransactionIdProvider {
 		if (readInt(CLIENT_ID_POS) == 0) {
 			clientId = UUID.randomUUID().toString().replace("-", "");
 			groupId = UUID.randomUUID().toString().replace("-", "");
-			headClientId = UUID.randomUUID().toString().replace("-", "");
-			headGroupId = UUID.randomUUID().toString().replace("-", "");
+			masterClientId = UUID.randomUUID().toString().replace("-", "");
+			masterGroupId = UUID.randomUUID().toString().replace("-", "");
 			writeString(CLIENT_ID_POS, clientId);
 			writeString(GROUP_ID_POS, groupId);
-			writeString(HEAD_CLIENT_ID_POS, headClientId);
-			writeString(HEAD_GROUP_ID_POS, headGroupId);
+			writeString(MASTER_CLIENT_ID_POS, masterClientId);
+			writeString(MASTER_GROUP_ID_POS, masterGroupId);
 		} else {
 			clientId = readString(CLIENT_ID_POS);
 			groupId = readString(GROUP_ID_POS);
-			headClientId = readString(HEAD_CLIENT_ID_POS);
-			headGroupId = readString(HEAD_GROUP_ID_POS);
+			masterClientId = readString(MASTER_CLIENT_ID_POS);
+			masterGroupId = readString(MASTER_GROUP_ID_POS);
 		}
 		startupCount = readLong(START_UP_COUNT_POS) + 1;
 		writeLong(START_UP_COUNT_POS, startupCount);
@@ -108,12 +111,12 @@ public class SchemaStats implements TransactionIdProvider {
 		return groupId;
 	}
 
-	public String getHeadClientId() {
-		return headClientId;
+	public String getMasterClientId() {
+		return masterClientId;
 	}
 
-	public String getHeadGroupId() {
-		return headGroupId;
+	public String getMasterGroupId() {
+		return masterGroupId;
 	}
 
 	public long getStartupCount() {
@@ -140,6 +143,21 @@ public class SchemaStats implements TransactionIdProvider {
 		return readLong(LAST_TRANSACTION_TIMESTAMP_POS);
 	}
 
+	public long getTransactionOffset() {
+		return readLong(TRANSACTION_OFFSET_POS);
+	}
+
+	public void setTransactionOffset(long transactionOffset) {
+		writeLong(TRANSACTION_OFFSET_POS, transactionOffset);
+	}
+
+	public long getMasterTransactionOffset() {
+		return readLong(MASTER_TRANSACTION_OFFSET_POS);
+	}
+
+	public void setMasterTransactionOffset(long masterTransactionOffset) {
+		writeLong(MASTER_TRANSACTION_OFFSET_POS, masterTransactionOffset);
+	}
 
 	private long readLong(int pos) {
 		return buffer.getLongVolatile(pos);

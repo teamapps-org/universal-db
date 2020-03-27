@@ -26,11 +26,6 @@ public class ClusterSetConfig {
 	private final String sharedSecret;
 	private final String topicPrefix;
 
-	private String producerClientId;
-	private String consumerGroupId;
-	private String headProducerClientId;
-	private String headConsumerGroupId;
-
 	public ClusterSetConfig(String zookeeperConfig, String kafkaConfig, String sharedSecret, String topicPrefix) {
 		this.zookeeperConfig = zookeeperConfig;
 		this.kafkaConfig = kafkaConfig;
@@ -54,35 +49,4 @@ public class ClusterSetConfig {
 		return topicPrefix;
 	}
 
-	public String getProducerClientId() {
-		return producerClientId;
-	}
-
-	public String getConsumerGroupId() {
-		return consumerGroupId;
-	}
-
-	public String getHeadProducerClientId() {
-		return headProducerClientId;
-	}
-
-	public String getHeadConsumerGroupId() {
-		return headConsumerGroupId;
-	}
-
-	public void setProducerClientId(String producerClientId) {
-		this.producerClientId = producerClientId;
-	}
-
-	public void setConsumerGroupId(String consumerGroupId) {
-		this.consumerGroupId = consumerGroupId;
-	}
-
-	public void setHeadProducerClientId(String headProducerClientId) {
-		this.headProducerClientId = headProducerClientId;
-	}
-
-	public void setHeadConsumerGroupId(String headConsumerGroupId) {
-		this.headConsumerGroupId = headConsumerGroupId;
-	}
 }

@@ -22,7 +22,8 @@ package org.teamapps.universaldb.distribute;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
-import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
+import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -33,6 +34,7 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.universaldb.SchemaStats;
 import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.transaction.ClusterTransaction;
 import org.teamapps.universaldb.transaction.TransactionIdProvider;
@@ -42,17 +44,19 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-public class TransactionHead extends LeaderSelectorListenerAdapter implements Closeable {
+public class TransactionMaster implements LeaderSelectorListener, Closeable {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final String LEADER_SELECTION_NODE = "/leaderSelection/leader";
 
 	private final String clientId;
 	private final String sharedSecret;
+	private final SchemaStats schemaStats;
 	private final DataBaseMapper dataBaseMapper;
 	private final TransactionIdProvider transactionIdProvider;
 	private final Consumer<byte[], byte[]> consumer;
@@ -62,20 +66,31 @@ public class TransactionHead extends LeaderSelectorListenerAdapter implements Cl
 	private final String consumerTopic;
 	private final TopicPartition consumerTopicPartition;
 	private final String producerTopic;
+	private boolean masterRole;
+	private final String masterProducerClientId;
+	private long packetKey;
 
+	/*
+		TODO:
+			rename head to master
+			use schemaStats instead fo config
+			schemaStats: add transactionOffset, masterTransactionOffset
+	 */
 
-	public TransactionHead(ClusterSetConfig clusterConfig,
-						   DataBaseMapper dataBaseMapper,
-						   TransactionIdProvider transactionIdProvider
+	public TransactionMaster(ClusterSetConfig clusterConfig,
+							 SchemaStats schemaStats,
+							 DataBaseMapper dataBaseMapper,
+							 TransactionIdProvider transactionIdProvider
 	) {
-		this.clientId = clusterConfig.getHeadProducerClientId();
+		this.clientId = schemaStats.getClientId();
 		this.sharedSecret = clusterConfig.getSharedSecret();
+		this.schemaStats = schemaStats;
 		this.dataBaseMapper = dataBaseMapper;
 		this.transactionIdProvider = transactionIdProvider;
 		Properties consumerProps = new Properties();
 		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
-		consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, clusterConfig.getHeadConsumerGroupId());
-		consumerProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, clusterConfig.getHeadConsumerGroupId());
+		consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, schemaStats.getMasterGroupId());
+		consumerProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, schemaStats.getMasterGroupId());
 		consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10_000);
@@ -87,6 +102,7 @@ public class TransactionHead extends LeaderSelectorListenerAdapter implements Cl
 		consumer = new KafkaConsumer<>(consumerProps);
 		consumer.subscribe(Collections.singletonList(consumerTopic));
 
+		masterProducerClientId = schemaStats.getMasterClientId();
 		producerTopic = clusterConfig.getTopicPrefix() + "-" + TransactionReader.RESOLVED_SUFFIX;
 		Properties producerProps = new Properties();
 		producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
@@ -103,15 +119,20 @@ public class TransactionHead extends LeaderSelectorListenerAdapter implements Cl
 	}
 
 	@Override
-	public void takeLeadership(CuratorFramework client) throws Exception {
-		logger.info("START TRANSACTION HEAD");
-		try {
-			while (!Thread.interrupted()) {
-				handleMessages();
-			}
-		} finally {
-			logger.info("END TRANSACTION HEAD");
+	public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
+		if (!connectionState.isConnected()) {
+			masterRole = false;
 		}
+	}
+
+	@Override
+	public void takeLeadership(CuratorFramework client) throws Exception {
+		logger.info("START TRANSACTION MASTER");
+		masterRole = true;
+		while (masterRole) {
+			handleMessages();
+		}
+		logger.info("END TRANSACTION MASTER");
 	}
 
 	private void handleMessages() throws IOException {
@@ -121,27 +142,35 @@ public class TransactionHead extends LeaderSelectorListenerAdapter implements Cl
 			TransactionMessageKey messageKey = new TransactionMessageKey(record.key());
 			byte[] value = record.value();
 			byte[] bytes = PacketDataMingling.mingle(value, sharedSecret, messageKey.getLocalKey());
-			logger.info("Head received new transaction:" + messageKey);
+			System.out.println("MASTER received bytes enc:" + Base64.getEncoder().encodeToString(value));
+			System.out.println("MASTER received bytes raw:" + Base64.getEncoder().encodeToString(bytes));
+			logger.info("MASTER received new transaction:" + messageKey);
 
 			TransactionPacket transactionPacket = new TransactionPacket(bytes);
 			ClusterTransaction transaction = new ClusterTransaction(transactionPacket, dataBaseMapper);
 
-			messageKey.setHeadClientId(clientId);
+			TransactionMessageKey masterMessageKey = new TransactionMessageKey(messageKey.getMessageType(), messageKey.getClientId(), getNextKey());
+			masterMessageKey.setMasterClientId(masterProducerClientId);
 			transactionPacket = transaction.resolveAndExecuteTransaction(transactionIdProvider, transactionPacket);
 
 			if (transactionPacket != null) {
-				logger.info("Head send new transaction:" + messageKey);
-				producer.send(new ProducerRecord<>(producerTopic, messageKey.getBytes(), transactionPacket.writePacketBytes()));
+				logger.info("MASTER send new transaction:" + masterMessageKey);
+				byte[] packetBytes = transactionPacket.writePacketBytes();
+				byte[] mingledBytes = PacketDataMingling.mingle(packetBytes, sharedSecret, masterMessageKey.getLocalKey());
+				producer.send(new ProducerRecord<>(producerTopic, masterMessageKey.getBytes(), mingledBytes));
 			} else {
 				logger.info("Sending error packet...");
-				producer.send(new ProducerRecord<>(producerTopic, messageKey.getBytes(), null));
+				producer.send(new ProducerRecord<>(producerTopic, masterMessageKey.getBytes(), null));
 			}
 		}
 	}
 
-
 	@Override
 	public void close() throws IOException {
 		leaderSelector.close();
+	}
+
+	private long getNextKey() {
+		return ++packetKey;
 	}
 }

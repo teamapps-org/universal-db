@@ -50,6 +50,7 @@ public class TransactionExecutionResult {
 	public void handleError(){
 		success = false;
 		executed = true;
+		notifyAll();
 	}
 
 	public void handleSuccess(Map<Integer, Integer> recordIdByCorrelationId) {

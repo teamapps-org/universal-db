@@ -24,6 +24,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.universaldb.SchemaStats;
 import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.transaction.ClusterTransaction;
 import org.teamapps.universaldb.transaction.TransactionIdProvider;
@@ -32,17 +33,15 @@ import org.teamapps.universaldb.transaction.TransactionPacket;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 public class TransactionReader {
 
 	public static final String RESOLVED_SUFFIX = "resolved";
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private final String headProducerClientId;
+	private final String masterProducerClientId;
 	private final String sharedSecret;
+	private final SchemaStats schemaStats;
 	private final DataBaseMapper dataBaseMapper;
 	private final Consumer<byte[], byte[]> consumer;
 	private final String topic;
@@ -51,19 +50,21 @@ public class TransactionReader {
 	private final TransactionIdProvider transactionIdProvider;
 
 	public TransactionReader(ClusterSetConfig clusterConfig,
+							 SchemaStats schemaStats,
 							 DataBaseMapper dataBaseMapper,
 							 Map<TransactionMessageKey, TransactionExecutionResult> transactionMap,
 							 TransactionIdProvider transactionIdProvider
 	) {
-		this.headProducerClientId = clusterConfig.getHeadProducerClientId();
 		this.sharedSecret = clusterConfig.getSharedSecret();
+		this.schemaStats = schemaStats;
 		this.dataBaseMapper = dataBaseMapper;
 		this.transactionMap = transactionMap;
 		this.transactionIdProvider = transactionIdProvider;
+		this.masterProducerClientId = schemaStats.getMasterClientId();
 		Properties consumerProps = new Properties();
 		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
-		consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, clusterConfig.getConsumerGroupId());
-		consumerProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, clusterConfig.getConsumerGroupId());
+		consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, schemaStats.getMasterGroupId());
+		consumerProps.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, schemaStats.getMasterGroupId());
 		consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10_000);
@@ -94,30 +95,34 @@ public class TransactionReader {
 		for (ConsumerRecord<byte[], byte[]> record : records) {
 			TransactionMessageKey messageKey = new TransactionMessageKey(record.key());
 			byte[] value = record.value();
+			System.out.println("Received bytes enc:" + Base64.getEncoder().encodeToString(value));
 			byte[] bytes = PacketDataMingling.mingle(value, sharedSecret, messageKey.getLocalKey());
+			System.out.println("Received bytes raw:" + Base64.getEncoder().encodeToString(bytes));
 
 			TransactionPacket transactionPacket = new TransactionPacket(bytes);
 			ClusterTransaction transaction = new ClusterTransaction(transactionPacket, dataBaseMapper);
 
 			logger.info("Client reader - received new transaction:" + messageKey);
 
-			if (transaction.getTransactionId() == transactionIdProvider.getLastCommittedTransactionId() + 1) {
-				commitTransactions(transaction, messageKey);
+			if (messageKey.getClientId().equals(masterProducerClientId)) {
+				TransactionExecutionResult executionResult = transactionMap.remove(messageKey);
+				if (executionResult != null) {
+					if (value != null) {
+						executionResult.handleSuccess(transaction.getRecordIdByCorrelationId());
+					} else {
+						executionResult.handleError();
+					}
+				}
 			} else {
-				logger.warn("Transaction with wrong transaction id! Expected id:" + (transactionIdProvider.getLastCommittedTransactionId() + 1) + ", actual id:" + transaction.getTransactionId() + ", key:");
+				if (transaction.getTransactionId() == transactionIdProvider.getLastCommittedTransactionId() + 1) {
+					transaction.executeResolvedTransaction();
+				} else {
+					logger.warn("Transaction with wrong transaction id! Expected id:" + (transactionIdProvider.getLastCommittedTransactionId() + 1) + ", actual id:" + transaction.getTransactionId() + ", key:");
+				}
 			}
+
+
 		}
 	}
-
-	private void commitTransactions(ClusterTransaction transaction, TransactionMessageKey messageKey) {
-		if (!headProducerClientId.equals(messageKey.getHeadClientId())) {
-			transaction.executeResolvedTransaction();
-		}
-		if (messageKey.getClientId().equals(headProducerClientId)) {
-			TransactionExecutionResult executionResult = transactionMap.remove(messageKey);
-			executionResult.handleSuccess(transaction.getRecordIdByCorrelationId());
-		}
-	}
-
 
 }

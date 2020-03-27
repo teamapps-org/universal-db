@@ -29,7 +29,8 @@ public class TransactionMessageKey {
 	private final TransactionMessageType messageType;
 	private final String clientId;
 	private final long localKey;
-	private String headClientId;
+	private String masterClientId;
+	private long masterOffset;
 
 	public TransactionMessageKey(TransactionMessageType messageType, String clientId, long localKey) {
 		this.messageType = messageType;
@@ -42,8 +43,8 @@ public class TransactionMessageKey {
 		messageType = TransactionMessageType.values()[dataInputStream.readInt()];
 		clientId = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
 		localKey = dataInputStream.readLong();
-		headClientId = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
-
+		masterClientId = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
+		masterOffset = dataInputStream.readLong();
 	}
 
 	public byte[] getBytes() throws IOException {
@@ -52,7 +53,8 @@ public class TransactionMessageKey {
 		dataOutputStream.writeInt(messageType.ordinal());
 		DataStreamUtil.writeStringWithLengthHeader(dataOutputStream, clientId);
 		dataOutputStream.writeLong(localKey);
-		DataStreamUtil.writeStringWithLengthHeader(dataOutputStream, headClientId);
+		DataStreamUtil.writeStringWithLengthHeader(dataOutputStream, masterClientId);
+		dataOutputStream.writeLong(masterOffset);
 		return byteArrayOutputStream.toByteArray();
 	}
 
@@ -68,12 +70,20 @@ public class TransactionMessageKey {
 		return localKey;
 	}
 
-	public String getHeadClientId() {
-		return headClientId;
+	public String getMasterClientId() {
+		return masterClientId;
 	}
 
-	public void setHeadClientId(String headClientId) {
-		this.headClientId = headClientId;
+	public void setMasterClientId(String masterClientId) {
+		this.masterClientId = masterClientId;
+	}
+
+	public long getMasterOffset() {
+		return masterOffset;
+	}
+
+	public void setMasterOffset(long masterOffset) {
+		this.masterOffset = masterOffset;
 	}
 
 	@Override
@@ -82,7 +92,8 @@ public class TransactionMessageKey {
 				"messageType=" + messageType +
 				", clientId='" + clientId + '\'' +
 				", localKey=" + localKey +
-				", headClientId='" + headClientId + '\'' +
+				", masterClientId='" + masterClientId + '\'' +
+				", masterOffset=" + masterOffset +
 				'}';
 	}
 
@@ -91,7 +102,7 @@ public class TransactionMessageKey {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		TransactionMessageKey that = (TransactionMessageKey) o;
-		//note: headClientId may not be part of equals
+		//note: masterClientId and masterOffset may not be part of equals --> sender will compare against key without master day
 		return localKey == that.localKey &&
 				messageType == that.messageType &&
 				clientId.equals(that.clientId);

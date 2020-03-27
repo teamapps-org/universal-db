@@ -50,7 +50,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 	private SchemaStats schemaStats;
     private TransactionWriter transactionWriter;
     private TransactionReader transactionReader;
-    private TransactionHead transactionHead;
+    private TransactionMaster transactionMaster;
 
     public static int getUserId() {
 		return THREAD_LOCAL_USER_ID.get();
@@ -167,19 +167,16 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 			}
 		}
 
-		clusterConfig.setProducerClientId(schemaStats.getClientId());
-		clusterConfig.setConsumerGroupId(schemaStats.getGroupId());
-		clusterConfig.setHeadProducerClientId(schemaStats.getHeadClientId());
-		clusterConfig.setHeadConsumerGroupId(schemaStats.getHeadGroupId());
-
-        transactionWriter = new TransactionWriter(clusterConfig);
+        transactionWriter = new TransactionWriter(clusterConfig, schemaStats);
 
         transactionReader = new TransactionReader(clusterConfig,
+                schemaStats,
                 this,
                 transactionWriter.getTransactionMap(),
 				this);
 
-        transactionHead = new TransactionHead(clusterConfig,
+        transactionMaster = new TransactionMaster(clusterConfig,
+                schemaStats,
                 this,
 				this);
 
