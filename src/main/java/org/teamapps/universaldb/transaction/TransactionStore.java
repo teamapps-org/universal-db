@@ -31,7 +31,7 @@ import java.util.Iterator;
 import java.util.zip.GZIPOutputStream;
 
 
-public class TransactionStore implements TransactionIdProvider {
+public class TransactionStore implements TransactionIdHandler {
 
     private static final int TIMESTAMP_FIRST_SYSTEM_START_POS = 0;
     private static final int TIMESTAMP_SYSTEM_START_POS = 8;
@@ -161,7 +161,7 @@ public class TransactionStore implements TransactionIdProvider {
                 //todo: enforce disconnect!
                 throw new RuntimeException("Cannot execute transaction with unexptected transaction id, expected" + currentTransactionId + ", actual:" + transactionId);
             }
-            transactionRequest.executeResolvedTransaction();
+            transactionRequest.executeResolvedTransaction(this);
         } else {
             transactionRequest.executeUnresolvedTransaction(this);
         }
@@ -247,8 +247,13 @@ public class TransactionStore implements TransactionIdProvider {
     }
 
     @Override
-    public long getNextTransactionId() {
+    public long getAndCommitNextTransactionId() {
         return currentTransactionId;
+    }
+
+    @Override
+    public void commitTransactionId(long id) {
+        //ignore!
     }
 
     @Override

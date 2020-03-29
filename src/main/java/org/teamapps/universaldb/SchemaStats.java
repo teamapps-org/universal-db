@@ -20,15 +20,20 @@
 package org.teamapps.universaldb;
 
 import org.agrona.concurrent.AtomicBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.transaction.TransactionIdProvider;
+import org.teamapps.universaldb.transaction.TransactionIdHandler;
 import org.teamapps.universaldb.util.MappedStoreUtil;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-public class SchemaStats implements TransactionIdProvider {
+public class SchemaStats implements TransactionIdHandler {
+
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private static final int FIRST_SYSTEM_START_TIMESTAMP_POS = 0;
 	private static final int SYSTEM_START_TIMESTAMP_POS = 8;
@@ -131,12 +136,21 @@ public class SchemaStats implements TransactionIdProvider {
 		return readLong(LAST_TRANSACTION_ID_POS);
 	}
 
-	public long setNextTransactionId() {
+	@Override
+	public long getAndCommitNextTransactionId() {
 		long transactionId = getLastTransactionId();
 		transactionId++;
 		writeLong(LAST_TRANSACTION_ID_POS, transactionId);
 		writeLong(LAST_TRANSACTION_TIMESTAMP_POS, System.currentTimeMillis());
 		return transactionId;
+	}
+
+	@Override
+	public void commitTransactionId(long transactionId) {
+		if (getLastTransactionId() + 1 != transactionId) {
+			logger.error("Wrong transaction id to commit, expected:" + (getLastTransactionId() + 1) + ", actual:" + transactionId);
+		}
+		writeLong(LAST_TRANSACTION_ID_POS, transactionId);
 	}
 
 	public long getLastTransactionTimestamp() {
@@ -194,8 +208,5 @@ public class SchemaStats implements TransactionIdProvider {
 		return getLastTransactionId();
 	}
 
-	@Override
-	public long getNextTransactionId() {
-		return setNextTransactionId();
-	}
+
 }

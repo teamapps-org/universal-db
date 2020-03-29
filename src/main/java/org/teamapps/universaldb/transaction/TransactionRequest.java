@@ -53,12 +53,12 @@ public class TransactionRequest {
 		return transaction.getTransactionId() != 0;
 	}
 
-	public void executeUnresolvedTransaction(TransactionIdProvider transactionIdProvider) throws IOException {
-		this.packet = transaction.resolveAndExecuteTransaction(transactionIdProvider, packet);
+	public void executeUnresolvedTransaction(TransactionIdHandler transactionIdHandler) throws IOException {
+		this.packet = transaction.resolveAndExecuteTransaction(transactionIdHandler, packet);
 	}
 
-	public void executeResolvedTransaction() {
-		transaction.executeResolvedTransaction();
+	public void executeResolvedTransaction(TransactionIdHandler transactionIdHandler) {
+		transaction.executeResolvedTransaction(transactionIdHandler);
 	}
 
 	public synchronized void waitForExecution() {

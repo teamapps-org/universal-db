@@ -35,7 +35,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
+public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 	private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
 	private static final ThreadLocal<Transaction> THREAD_LOCAL_TRANSACTION = new ThreadLocal<>();
@@ -243,11 +243,11 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 	}
 
     @Override
-    public long getNextTransactionId() {
+    public long getAndCommitNextTransactionId() {
         if (schemaStats != null) {
-            return schemaStats.getNextTransactionId();
+            return schemaStats.getAndCommitNextTransactionId();
         } else {
-            return transactionStore.getNextTransactionId();
+            return transactionStore.getAndCommitNextTransactionId();
         }
     }
 
@@ -257,6 +257,13 @@ public class UniversalDB implements DataBaseMapper, TransactionIdProvider {
 			return schemaStats.getLastCommittedTransactionId();
 		} else {
 			return transactionStore.getLastCommittedTransactionId();
+		}
+	}
+
+	@Override
+	public void commitTransactionId(long id) {
+		if (schemaStats != null) {
+			schemaStats.commitTransactionId(id);
 		}
 	}
 }

@@ -22,27 +22,45 @@ package org.teamapps.universaldb.distribute;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TransactionMessageKey {
 
+	public static TransactionMessageKey createFromKey(TransactionMessageKey key, long packetKey, String masterClientId, long masterOffset) {
+		return new TransactionMessageKey(key.getMessageType(), key.getClientId(), packetKey, key.getTransactionKeyOfCallingNode(), masterClientId, masterOffset);
+	}
+
+	private static AtomicLong localTransactionKeyGenerator = new AtomicLong();
+
 	private final TransactionMessageType messageType;
 	private final String clientId;
-	private final long localKey;
+	private final long packetKey;
+	private final long transactionKeyOfCallingNode;
 	private String masterClientId;
 	private long masterOffset;
 
-	public TransactionMessageKey(TransactionMessageType messageType, String clientId, long localKey) {
+	public TransactionMessageKey(TransactionMessageType messageType, String clientId, long packetKey) {
 		this.messageType = messageType;
 		this.clientId = clientId;
-		this.localKey = localKey;
+		this.packetKey = packetKey;
+		this.transactionKeyOfCallingNode = localTransactionKeyGenerator.incrementAndGet();
+	}
+
+	public TransactionMessageKey(TransactionMessageType messageType, String clientId, long packetKey, long transactionKeyOfCallingNode, String masterClientId, long masterOffset) {
+		this.messageType = messageType;
+		this.clientId = clientId;
+		this.packetKey = packetKey;
+		this.transactionKeyOfCallingNode = transactionKeyOfCallingNode;
+		this.masterClientId = masterClientId;
+		this.masterOffset = masterOffset;
 	}
 
 	public TransactionMessageKey(byte[] bytes) throws IOException {
 		DataInputStream dataInputStream = new DataInputStream(new ByteArrayInputStream(bytes));
 		messageType = TransactionMessageType.values()[dataInputStream.readInt()];
+		transactionKeyOfCallingNode = dataInputStream.readLong();
 		clientId = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
-		localKey = dataInputStream.readLong();
+		packetKey = dataInputStream.readLong();
 		masterClientId = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
 		masterOffset = dataInputStream.readLong();
 	}
@@ -51,8 +69,9 @@ public class TransactionMessageKey {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 		DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
 		dataOutputStream.writeInt(messageType.ordinal());
+		dataOutputStream.writeLong(transactionKeyOfCallingNode);
 		DataStreamUtil.writeStringWithLengthHeader(dataOutputStream, clientId);
-		dataOutputStream.writeLong(localKey);
+		dataOutputStream.writeLong(packetKey);
 		DataStreamUtil.writeStringWithLengthHeader(dataOutputStream, masterClientId);
 		dataOutputStream.writeLong(masterOffset);
 		return byteArrayOutputStream.toByteArray();
@@ -66,24 +85,20 @@ public class TransactionMessageKey {
 		return clientId;
 	}
 
-	public long getLocalKey() {
-		return localKey;
+	public long getPacketKey() {
+		return packetKey;
 	}
 
 	public String getMasterClientId() {
 		return masterClientId;
 	}
 
-	public void setMasterClientId(String masterClientId) {
-		this.masterClientId = masterClientId;
-	}
-
 	public long getMasterOffset() {
 		return masterOffset;
 	}
 
-	public void setMasterOffset(long masterOffset) {
-		this.masterOffset = masterOffset;
+	public long getTransactionKeyOfCallingNode() {
+		return transactionKeyOfCallingNode;
 	}
 
 	@Override
@@ -91,25 +106,10 @@ public class TransactionMessageKey {
 		return "TransactionMessageKey{" +
 				"messageType=" + messageType +
 				", clientId='" + clientId + '\'' +
-				", localKey=" + localKey +
+				", packetKey=" + packetKey +
+				", transactionKeyOfCallingNode=" + transactionKeyOfCallingNode +
 				", masterClientId='" + masterClientId + '\'' +
 				", masterOffset=" + masterOffset +
 				'}';
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		TransactionMessageKey that = (TransactionMessageKey) o;
-		//note: masterClientId and masterOffset may not be part of equals --> sender will compare against key without master day
-		return localKey == that.localKey &&
-				messageType == that.messageType &&
-				clientId.equals(that.clientId);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(messageType, clientId, localKey);
 	}
 }

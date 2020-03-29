@@ -22,7 +22,6 @@ package org.teamapps.universaldb.transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.index.DataBaseMapper;
-import org.teamapps.universaldb.index.TableIndex;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -163,8 +162,8 @@ public class ClusterTransaction {
 		return byteArrayStream.toByteArray();
 	}
 
-	public TransactionPacket resolveAndExecuteTransaction(TransactionIdProvider transactionIdProvider, TransactionPacket packet) throws IOException {
-		transactionId = transactionIdProvider.getNextTransactionId();
+	public TransactionPacket resolveAndExecuteTransaction(TransactionIdHandler transactionIdHandler, TransactionPacket packet) throws IOException {
+		transactionId = transactionIdHandler.getAndCommitNextTransactionId();
 
 		boolean dataChangeCheckSuccess = true;
 		for (TransactionRecord transactionRecord : transactionRecords) {
@@ -199,10 +198,11 @@ public class ClusterTransaction {
 		}
 	}
 
-	public void executeResolvedTransaction() {
+	public void executeResolvedTransaction(TransactionIdHandler transactionIdHandler) {
 		for (TransactionRecord transactionRecord : transactionRecords) {
 			transactionRecord.persistResolvedChanges(transactionId, recordIdByCorrelationId);
 		}
+		transactionIdHandler.commitTransactionId(transactionId);
 	}
 
 	public int getResolvedRecordIdByCorrelationId(int correlationId) {

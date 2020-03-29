@@ -45,7 +45,7 @@ public class TransactionWriter implements Callback {
 	private final String topic;
 	private final SchemaStats schemaStats;
 	private long packetKey;
-	private final Map<TransactionMessageKey, TransactionExecutionResult> transactionMap = new ConcurrentHashMap<>();
+	private final Map<Long, TransactionExecutionResult> transactionMap = new ConcurrentHashMap<>();
 
 	public TransactionWriter(ClusterSetConfig clusterConfig, SchemaStats schemaStats) {
 		this.clientId = schemaStats.getClientId();
@@ -65,14 +65,12 @@ public class TransactionWriter implements Callback {
 		TransactionPacket packet = request.getPacket();
 		long key = getNextKey();
 		byte[] packetBytes = packet.writePacketBytes();
-		System.out.println("Send bytes raw:" + Base64.getEncoder().encodeToString(packetBytes));
 		byte[] bytes = PacketDataMingling.mingle(packetBytes, sharedSecret, key);
-		System.out.println("Send bytes end:" + Base64.getEncoder().encodeToString(bytes));
 		TransactionMessageKey messageKey = new TransactionMessageKey(TransactionMessageType.TRANSACTION, clientId, key);
 		TransactionExecutionResult result = new TransactionExecutionResult();
-		transactionMap.put(messageKey, result);
+		transactionMap.put(messageKey.getTransactionKeyOfCallingNode(), result);
 		producer.send(new ProducerRecord<>(topic, messageKey.getBytes(), bytes), this);
-		logger.info("Client writer - sent transaction:" + messageKey);
+		logger.debug("Client writer - sent transaction:" + messageKey);
 		return result;
 	}
 
@@ -80,12 +78,12 @@ public class TransactionWriter implements Callback {
 		return ++packetKey;
 	}
 
-	public Map<TransactionMessageKey, TransactionExecutionResult> getTransactionMap() {
+	public Map<Long, TransactionExecutionResult> getTransactionMap() {
 		return transactionMap;
 	}
 
 	@Override
 	public void onCompletion(RecordMetadata metadata, Exception exception) {
-
+		//todo
 	}
 }
