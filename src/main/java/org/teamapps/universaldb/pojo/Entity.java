@@ -21,6 +21,8 @@ package org.teamapps.universaldb.pojo;
 
 import org.teamapps.universaldb.transaction.Transaction;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface Entity<ENTITY> {
 
 	int getId();
@@ -42,6 +44,8 @@ public interface Entity<ENTITY> {
 	ENTITY saveTransactional(boolean strictChangeVerification);
 
 	ENTITY save();
+
+	CompletableFuture<Boolean> saveAsynchronously();
 
 	void delete(Transaction transaction);
 

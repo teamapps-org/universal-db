@@ -30,7 +30,6 @@ import org.teamapps.universaldb.transaction.TransactionRequest;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Base64;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;

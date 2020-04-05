@@ -18,6 +18,7 @@ import org.teamapps.universaldb.record.*;
 import java.util.*;
 import java.time.*;
 import java.io.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 {imports}
 
@@ -75,6 +76,11 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type}, Enti
     public {udbType} save() {
         save(table);
         return this;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> saveAsynchronously() {
+        return saveAsynchronously(table);
     }
 
     @Override

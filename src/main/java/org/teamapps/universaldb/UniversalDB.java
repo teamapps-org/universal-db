@@ -209,9 +209,9 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		}
 	}
 
-	public void executeTransaction(ClusterTransaction transaction) throws IOException {
+	public void executeTransaction(ClusterTransaction transaction, boolean asynchronous) throws IOException {
 		if (transactionWriter != null) {
-			executeClusterTransaction(transaction);
+			executeClusterTransaction(transaction, asynchronous);
 		} else {
 			executeStandaloneTransaction(transaction);
 		}
@@ -222,9 +222,11 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		transactionStore.executeTransaction(request);
 	}
 
-	private void executeClusterTransaction(ClusterTransaction transaction) throws IOException {
+	private void executeClusterTransaction(ClusterTransaction transaction, boolean asynchronous) throws IOException {
 		TransactionExecutionResult transactionExecutionResult = transactionWriter.writeTransaction(transaction);
-		transactionExecutionResult.waitForExecution();
+		if (!asynchronous) {
+			transactionExecutionResult.waitForExecution();
+		}
 	}
 
 	@Override
@@ -265,5 +267,9 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		if (schemaStats != null) {
 			schemaStats.commitTransactionId(id);
 		}
+	}
+
+	public SchemaStats getClusterSchemaStats() {
+		return schemaStats;
 	}
 }

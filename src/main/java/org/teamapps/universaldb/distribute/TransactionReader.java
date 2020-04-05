@@ -71,6 +71,8 @@ public class TransactionReader {
 		consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); //"latest"
 
+		logger.info("Start with transaction offset:" + schemaStats.getTransactionOffset());
+
 		topic = clusterConfig.getTopicPrefix() + "-" + RESOLVED_SUFFIX;
 		topicPartition = new TopicPartition(topic, 0);
 		consumer = new KafkaConsumer<>(consumerProps);
@@ -119,7 +121,7 @@ public class TransactionReader {
 				if (transaction.getTransactionId() == transactionIdHandler.getLastCommittedTransactionId() + 1) {
 					transaction.executeResolvedTransaction(transactionIdHandler);
 				} else {
-					logger.warn("Transaction with wrong transaction id! Expected id:" + (transactionIdHandler.getLastCommittedTransactionId() + 1) + ", actual id:" + transaction.getTransactionId() + ", key:");
+					logger.warn("Transaction with wrong transaction id! Expected id:" + (transactionIdHandler.getLastCommittedTransactionId() + 1) + ", actual id:" + transaction.getTransactionId() + ", key:" + messageKey);
 				}
 			}
 

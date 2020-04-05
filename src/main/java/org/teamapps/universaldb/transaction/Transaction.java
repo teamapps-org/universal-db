@@ -48,10 +48,13 @@ public class Transaction {
 	public void addTransactionRecord(TransactionRecord transactionRecord) {
 		clusterTransaction.addTransactionRecord(transactionRecord);
 	}
-
 	public void execute() {
+		execute(false);
+	}
+
+	public void execute(boolean asynchronous) {
 		try {
-			dataBase.executeTransaction(clusterTransaction);
+			dataBase.executeTransaction(clusterTransaction, asynchronous);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

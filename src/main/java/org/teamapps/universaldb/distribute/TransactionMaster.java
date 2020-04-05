@@ -86,10 +86,13 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 		consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); //"latest"
 
+		logger.info("Start with master transaction offset:" + schemaStats.getMasterTransactionOffset());
+
 		consumerTopic = clusterConfig.getTopicPrefix() + "-" + TransactionWriter.UNRESOLVED_SUFFIX;
 		consumerTopicPartition = new TopicPartition(consumerTopic, 0);
 		consumer = new KafkaConsumer<>(consumerProps);
 		consumer.assign(Collections.singletonList(consumerTopicPartition));
+		consumer.seek(consumerTopicPartition, schemaStats.getMasterTransactionOffset());
 
 		masterProducerClientId = schemaStats.getMasterClientId();
 		producerTopic = clusterConfig.getTopicPrefix() + "-" + TransactionReader.RESOLVED_SUFFIX;

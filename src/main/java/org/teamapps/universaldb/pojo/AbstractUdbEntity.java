@@ -33,6 +33,7 @@ import org.teamapps.universaldb.transaction.TransactionRecord;
 import org.teamapps.universaldb.transaction.TransactionRecordValue;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -334,7 +335,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			this.transaction = transaction;
 			boolean update = !createEntity;
 			TransactionRecord transactionRecord = new TransactionRecord(tableIndex, id, correlationId, transaction.getUserId(), update, false, strictChangeVerification);
-//			entityChangeSet.setTransactionRecordValues(transactionRecord);
 			entityChangeSet.setTransactionRecordValues(transaction, transactionRecord, strictChangeVerification);
 			transaction.addTransactionRecord(transactionRecord);
 			clearChanges();
@@ -342,10 +342,19 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void save(TableIndex tableIndex) {
+		save(tableIndex, false);
+	}
+
+	public CompletableFuture<Boolean> saveAsynchronously(TableIndex tableIndex) {
+		save(tableIndex, true);
+		return new CompletableFuture<>();
+	}
+
+	public void save(TableIndex tableIndex, boolean asynchronous) {
 		if (entityChangeSet != null) {
 			transaction = Transaction.create();
 			save(transaction, tableIndex, false);
-			transaction.execute();
+			transaction.execute(asynchronous);
 			if (id == 0) {
 				id = transaction.getResolvedRecordIdByCorrelationId(correlationId);
 			}
