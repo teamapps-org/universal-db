@@ -53,9 +53,9 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 	}
 
 	private void recalculateMaxSetIndex() {
-		int maximumId = getMaximumId();
+		int maximumId = getMaximumId() * 8;
 		int maxId = 0;
-		for (int id = maximumId; id < 0; id--) {
+		for (int id = maximumId; id > 0; id--) {
 			if (getValue(id)) {
 				maxId = id;
 				break;
