@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ package org.teamapps.universaldb.index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.TableConfig;
-import org.teamapps.universaldb.index.bool.BitSetBooleanIndex;
+import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
@@ -52,8 +52,8 @@ public class TableIndex implements MappedObject {
 	private final File path;
 	private final TableConfig tableConfig;
 	private boolean keepDeletedRecords;
-	private BitSetBooleanIndex records;
-	private BitSetBooleanIndex deletedRecords;
+	private BooleanIndex records;
+	private BooleanIndex deletedRecords;
 	private int nextId;
 	private LongIndex transactionIndex;
 
@@ -77,9 +77,9 @@ public class TableIndex implements MappedObject {
 		this.parentFQN = parentFQN;
 		this.path = new File(parentPath, name);
 		path.mkdir();
-		records = new BitSetBooleanIndex("coll-recs", this);
+		records = new BooleanIndex("coll-recs", this);
 		this.tableConfig = tableConfig;
-		nextId = records.getBitSet().length();
+		nextId = records.getNextId();
 		if (nextId == 0) {
 			nextId++;
 		}
@@ -88,7 +88,7 @@ public class TableIndex implements MappedObject {
 
 		if (tableConfig.keepDeleted()) {
 			keepDeletedRecords = true;
-			deletedRecords = new BitSetBooleanIndex("coll-del-recs", this);
+			deletedRecords = new BooleanIndex("coll-del-recs", this);
 		}
 		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
@@ -173,18 +173,18 @@ public class TableIndex implements MappedObject {
 	}
 
 	public BitSet getRecords() {
-		return (BitSet) records.getBitSet().clone();
+		return records.getBitSet();
 	}
 
 	public int getCount() {
-		return records.getBitSet().cardinality();
+		return records.getCount();
 	}
 
 	public BitSet getDeletedRecords() {
 		if (!keepDeletedRecords) {
 			return null;
 		}
-		return (BitSet) deletedRecords.getBitSet().clone();
+		return deletedRecords.getBitSet();
 	}
 
 	public void addIndex(IndexType type, String name) {
@@ -401,14 +401,14 @@ public class TableIndex implements MappedObject {
 	}
 
 	public BitSet getRecordBitSet() {
-		return (BitSet) records.getBitSet().clone();
+		return records.getBitSet();
 	}
 
 	public BitSet getDeletedRecordsBitSet() {
 		if (!keepDeletedRecords) {
 			return null;
 		}
-		return (BitSet) deletedRecords.getBitSet().clone();
+		return deletedRecords.getBitSet();
 	}
 
 	public List<ColumnIndex> getColumnIndices() {

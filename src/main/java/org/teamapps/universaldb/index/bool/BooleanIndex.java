@@ -45,9 +45,23 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		BIT_MASKS[7] = (byte) 0b10000000;
 	}
 
+	private int maxSetId;
 
 	public BooleanIndex(String name, TableIndex tableIndex) {
 		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
+		recalculateMaxSetIndex();
+	}
+
+	private void recalculateMaxSetIndex() {
+		int maximumId = getMaximumId();
+		int maxId = 0;
+		for (int id = maximumId; id < 0; id--) {
+			if (getValue(id)) {
+				maxId = id;
+				break;
+			}
+		}
+		maxSetId = maxId;
 	}
 
 	@Override
@@ -116,6 +130,15 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 			b = (byte) (b & ~BIT_MASKS[bit]);
 		}
 		getBuffer(index).putByte(position, b);
+		if (value) {
+			if (id > maxSetId) {
+				maxSetId = id;
+			}
+		} else {
+			if (id == maxSetId) {
+				recalculateMaxSetIndex();
+			}
+		}
 	}
 
 	@Override
@@ -162,5 +185,32 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		return result;
 	}
 
+	public int getCount() {
+		int count = 0;
+		for (int i = 1; i <= maxSetId; i++) {
+			if (getValue(i)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	public BitSet getBitSet() {
+		BitSet bitSet = new BitSet(maxSetId);
+		for (int i = 1; i <= maxSetId; i++) {
+			if (getValue(i)) {
+				bitSet.set(i);
+			}
+		}
+		return bitSet;
+	}
+
+	public int getMaxId() {
+		return maxSetId;
+	}
+
+	public int getNextId() {
+		return maxSetId + 1;
+	}
 
 }

@@ -20,9 +20,7 @@
 package org.teamapps.universaldb.index;
 
 import org.teamapps.universaldb.index.binary.BinaryIndex;
-import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
-import org.teamapps.universaldb.util.DataStreamUtil;
-import org.teamapps.universaldb.index.bool.BitSetBooleanIndex;
+import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.numeric.*;
@@ -30,8 +28,10 @@ import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.ReferenceIteratorValue;
 import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.IndexPath;
+import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -48,8 +48,7 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 
 		switch (indexType) {
 			case BOOLEAN:
-				//todo: bit set boolean vs. boolean index -> check sub type!
-				column = new BitSetBooleanIndex(name, table);
+				column = new BooleanIndex(name, table);
 				break;
 			case SHORT:
 				column = new ShortIndex(name, table);
