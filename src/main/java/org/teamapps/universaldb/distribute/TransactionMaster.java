@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,9 +26,7 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -44,17 +42,18 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
-public class TransactionMaster implements LeaderSelectorListener, Closeable {
+public class TransactionMaster implements LeaderSelectorListener, Closeable, Callback {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final String LEADER_SELECTION_NODE = "/leaderSelection/leader";
 
 	private final String sharedSecret;
+	private final ClusterSetConfig clusterConfig;
 	private final SchemaStats schemaStats;
 	private final DataBaseMapper dataBaseMapper;
 	private final TransactionIdHandler transactionIdHandler;
@@ -74,6 +73,7 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 							 DataBaseMapper dataBaseMapper,
 							 TransactionIdHandler transactionIdHandler
 	) {
+		this.clusterConfig = clusterConfig;
 		this.sharedSecret = clusterConfig.getSharedSecret();
 		this.schemaStats = schemaStats;
 		this.dataBaseMapper = dataBaseMapper;
@@ -82,7 +82,7 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
 		consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10_000);
+		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000_000);
 		consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); //"latest"
 
@@ -101,6 +101,7 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 		producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, masterProducerClientId);
 		producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 		producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+		producerProps.put(ProducerConfig.ACKS_CONFIG, "1"); //"all"
 		producer = new KafkaProducer<>(producerProps);
 
 		CuratorFramework client = CuratorFrameworkFactory.newClient(clusterConfig.getZookeeperConfig(), new ExponentialBackoffRetry(1000, 3));
@@ -113,6 +114,7 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 	@Override
 	public void stateChanged(CuratorFramework curatorFramework, ConnectionState connectionState) {
 		if (!connectionState.isConnected()) {
+			logger.info("Lost connection to zookeeper");
 			masterRole = false;
 		}
 	}
@@ -125,15 +127,45 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 			return;
 		}
 		masterRole = true;
+
+		long unconsumedMessageCount;
+		while (masterRole && ((unconsumedMessageCount = getUnconsumedMessageCount()) > 0)) {
+			logger.info("Master waiting for worker topics to be consumed:" + unconsumedMessageCount);
+			Thread.sleep(1000);
+		}
+
 		consumer.seek(consumerTopicPartition, schemaStats.getMasterTransactionOffset());
 		while (masterRole) {
+			System.out.println("Consume master transaction log...");
 			handleMessages();
 		}
 		logger.info("END TRANSACTION MASTER");
 	}
 
+	private long getUnconsumedMessageCount() {
+		try {
+			Properties consumerProps = new Properties();
+			consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
+			consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+			consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+			consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+
+			KafkaConsumer<Object, Object> resolvedTopicConsumer = new KafkaConsumer<>(consumerProps);
+			TopicPartition topicPartition = new TopicPartition(clusterConfig.getTopicPrefix() + "-" + TransactionReader.RESOLVED_SUFFIX, 0);
+			Map<TopicPartition, Long> endOffsets = resolvedTopicConsumer.endOffsets(Collections.singletonList(topicPartition));
+
+			Long latestOffset = endOffsets.get(topicPartition);
+			long unconsumedMessages =  latestOffset -1  - schemaStats.getMasterTransactionOffset();
+			resolvedTopicConsumer.close();
+			return unconsumedMessages;
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+		return Integer.MAX_VALUE;
+	}
+
 	private void handleMessages() throws IOException {
-		ConsumerRecords<byte[], byte[]> consumerRecords = consumer.poll(Duration.ofSeconds(1));
+		ConsumerRecords<byte[], byte[]> consumerRecords = consumer.poll(Duration.ofSeconds(3));
 		List<ConsumerRecord<byte[], byte[]>> records = consumerRecords.records(consumerTopicPartition);
 		for (ConsumerRecord<byte[], byte[]> record : records) {
 			TransactionMessageKey messageKey = new TransactionMessageKey(record.key());
@@ -151,7 +183,7 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 				logger.debug("MASTER send new transaction:" + masterMessageKey + ", transaction-id:" + transaction.getTransactionId());
 				byte[] packetBytes = transactionPacket.writePacketBytes();
 				byte[] mingledBytes = PacketDataMingling.mingle(packetBytes, sharedSecret, masterMessageKey.getPacketKey());
-				producer.send(new ProducerRecord<>(producerTopic, masterMessageKey.getBytes(), mingledBytes));
+				producer.send(new ProducerRecord<>(producerTopic, masterMessageKey.getBytes(), mingledBytes), this);
 			} else {
 				logger.info("Sending error packet...");
 				producer.send(new ProducerRecord<>(producerTopic, masterMessageKey.getBytes(), null));
@@ -166,5 +198,12 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable {
 
 	private long getNextKey() {
 		return ++packetKey;
+	}
+
+	@Override
+	public void onCompletion(RecordMetadata metadata, Exception e) {
+		if (e != null) {
+			logger.warn("Error writing master transaction:" + e.getMessage());
+		}
 	}
 }

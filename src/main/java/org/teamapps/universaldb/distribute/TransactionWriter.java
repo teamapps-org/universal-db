@@ -56,6 +56,8 @@ public class TransactionWriter implements Callback {
 		producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, clientId);
 		producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 		producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+		producerProps.put(ProducerConfig.ACKS_CONFIG, "1"); //"all"
+		producerProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 25);
 		producer = new KafkaProducer<>(producerProps);
 	}
 
@@ -69,7 +71,6 @@ public class TransactionWriter implements Callback {
 		TransactionExecutionResult result = new TransactionExecutionResult();
 		transactionMap.put(messageKey.getTransactionKeyOfCallingNode(), result);
 		producer.send(new ProducerRecord<>(topic, messageKey.getBytes(), bytes), this);
-		logger.debug("Client writer - sent transaction:" + messageKey);
 		return result;
 	}
 
@@ -82,7 +83,9 @@ public class TransactionWriter implements Callback {
 	}
 
 	@Override
-	public void onCompletion(RecordMetadata metadata, Exception exception) {
-		//todo
+	public void onCompletion(RecordMetadata metadata, Exception e) {
+		if (e != null) {
+			logger.warn("Error writing transaction:" + e.getMessage());
+		}
 	}
 }

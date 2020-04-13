@@ -67,7 +67,7 @@ public class TransactionReader {
 		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
 		consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10_000);
+		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000_000);
 		consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); //"latest"
 
@@ -101,10 +101,6 @@ public class TransactionReader {
 
 			TransactionPacket transactionPacket = new TransactionPacket(bytes);
 			ClusterTransaction transaction = new ClusterTransaction(transactionPacket, dataBaseMapper);
-			schemaStats.setTransactionOffset(record.offset() + 1);
-			schemaStats.setMasterTransactionOffset(messageKey.getMasterOffset() + 1);
-
-			logger.debug("Client reader - received new transaction:" + messageKey + ", transaction-id:" + transaction.getTransactionId());
 
 			if (messageKey.getClientId().equals(clientId)) {
 				TransactionExecutionResult executionResult = transactionMap.remove(messageKey.getTransactionKeyOfCallingNode());
@@ -125,6 +121,8 @@ public class TransactionReader {
 				}
 			}
 
+			schemaStats.setTransactionOffset(record.offset() + 1);
+			schemaStats.setMasterTransactionOffset(messageKey.getMasterOffset() + 1);
 
 		}
 	}
