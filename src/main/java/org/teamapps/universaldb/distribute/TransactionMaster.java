@@ -102,6 +102,9 @@ public class TransactionMaster implements LeaderSelectorListener, Closeable, Cal
 		producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 		producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 		producerProps.put(ProducerConfig.ACKS_CONFIG, "1"); //"all"
+		producerProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, 1);
+		producerProps.put(ProducerConfig.BATCH_SIZE_CONFIG, 1_000_000);
+		producerProps.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 10 * 1024 * 1024);
 		producer = new KafkaProducer<>(producerProps);
 
 		CuratorFramework client = CuratorFrameworkFactory.newClient(clusterConfig.getZookeeperConfig(), new ExponentialBackoffRetry(1000, 3));

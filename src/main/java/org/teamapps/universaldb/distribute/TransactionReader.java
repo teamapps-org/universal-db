@@ -67,9 +67,12 @@ public class TransactionReader {
 		consumerProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, clusterConfig.getKafkaConfig());
 		consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 		consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000_000);
 		consumerProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"); //"latest"
+		consumerProps.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000_000);
+		consumerProps.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 30 * 1024 * 1024);
+		consumerProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30 * 1_000);
+		consumerProps.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 9 * 1_000);
 
 		logger.info("Start with transaction offset:" + schemaStats.getTransactionOffset());
 
