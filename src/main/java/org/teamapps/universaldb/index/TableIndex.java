@@ -301,11 +301,6 @@ public class TableIndex implements MappedObject {
 			id = nextId;
 		}
 		records.setValue(id, true);
-		if (recordId == 0) {
-			nextId++;
-		} else if (recordId > nextId) {
-			nextId = recordId + 1;
-		}
 		return id;
 	}
 

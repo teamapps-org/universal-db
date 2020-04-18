@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,10 +46,12 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 	}
 
 	private int maxSetId;
+	private int numberOfSetIds;
 
 	public BooleanIndex(String name, TableIndex tableIndex) {
 		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
 		recalculateMaxSetIndex();
+		recalculateNumberOfSetIds();
 	}
 
 	private void recalculateMaxSetIndex() {
@@ -62,6 +64,16 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 			}
 		}
 		maxSetId = maxId;
+	}
+
+	private void recalculateNumberOfSetIds() {
+		int count = 0;
+		for (int id = 1; id <= maxSetId; id++) {
+			if (getValue(id)) {
+				count++;
+			}
+		}
+		numberOfSetIds = count;
 	}
 
 	@Override
@@ -105,7 +117,7 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		int index = getIndexForId(id / 8);
 		int offset = getOffsetForIndex(index);
 
-		int position = (id / 8)  - offset;
+		int position = (id / 8) - offset;
 
 		int bit = id % 8;
 		byte b = getBuffer(index).getByte(position);
@@ -121,6 +133,14 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		int index = getIndexForId(id / 8);
 		int offset = getOffsetForIndex(index);
 		int position = (id / 8) - offset;
+
+		if (id > 0 && value != getValue(id)) {
+			if (value) {
+				numberOfSetIds++;
+			} else {
+				numberOfSetIds--;
+			}
+		}
 
 		int bit = id % 8;
 		byte b = getBuffer(index).getByte(position);
@@ -162,7 +182,7 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		});
 		return sortEntries;
 	}
-	
+
 	public BitSet filterEquals(BitSet bitSet, boolean compare) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
@@ -186,13 +206,7 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 	}
 
 	public int getCount() {
-		int count = 0;
-		for (int i = 1; i <= maxSetId; i++) {
-			if (getValue(i)) {
-				count++;
-			}
-		}
-		return count;
+		return numberOfSetIds;
 	}
 
 	public BitSet getBitSet() {
