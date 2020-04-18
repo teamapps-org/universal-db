@@ -54,7 +54,6 @@ public class TableIndex implements MappedObject {
 	private boolean keepDeletedRecords;
 	private BooleanIndex records;
 	private BooleanIndex deletedRecords;
-	private int nextId;
 	private LongIndex transactionIndex;
 
 	private List<ColumnIndex> columnIndices;
@@ -79,10 +78,7 @@ public class TableIndex implements MappedObject {
 		path.mkdir();
 		records = new BooleanIndex("coll-recs", this);
 		this.tableConfig = tableConfig;
-		nextId = records.getNextId();
-		if (nextId == 0) {
-			nextId++;
-		}
+
 		columnIndices = new ArrayList<>();
 		columnIndexByName = new HashMap<>();
 
@@ -288,17 +284,18 @@ public class TableIndex implements MappedObject {
 	}
 
 	public int createRecord(int recordId, int correlationId, boolean update) {
-		if (!keepDeletedRecords) {
-			//todo: retrieve deleted id
-
+		int id = 0;
+		if (recordId == 0) {
+			if (keepDeletedRecords) {
+				id = Math.max(records.getNextId(), deletedRecords.getNextId());
+			} else {
+				id = records.getNextId();
+			}
 		} else {
-			if (recordId > 0 && deletedRecords.getValue(recordId)) {
+			id = recordId;
+			if (keepDeletedRecords && deletedRecords.getValue(recordId)) {
 				deletedRecords.setValue(recordId, false);
 			}
-		}
-		int id = recordId;
-		if (recordId == 0) {
-			id = nextId;
 		}
 		records.setValue(id, true);
 		return id;
