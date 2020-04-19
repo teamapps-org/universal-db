@@ -37,6 +37,7 @@ public enum IndexType {
 	MULTI_REFERENCE(10),
 	FILE(11),
 	BINARY(12),
+	FILE_NG(13),
 	
 	;
 
