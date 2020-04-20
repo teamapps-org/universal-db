@@ -107,7 +107,7 @@ public class CharIndex {
 			return 0;
 		}
 		byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
-		if (currentBuffer.getRemainingSize() < bytes.length + 4) {
+		while (currentBuffer.getRemainingSize() < bytes.length + 4) {
 			addBuffer();
 		}
 		int position = currentBuffer.getFreeSpacePosition();
