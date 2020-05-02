@@ -69,8 +69,15 @@ public class LocalFileValue implements FileValue{
 		return file;
 	}
 
+	/**
+	 * The file version. For first version, version is 1.
+	 * For uncommitted files an unknown version of 0 might
+	 * be returned.
+	 *
+	 * @return the version or 0, if version is unknown
+	 */
 	@Override
-	public short getVersion() {
+	public int getVersion() {
 		return 0;
 	}
 

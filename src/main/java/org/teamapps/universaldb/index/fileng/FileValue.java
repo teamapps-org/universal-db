@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.fileng;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Map;
 
 public interface FileValue {
 
@@ -42,10 +43,14 @@ public interface FileValue {
 
 	File getAsFile();
 
-	short getVersion();
+	int getVersion();
 
-	default short getVersionCount() {
+	default int getVersionCount() {
 		return getVersion();
+	}
+
+	default Map<String, String> parseMetaData() {
+		return FileUtil.parseFileMetaData(getInputStream());
 	}
 
 	File getFileVersion(int version);
