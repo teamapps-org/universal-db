@@ -22,6 +22,7 @@ package org.teamapps.universaldb.index.binary;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
+import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
 import java.util.BitSet;
@@ -122,6 +123,24 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	@Override
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		return sortEntries;
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			byte[] value = getValue(id);
+			dataOutputStream.writeInt(id);
+			DataStreamUtil.writeByteArrayWithLengthHeader(dataOutputStream,value);
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			byte[] value = DataStreamUtil.readByteArrayWithLengthHeader(dataInputStream);
+			setValue(id, value);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override

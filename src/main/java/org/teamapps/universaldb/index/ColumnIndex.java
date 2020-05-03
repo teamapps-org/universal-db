@@ -33,9 +33,7 @@ import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.IndexPath;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Locale;
@@ -172,6 +170,22 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 	List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale);
 
 	BitSet filter(BitSet records, FILTER filter);
+
+	default void dumpIndex(File file, BitSet records) throws IOException {
+		DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file), 128_000));
+		dumpIndex(dataOutputStream, records);
+		dataOutputStream.close();
+	}
+
+	void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException;
+
+	default void restoreIndex(File file) throws IOException{
+		DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file), 128_000));
+		restoreIndex(dataInputStream);
+		dataInputStream.close();
+	}
+
+	void restoreIndex(DataInputStream dataInputStream) throws IOException;
 
 	void close();
 

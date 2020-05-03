@@ -29,6 +29,7 @@ import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
@@ -343,6 +344,35 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 			return Integer.compare(value1, value2) * order;
 		});
 		return sortEntries;
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			List<Integer> references = getReferencesAsList(id);
+			dataOutputStream.writeInt(id);
+			dataOutputStream.writeInt(references.size());
+			for (Integer reference : references) {
+				dataOutputStream.writeInt(reference);
+			}
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		boolean cyclicReferencesValue = this.cyclicReferences;
+		this.cyclicReferences = false;
+		try {
+			int id = dataInputStream.readInt();
+			int count = dataInputStream.readInt();
+			List<Integer> references = new ArrayList<>();
+			for (int i = 0; i < count; i++) {
+				references.add(dataInputStream.readInt());
+			}
+			setReferences(id, references);
+		} catch (EOFException ignore) { } finally {
+			this.cyclicReferences = cyclicReferencesValue;
+		}
 	}
 
 	@Override

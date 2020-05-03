@@ -24,6 +24,7 @@ import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -88,6 +89,24 @@ public class DoubleIndex extends AbstractBufferIndex<Double, NumericFilter> {
 			return Double.compare(value1, value2) * order;
 		});
 		return sortEntries;
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			double value = getValue(id);
+			dataOutputStream.writeInt(id);
+			dataOutputStream.writeDouble(value);
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			double value = dataInputStream.readDouble();
+			setValue(id, value);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override

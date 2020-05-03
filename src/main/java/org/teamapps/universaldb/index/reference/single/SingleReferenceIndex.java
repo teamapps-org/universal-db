@@ -27,6 +27,7 @@ import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -175,6 +176,24 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 			int val2 = dataInputStream.readInt();
 			return new RecordReference(val1, val2);
 		}
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			int value = getValue(id);
+			dataOutputStream.writeInt(id);
+			dataOutputStream.writeInt(value);
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			int value = dataInputStream.readInt();
+			setIndexValue(id, value);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override

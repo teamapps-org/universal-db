@@ -22,9 +22,7 @@ package org.teamapps.universaldb.index.numeric;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.transaction.DataType;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteOrder;
 import java.util.*;
 
@@ -104,6 +102,25 @@ public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> {
 	@Override
 	public Integer readTransactionValue(DataInputStream dataInputStream) throws IOException {
 		return dataInputStream.readInt();
+	}
+
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			int value = getValue(id);
+			dataOutputStream.writeInt(id);
+			dataOutputStream.writeInt(value);
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			int value = dataInputStream.readInt();
+			setValue(id, value);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override

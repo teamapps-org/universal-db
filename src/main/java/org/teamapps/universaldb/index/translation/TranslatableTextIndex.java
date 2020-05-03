@@ -23,9 +23,11 @@ import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.text.*;
 import org.teamapps.universaldb.transaction.DataType;
+import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 
@@ -141,6 +143,24 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 	@Override
 	public TranslatableText readTransactionValue(DataInputStream dataInputStream) throws IOException {
 		return new TranslatableText(dataInputStream);
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			TranslatableText value = getValue(id);
+			dataOutputStream.writeInt(id);
+			DataStreamUtil.writeTranslatableText(dataOutputStream, value);
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			TranslatableText value = DataStreamUtil.readTranslatableText(dataInputStream);
+			setValue(id, value);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override

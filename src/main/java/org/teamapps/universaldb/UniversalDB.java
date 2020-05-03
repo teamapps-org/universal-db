@@ -32,6 +32,7 @@ import org.teamapps.universaldb.transaction.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -226,6 +227,22 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		TransactionExecutionResult transactionExecutionResult = transactionWriter.writeTransaction(transaction);
 		if (!asynchronous) {
 			transactionExecutionResult.waitForExecution();
+		}
+	}
+
+	public void createDatabaseDump(File dumpFolder) throws IOException {
+		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+			File dbFolder = new File(dumpFolder, database.getName());
+			dbFolder.mkdir();
+			for (TableIndex table : database.getTables()) {
+				File tableFolder = new File(dbFolder, table.getName());
+				tableFolder.mkdir();
+				BitSet records = table.getRecords();
+				for (ColumnIndex columnIndex : table.getColumnIndices()) {
+					File dumpFile = new File(tableFolder, columnIndex.getName() + ".dbd");
+					columnIndex.dumpIndex(dumpFile, records); //todo catch, continue and rethrow?
+				}
+			}
 		}
 	}
 

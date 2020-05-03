@@ -22,9 +22,11 @@ package org.teamapps.universaldb.index.text;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
+import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.Collator;
@@ -137,6 +139,24 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		byte[] bytes = new byte[length];
 		dataInputStream.read(bytes);
 		return new String(bytes, StandardCharsets.UTF_8);
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			String value = getValue(id);
+			dataOutputStream.writeInt(id);
+			DataStreamUtil.writeStringWithLengthHeader(dataOutputStream, value);
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			String value = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
+			setValue(id, value);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override

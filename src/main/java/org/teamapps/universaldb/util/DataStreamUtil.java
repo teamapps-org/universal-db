@@ -19,6 +19,8 @@
  */
 package org.teamapps.universaldb.util;
 
+import org.teamapps.universaldb.index.translation.TranslatableText;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -44,6 +46,26 @@ public class DataStreamUtil {
 		byte[] stringBytes = new byte[length];
 		dataInputStream.read(stringBytes);
 		return new String(stringBytes, StandardCharsets.UTF_8);
+	}
+
+	public static void writeTranslatableText(DataOutputStream dataOutputStream, TranslatableText value) throws IOException {
+		if (value == null) {
+			dataOutputStream.writeInt(0);
+		} else {
+			byte[] bytes = value.getEncodedValue().getBytes(StandardCharsets.UTF_8);
+			dataOutputStream.writeInt(bytes.length);
+			dataOutputStream.write(bytes);
+		}
+	}
+
+	public static TranslatableText readTranslatableText(DataInputStream dataInputStream) throws IOException {
+		int length = dataInputStream.readInt();
+		if (length == 0) {
+			return null;
+		}
+		byte[] stringBytes = new byte[length];
+		dataInputStream.read(stringBytes);
+		return new TranslatableText(new String(stringBytes, StandardCharsets.UTF_8));
 	}
 
 	public static void writeByteArrayWithLengthHeader(DataOutputStream dataOutputStream, byte[] bytes) throws IOException {

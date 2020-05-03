@@ -25,11 +25,9 @@ import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
 import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.transaction.DataType;
+import org.teamapps.universaldb.util.DataStreamUtil;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
@@ -177,6 +175,38 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	@Override
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
 		return sortEntries;
+	}
+
+	@Override
+	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			String uuid = uuidIndex.getValue(id);
+			if (uuid != null) {
+				String hash = hashIndex.getValue(id);
+				long size = sizeIndex.getValue(id);
+				byte[] metaData = metaDataIndex.getValue(id);
+				dataOutputStream.writeInt(id);
+				DataStreamUtil.writeStringWithLengthHeader(dataOutputStream,uuid);
+				DataStreamUtil.writeStringWithLengthHeader(dataOutputStream,hash);
+				dataOutputStream.writeLong(size);
+				DataStreamUtil.writeByteArrayWithLengthHeader(dataOutputStream,metaData);
+			}
+		}
+	}
+
+	@Override
+	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+		try {
+			int id = dataInputStream.readInt();
+			String uuid = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
+			String hash = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
+			long size = dataInputStream.readLong();
+			byte[] metaData = DataStreamUtil.readByteArrayWithLengthHeader(dataInputStream);
+			uuidIndex.setValue(id, uuid);
+			hashIndex.setValue(id, hash);
+			sizeIndex.setValue(id, size);
+			metaDataIndex.setValue(id, metaData);
+		} catch (EOFException ignore) {}
 	}
 
 	@Override
