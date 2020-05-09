@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.function.Function;
 {imports}
 
-public interface {query} {
+public interface {query} extends Query<{type}> {
 
     static {query} create() {
         return new {udbQuery}();

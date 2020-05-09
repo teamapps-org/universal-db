@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class ShortIndex extends AbstractBufferIndex<Short, NumericFilter> {
+public class ShortIndex extends AbstractBufferIndex<Short, NumericFilter> implements NumericIndex {
 
 	public static final int ENTRY_SIZE = 2;
 

@@ -361,7 +361,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected TableIndex getTableIndex() {
+	public TableIndex getTableIndex() {
 		return tableIndex;
 	}
 

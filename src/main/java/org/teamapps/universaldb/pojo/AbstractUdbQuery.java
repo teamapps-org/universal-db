@@ -19,13 +19,30 @@
  */
 package org.teamapps.universaldb.pojo;
 
+import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.bool.BooleanFilter;
+import org.teamapps.universaldb.index.bool.BooleanIndex;
+import org.teamapps.universaldb.index.numeric.NumericFilter;
+import org.teamapps.universaldb.index.text.TextFilter;
+import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.query.*;
+import org.teamapps.universaldb.record.EntityBuilder;
 
 import java.util.BitSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class AbstractUdbQuery {
+public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 
+	private final TableIndex tableIndex;
+	private final EntityBuilder<ENTITY> entityBuilder;
 	private Filter filter;
+
+	public AbstractUdbQuery(TableIndex tableIndex, EntityBuilder<ENTITY> entityBuilder) {
+		this.tableIndex = tableIndex;
+		this.entityBuilder = entityBuilder;
+	}
 
 	public Filter getFilter() {
 		return filter;
@@ -116,4 +133,87 @@ public class AbstractUdbQuery {
 		}
 	}
 
+	public void addFullTextFilter(TextFilter textFilter, String... fieldNames) {
+		and(tableIndex.createFullTextFilter(textFilter, fieldNames));
+	}
+
+	public void addFullTextQuery(String query, String... fieldNames) {
+		and(tableIndex.createFullTextFilter(query, fieldNames));
+	}
+
+	public void addTextFilter(String columnName, TextFilter filter) {
+		TextIndex textIndex = (TextIndex) tableIndex.getColumnIndex(columnName);
+		IndexFilter<String, TextFilter> indexFilter = textIndex.createFilter(filter);
+		and(indexFilter);
+	}
+
+	public void addNumericFilter(String columnName, NumericFilter filter) {
+		ColumnIndex columnIndex = tableIndex.getColumnIndex(columnName);
+		IndexFilter indexFilter = columnIndex.createFilter(filter);
+		and(indexFilter);
+	}
+
+	public void addBooleanFilter(String columnName, BooleanFilter booleanFilter) {
+		BooleanIndex booleanIndex = (BooleanIndex) tableIndex.getColumnIndex(columnName);
+		IndexFilter<Boolean, BooleanFilter> indexFilter = booleanIndex.createFilter(booleanFilter);
+		and(indexFilter);
+	}
+
+
+	public List<ENTITY> execute() {
+		BitSet result = filter(tableIndex.getRecordBitSet());
+		return new EntityBitSetList<>(entityBuilder, result);
+	}
+
+	public ENTITY executeExpectSingleton() {
+		BitSet result = filter(tableIndex.getRecordBitSet());
+		int id = result.nextSetBit(1);
+		if (id < 0) {
+			return null;
+		} else {
+			return entityBuilder.build(id);
+		}
+	}
+
+	public BitSet executeToBitSet() {
+		return filter(tableIndex.getRecordBitSet());
+	}
+
+	public List<ENTITY> execute(String sortFieldName, boolean ascending, String ... path) {
+		BitSet result = filter(tableIndex.getRecordBitSet());
+		return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, path);
+	}
+
+	public List<ENTITY> execute(int startIndex, int length, Sorting sorting) {
+		if (sorting == null) {
+			return execute().stream()
+					.skip(startIndex)
+					.limit(length)
+					.collect(Collectors.toList());
+		} else {
+			return execute(sorting.getSortFieldName(), sorting.getSortDirection().isAscending(), sorting.getSortFieldPath()).stream()
+					.skip(startIndex)
+					.limit(length)
+					.collect(Collectors.toList());
+		}
+	}
+
+
+	public TableIndex getTableIndex() {
+		return tableIndex;
+	}
+
+	public EntityBuilder<ENTITY> getEntityBuilder() {
+		return entityBuilder;
+	}
+
+	@Override
+	public String toString() {
+		Filter filter = getFilter();
+		if (filter == null) {
+			return "EMPTY QUERY";
+		} else {
+			return filter.toString();
+		}
+	}
 }

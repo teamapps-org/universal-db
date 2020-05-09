@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> {
+public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> implements NumericIndex {
 
 	public static final int ENTRY_SIZE = 4;
 

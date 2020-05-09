@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> {
+public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> implements NumericIndex {
 
 	public static final int ENTRY_SIZE = 8;
 

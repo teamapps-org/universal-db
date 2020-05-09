@@ -26,7 +26,7 @@ import java.io.*;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> {
+public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> implements NumericIndex {
 
 	public static final int ENTRY_SIZE = 4;
 
