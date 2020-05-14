@@ -30,9 +30,11 @@ import java.util.PrimitiveIterator;
 public class ReferenceIteratorValue implements MultiReferenceValue {
 
 	private final PrimitiveIterator.OfInt idIterator;
+	private final int referencesCount;
 
-	public ReferenceIteratorValue(PrimitiveIterator.OfInt idIterator) {
+	public ReferenceIteratorValue(PrimitiveIterator.OfInt idIterator, int referencesCount) {
 		this.idIterator = idIterator;
+		this.referencesCount = referencesCount;
 	}
 
 	@Override
@@ -52,6 +54,10 @@ public class ReferenceIteratorValue implements MultiReferenceValue {
 
 	public PrimitiveIterator.OfInt getIdIterator() {
 		return idIterator;
+	}
+
+	public int getReferencesCount() {
+		return referencesCount;
 	}
 
 	public List<Integer> getAsList() {

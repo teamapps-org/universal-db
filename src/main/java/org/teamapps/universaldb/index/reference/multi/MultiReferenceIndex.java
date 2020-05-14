@@ -79,7 +79,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		if (references == null) {
 			return null;
 		} else {
-			return new ReferenceIteratorValue(references);
+			return new ReferenceIteratorValue(references, getReferencesCount(id));
 		}
 	}
 
