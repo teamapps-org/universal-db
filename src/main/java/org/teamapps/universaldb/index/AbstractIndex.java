@@ -27,14 +27,16 @@ public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, F
 	private final File path;
 	private final String name;
 	private final TableIndex table;
+	private final ColumnType columnType;
 	private final FullTextIndexingOptions fullTextIndexingOptions;
 	private int mappingId;
 
 
-	public AbstractIndex(String name, TableIndex table, FullTextIndexingOptions fullTextIndexingOptions) {
+	public AbstractIndex(String name, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions) {
 		this.name = name;
 		this.path = table.getPath();
 		this.table = table;
+		this.columnType = columnType;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
 	}
 
@@ -55,6 +57,11 @@ public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, F
 	@Override
 	public TableIndex getTable() {
 		return table;
+	}
+
+	@Override
+	public ColumnType getColumnType() {
+		return columnType;
 	}
 
 	@Override

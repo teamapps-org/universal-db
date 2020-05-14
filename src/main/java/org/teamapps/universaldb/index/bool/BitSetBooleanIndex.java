@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.bool;
 
+import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.index.TableIndex;
 
 import java.util.BitSet;
@@ -28,7 +29,7 @@ public class BitSetBooleanIndex extends BooleanIndex {
 	private BitSet bitSet;
 
 	public BitSetBooleanIndex(String name, TableIndex table) {
-		super(name, table);
+		super(name, table, ColumnType.BOOLEAN);
 		bitSet = new BitSet();
 		for (int i = 0; i <= getMaximumId() * 8; i++) {
 			bitSet.set(i, super.getValue(i));

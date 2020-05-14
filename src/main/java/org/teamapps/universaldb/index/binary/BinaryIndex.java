@@ -36,10 +36,10 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	private final ByteArrayIndex byteArrayIndex;
 	private final boolean compressContent;
 
-	public BinaryIndex(String name, TableIndex table, boolean compressContent) {
-		super(name, table, FullTextIndexingOptions.NOT_INDEXED);
+	public BinaryIndex(String name, TableIndex table, boolean compressContent, ColumnType columnType) {
+		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
 		this.compressContent = compressContent;
-		positionIndex = new LongIndex(name, table);
+		positionIndex = new LongIndex(name, table, columnType);
 		byteArrayIndex = new ByteArrayIndex(getPath(), name, this.compressContent);
 	}
 

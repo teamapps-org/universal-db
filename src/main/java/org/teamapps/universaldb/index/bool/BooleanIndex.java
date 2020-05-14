@@ -49,8 +49,8 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 	private int maxSetId;
 	private int numberOfSetIds;
 
-	public BooleanIndex(String name, TableIndex tableIndex) {
-		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
+	public BooleanIndex(String name, TableIndex tableIndex, ColumnType columnType) {
+		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
 		recalculateMaxSetIndex();
 		recalculateNumberOfSetIds();
 	}

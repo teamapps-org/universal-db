@@ -46,9 +46,9 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	private SingleReferenceIndex reverseSingleIndex;
 	private MultiReferenceIndex reverseMultiIndex;
 
-	public MultiReferenceIndex(String name, TableIndex table, ReferenceBlockChain referenceBlockChain) {
-		super(name, table, FullTextIndexingOptions.NOT_INDEXED);
-		this.entryIndex = new LongIndex(name, table);
+	public MultiReferenceIndex(String name, TableIndex table, ColumnType columnType, ReferenceBlockChain referenceBlockChain) {
+		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
+		this.entryIndex = new LongIndex(name, table, columnType);
 		this.referenceBlockChain = referenceBlockChain;
 	}
 

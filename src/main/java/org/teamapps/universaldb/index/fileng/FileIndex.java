@@ -33,19 +33,19 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> implements F
 	private final File localFileStorePath;
 	private final RemoteFileStore remoteFileStore;
 
-	public FileIndex(String name, TableIndex table, boolean indexFileContent, boolean indexFileVersions, String secret) {
-		super(name, table, indexFileContent ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
+	public FileIndex(String name, TableIndex table, ColumnType columnType, boolean indexFileContent, boolean indexFileVersions, String secret) {
+		super(name, table, columnType, indexFileContent ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
 		this.indexFileContent = indexFileContent;
 		this.indexFileVersions = indexFileVersions;
 		this.secret = secret;
-		hashIndex = new TextIndex(name + "-file-hash", table, false);
-		nameIndex = new TextIndex(name + "-file-name", table, false);
-		sizeIndex = new LongIndex(name + "-file-size", table);
+		hashIndex = new TextIndex(name + "-file-hash", table, columnType, false);
+		nameIndex = new TextIndex(name + "-file-name", table, columnType, false);
+		sizeIndex = new LongIndex(name + "-file-size", table, columnType);
 		if (indexFileContent) {
 			textContentIndex = new FileTextContentIndex(table.getPath(), name + "-file-fulltext-content");
 		}
 		if (indexFileVersions) {
-			versionIndex = new ShortIndex(name + "-file-version", table);
+			versionIndex = new ShortIndex(name + "-file-version", table, columnType);
 			versionDataIndex = new FileVersionDataIndex(name, table);
 		}
 		fullTextIndex = new CollectionTextSearchIndex(getPath(), name);

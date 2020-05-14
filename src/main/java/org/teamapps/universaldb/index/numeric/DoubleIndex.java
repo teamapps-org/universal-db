@@ -33,8 +33,8 @@ public class DoubleIndex extends AbstractBufferIndex<Double, NumericFilter> impl
 
 	public static final int ENTRY_SIZE = 8;
 
-	public DoubleIndex(String name, TableIndex table) {
-		super(name, table, FullTextIndexingOptions.NOT_INDEXED);
+	public DoubleIndex(String name, TableIndex table, ColumnType columnType) {
+		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
 	@Override

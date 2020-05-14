@@ -76,7 +76,7 @@ public class TableIndex implements MappedObject {
 		this.parentFQN = parentFQN;
 		this.path = new File(parentPath, name);
 		path.mkdir();
-		records = new BooleanIndex("coll-recs", this);
+		records = new BooleanIndex("coll-recs", this, ColumnType.BOOLEAN);
 		this.tableConfig = tableConfig;
 
 		columnIndices = new ArrayList<>();
@@ -84,7 +84,7 @@ public class TableIndex implements MappedObject {
 
 		if (tableConfig.keepDeleted()) {
 			keepDeletedRecords = true;
-			deletedRecords = new BooleanIndex("coll-del-recs", this);
+			deletedRecords = new BooleanIndex("coll-del-recs", this, ColumnType.BOOLEAN);
 		}
 		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
@@ -183,7 +183,7 @@ public class TableIndex implements MappedObject {
 		return deletedRecords.getBitSet();
 	}
 
-	public void addIndex(IndexType type, String name) {
+	public void addIndex(ColumnType type, String name) {
 		ColumnIndex column = ColumnIndex.createColumn(this, name, type);
 		addIndex(column);
 	}
@@ -216,6 +216,7 @@ public class TableIndex implements MappedObject {
 		boolean negation = false;
 		boolean similar = false;
 		boolean startsWith = false;
+		boolean equals = false;
 		if (term.startsWith("!")) {
 			negation = true;
 			term = term.substring(1);
@@ -228,7 +229,12 @@ public class TableIndex implements MappedObject {
 			startsWith = true;
 			term = term.substring(0, term.length() - 1);
 		}
-		if (similar) {
+		if (term.startsWith("\"") && term.endsWith("\"")) {
+			term = term.substring(0, term.length() - 2);
+		}
+		if (equals) {
+			return negation ? TextFilter.termEqualsFilter(term) : TextFilter.termNotEqualsFilter(term);
+		} else if (similar) {
 			return negation ? TextFilter.termNotSimilarFilter(term) : TextFilter.termSimilarFilter(term);
 		} else if (startsWith) {
 			return negation ? TextFilter.termStartsNotWithFilter(term) : TextFilter.termStartsWithFilter(term);
@@ -426,7 +432,7 @@ public class TableIndex implements MappedObject {
 		for (Column column : table.getColumns()) {
 			ColumnIndex localColumn = getColumnIndex(column.getName());
 			if (localColumn == null) {
-				localColumn = ColumnIndex.createColumn(this, column.getName(), column.getIndexType());
+				localColumn = ColumnIndex.createColumn(this, column.getName(), column.getType());
 				addIndex(localColumn);
 			}
 			if (localColumn.getMappingId() == 0) {

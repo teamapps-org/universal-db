@@ -41,8 +41,8 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 	private MultiReferenceIndex reverseMultiIndex;
 
 
-	public SingleReferenceIndex(String name, TableIndex tableIndex) {
-		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
+	public SingleReferenceIndex(String name, TableIndex tableIndex, ColumnType columnType) {
+		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
 	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex) {

@@ -1,5 +1,6 @@
 package org.teamapps.universaldb.index.fileng;
 
+import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 
@@ -15,7 +16,7 @@ public class FileVersionDataIndex {
 	private final BinaryIndex versionDataIndex;
 
 	public FileVersionDataIndex(String name, TableIndex table) {
-		versionDataIndex = new BinaryIndex(name + "-file-version-data", table, false);
+		versionDataIndex = new BinaryIndex(name + "-file-version-data", table, false, ColumnType.BINARY);
 	}
 
 	public void addVersionEntry(int id, int version, String hash, String fileName, long size) {

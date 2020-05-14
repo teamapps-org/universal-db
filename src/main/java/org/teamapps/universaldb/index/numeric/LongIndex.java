@@ -33,8 +33,8 @@ public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> implemen
 
 	public static final int ENTRY_SIZE = 8;
 
-	public LongIndex(String name, TableIndex tableIndex) {
-		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
+	public LongIndex(String name, TableIndex tableIndex, ColumnType columnType) {
+		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
 	@Override

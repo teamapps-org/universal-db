@@ -33,8 +33,8 @@ public class ShortIndex extends AbstractBufferIndex<Short, NumericFilter> implem
 
 	public static final int ENTRY_SIZE = 2;
 
-	public ShortIndex(String name, TableIndex tableIndex) {
-		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
+	public ShortIndex(String name, TableIndex tableIndex, ColumnType columnType) {
+		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
 	@Override

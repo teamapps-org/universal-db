@@ -33,8 +33,8 @@ public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> implem
 
 	public static final int ENTRY_SIZE = 4;
 
-	public FloatIndex(String name, TableIndex table) {
-		super(name, table, FullTextIndexingOptions.NOT_INDEXED);
+	public FloatIndex(String name, TableIndex table, ColumnType columnType) {
+		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
 	@Override

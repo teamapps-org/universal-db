@@ -38,17 +38,17 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 	private final TextSearchIndex searchIndex;
 	private final CollectionTextSearchIndex collectionSearchIndex;
 
-	public TranslatableTextIndex(String name, TableIndex table, CollectionTextSearchIndex collectionSearchIndex) {
-		super(name, table, FullTextIndexingOptions.INDEXED);
-		this.positionIndex = new LongIndex(name, table);
+	public TranslatableTextIndex(String name, TableIndex table, ColumnType columnType, CollectionTextSearchIndex collectionSearchIndex) {
+		super(name, table, columnType, FullTextIndexingOptions.INDEXED);
+		this.positionIndex = new LongIndex(name, table, columnType);
 		this.charIndex = table.getCollectionCharIndex();
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
-	public TranslatableTextIndex(String name, TableIndex table, boolean withLocalSearchIndex) {
-		super(name, table, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
-		this.positionIndex = new LongIndex(name, table);
+	public TranslatableTextIndex(String name, TableIndex table, ColumnType columnType, boolean withLocalSearchIndex) {
+		super(name, table, columnType, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
+		this.positionIndex = new LongIndex(name, table, columnType);
 		this.charIndex = table.getCollectionCharIndex();
 		if (withLocalSearchIndex) {
 			searchIndex = new TextSearchIndex(getPath(), name);

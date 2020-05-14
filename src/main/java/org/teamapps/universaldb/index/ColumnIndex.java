@@ -41,45 +41,45 @@ import java.util.PrimitiveIterator;
 
 public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 
-	static ColumnIndex createColumn(TableIndex table, String name, IndexType indexType) {
+	static ColumnIndex createColumn(TableIndex table, String name, ColumnType columnType) {
 		ColumnIndex column = null;
 
-		switch (indexType) {
+		switch (columnType.getIndexType()) {
 			case BOOLEAN:
-				column = new BooleanIndex(name, table);
+				column = new BooleanIndex(name, table, columnType);
 				break;
 			case SHORT:
-				column = new ShortIndex(name, table);
+				column = new ShortIndex(name, table, columnType);
 				break;
 			case INT:
-				column = new IntegerIndex(name, table);
+				column = new IntegerIndex(name, table, columnType);
 				break;
 			case LONG:
-				column = new LongIndex(name, table);
+				column = new LongIndex(name, table, columnType);
 				break;
 			case FLOAT:
-				column = new FloatIndex(name, table);
+				column = new FloatIndex(name, table, columnType);
 				break;
 			case DOUBLE:
-				column = new DoubleIndex(name, table);
+				column = new DoubleIndex(name, table, columnType);
 				break;
 			case TEXT:
-				column = new TextIndex(name, table, table.getCollectionTextSearchIndex());
+				column = new TextIndex(name, table, columnType, table.getCollectionTextSearchIndex());
 				break;
 			case TRANSLATABLE_TEXT:
-				column = new TranslatableTextIndex(name, table, table.getCollectionTextSearchIndex());
+				column = new TranslatableTextIndex(name, table, columnType, table.getCollectionTextSearchIndex());
 				break;
 			case REFERENCE:
-				column = new SingleReferenceIndex(name, table);
+				column = new SingleReferenceIndex(name, table, columnType);
 				break;
 			case MULTI_REFERENCE:
-				column = new MultiReferenceIndex(name, table, table.getReferenceBlockChain());
+				column = new MultiReferenceIndex(name, table, columnType, table.getReferenceBlockChain());
 				break;
 			case FILE:
-				column = new FileIndex(name, table, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
+				column = new FileIndex(name, table, columnType, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
 				break;
 			case BINARY:
-				column = new BinaryIndex(name, table, false);
+				column = new BinaryIndex(name, table, false, columnType);
 				break;
 		}
 		return column;
@@ -128,6 +128,8 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 	String getName();
 
 	TableIndex getTable();
+
+	ColumnType getColumnType();
 
 	String getFQN();
 

@@ -57,7 +57,7 @@ public class LocalFileValue implements FileValue{
 	@Override
 	public InputStream getInputStream() {
 		try {
-			return new FileInputStream(file);
+			return new BufferedInputStream(new FileInputStream(file));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}

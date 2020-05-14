@@ -34,8 +34,8 @@ public abstract class AbstractBufferIndex<TYPE, FILTER> extends AbstractIndex<TY
 	private int maximumId;
 	private int[] bucketToIndex;
 
-	public AbstractBufferIndex(String name, TableIndex table, FullTextIndexingOptions fullTextIndexingOptions) {
-		super(name, table, fullTextIndexingOptions);
+	public AbstractBufferIndex(String name, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions) {
+		super(name, table, columnType, fullTextIndexingOptions);
 		this.maximumId = -1;
 		init();
 	}

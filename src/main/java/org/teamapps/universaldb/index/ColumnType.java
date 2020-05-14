@@ -26,52 +26,35 @@ import java.util.Set;
 
 public enum ColumnType {
 
-	BOOLEAN(1),
-	SHORT(2),
-	INT(3),
-	LONG(4),
-	FLOAT(5),
-	DOUBLE(6),
-	TEXT(7),
-	TRANSLATABLE_TEXT(8),
-	FILE(9),
-	SINGLE_REFERENCE(10),
-	MULTI_REFERENCE(11),
-	TIMESTAMP(12),
-	DATE(13),
-	TIME(14),
-	DATE_TIME(15),
-	LOCAL_DATE(16),
-	ENUM(17),
-	BINARY(18),
+	BOOLEAN,
+	BITSET_BOOLEAN,
+	SHORT,
+	INT,
+	LONG,
+	FLOAT,
+	DOUBLE,
+	TEXT,
+	TRANSLATABLE_TEXT,
+	FILE,
+	SINGLE_REFERENCE,
+	MULTI_REFERENCE,
+	TIMESTAMP,
+	DATE,
+	TIME,
+	DATE_TIME,
+	LOCAL_DATE,
+	ENUM,
+	BINARY,
 
-	CURRENCY(19), //todo
-	DYNAMIC_CURRENCY(20) //todo
+	CURRENCY, //todo
+	DYNAMIC_CURRENCY //todo
 
 	;
 
-	private final int id;
 
-	ColumnType(int id) {
-		this.id = id;
+	ColumnType() {
 	}
 
-	public int getId() {
-		return id;
-	}
-
-	private final static Map<Integer, ColumnType> indexTypeById = new HashMap<>();
-
-	static {
-		for (ColumnType type : values()) {
-			indexTypeById.put(type.getId(), type);
-		}
-
-	}
-
-	public static ColumnType getIndexTypeById(int id) {
-		return indexTypeById.get(id);
-	}
 
 	public boolean isReference() {
 		return this == SINGLE_REFERENCE || this == MULTI_REFERENCE;
@@ -80,6 +63,7 @@ public enum ColumnType {
 	public IndexType getIndexType() {
 		switch (this) {
 			case BOOLEAN:
+			case BITSET_BOOLEAN:
 				return IndexType.BOOLEAN;
 			case ENUM:
 			case SHORT:

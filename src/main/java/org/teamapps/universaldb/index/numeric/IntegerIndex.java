@@ -30,8 +30,8 @@ public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> im
 
 	public static final int ENTRY_SIZE = 4;
 
-	public IntegerIndex(String name, TableIndex tableIndex) {
-		super(name, tableIndex, FullTextIndexingOptions.NOT_INDEXED);
+	public IntegerIndex(String name, TableIndex tableIndex, ColumnType columnType) {
+		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
 	@Override
