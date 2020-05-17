@@ -220,7 +220,11 @@ public class CollectionTextSearchIndex {
 	}
 
 	public int getMaxDoc() {
-		return writer.getDocStats().maxDoc;
+		if (writer == null) {
+			return -1;
+		} else {
+			return writer.getDocStats().maxDoc;
+		}
 	}
 
 	public void deleteAllDocuments() throws IOException {
