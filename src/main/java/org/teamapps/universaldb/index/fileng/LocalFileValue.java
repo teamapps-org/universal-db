@@ -27,7 +27,7 @@ public class LocalFileValue implements FileValue{
 
 	private final File file;
 	private final String name;
-	private final String hash;
+	private String hash;
 
 	public LocalFileValue(File file) {
 		this(file, file.getName());
@@ -36,11 +36,13 @@ public class LocalFileValue implements FileValue{
 	public LocalFileValue(File file, String fileName) {
 		this.file = file;
 		this.name = fileName;
-		this.hash = FileUtil.createFileHash(file);
 	}
 
 	@Override
 	public String getHash() {
+		if (hash == null) {
+			hash = FileUtil.createFileHash(file);
+		}
 		return hash;
 	}
 
