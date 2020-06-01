@@ -24,14 +24,22 @@ import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.SortEntry;
 import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.bool.BooleanIndex;
+import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
+import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.index.translation.TranslatableText;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.record.EntityBuilder;
 import org.teamapps.universaldb.transaction.Transaction;
 import org.teamapps.universaldb.transaction.TransactionRecord;
 import org.teamapps.universaldb.transaction.TransactionRecordValue;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -296,8 +304,226 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return editValue;
 	}
 
+	public boolean getBooleanValue(BooleanIndex index) {
+		if (isChanged(index)) {
+			return (boolean) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
 
-	protected boolean isChanged(ColumnIndex index) {
+	public void setBooleanValue(boolean value, BooleanIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public short getShortValue(ShortIndex index) {
+		if (isChanged(index)) {
+			return (short) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setShortValue(short value, ShortIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public int getIntValue(IntegerIndex index) {
+		if (isChanged(index)) {
+			return (int) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setIntValue(int value, IntegerIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public long getLongValue(LongIndex index) {
+		if (isChanged(index)) {
+			return (long) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setLongValue(long value, LongIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public float getFloatValue(FloatIndex index) {
+		if (isChanged(index)) {
+			return (float) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setFloatValue(float value, FloatIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public double getDoubleValue(DoubleIndex index) {
+		if (isChanged(index)) {
+			return (double) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setDoubleValue(double value, DoubleIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public String getTextValue(TextIndex index) {
+		if (isChanged(index)) {
+			return (String) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setTextValue(String value, TextIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public TranslatableText getTranslatableTextValue(TranslatableTextIndex index) {
+		if (isChanged(index)) {
+			return (TranslatableText) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setTranslatableTextValue(TranslatableText value, TranslatableTextIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public Instant getTimestampValue(IntegerIndex index) {
+		int value;
+		if (isChanged(index)) {
+			value = (int) getChangedValue(index);
+		} else {
+			value = index.getValue(getId());
+		}
+		return value == 0 ? null : Instant.ofEpochSecond(value);
+	}
+
+	public int getTimestampAsEpochSecond(IntegerIndex index) {
+		if (isChanged(index)) {
+			return (int) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public long getTimestampAsEpochMilli(IntegerIndex index) {
+		if (isChanged(index)) {
+			return ((Integer) getChangedValue(index)).longValue() * 1000L;
+		} else {
+			return index.getValue(getId()) * 1000L;
+		}
+	}
+
+	public void setTimestampValue(Instant value, IntegerIndex index) {
+		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
+		setChangeValue(index, intValue, tableIndex);
+	}
+
+	public void setTimestampAsEpochSecond(int value, IntegerIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public void setTimestampAsEpochMilli(long value, IntegerIndex index) {
+		int intValue = (int) (value / 1000);
+		setChangeValue(index, intValue, tableIndex);
+	}
+
+	public Instant getTimeValue(IntegerIndex index) {
+		int value;
+		if (isChanged(index)) {
+			value = (int) getChangedValue(index);
+		} else {
+			value = index.getValue(getId());
+		}
+		return value == 0 ? null: Instant.ofEpochSecond(value);
+	}
+
+	public void setTimeValue(Instant value, IntegerIndex index) {
+		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
+		setChangeValue(index, intValue, tableIndex);
+	}
+
+	public Instant getDateValue(LongIndex index) {
+		long value;
+		if (isChanged(index)) {
+			value = (long) getChangedValue(index);
+		} else {
+			value = index.getValue(getId());
+		}
+		return value == 0 ? null : Instant.ofEpochMilli(value);
+	}
+
+	public long getDateAsEpochMilli(LongIndex index) {
+		if (isChanged(index)) {
+			return (long) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setDateValue(Instant value, LongIndex index) {
+		Long longValue = value != null ? value.toEpochMilli() : 0;
+		setChangeValue(index, longValue, tableIndex);
+	}
+
+	public void setDateAsEpochMilli(long value, LongIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public Instant getDateTimeValue(LongIndex index) {
+		long value;
+		if (isChanged(index)) {
+			value = (long) getChangedValue(index);
+		} else {
+			value = index.getValue(getId());
+		}
+		return value == 0 ? null : Instant.ofEpochMilli(value);
+	}
+
+	public long getDateTimeAsEpochMilli(LongIndex index) {
+		if (isChanged(index)) {
+			return (long) getChangedValue(index);
+		} else {
+			return index.getValue(getId());
+		}
+	}
+
+	public void setDateTimeValue(Instant value, LongIndex index) {
+		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
+		setChangeValue(index, longValue, tableIndex);
+	}
+
+	public void setDateTimeAsEpochMilli(long value, LongIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
+
+	public LocalDate getLocalDateValue(LongIndex index) {
+		long value;
+		if (isChanged(index)) {
+			value = (long) getChangedValue(index);
+		} else {
+			value = index.getValue(getId());
+		}
+		return value == 0 ? null : LocalDate.ofInstant(Instant.ofEpochMilli(value), ZoneOffset.UTC);
+	}
+
+
+
+
+
+	public boolean isChanged(ColumnIndex index) {
 		return entityChangeSet != null && entityChangeSet.isChanged(index);
 	}
 
@@ -378,13 +604,12 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	@Override
-	public boolean isCommitted() {
-		return entityChangeSet == null;
-	}
-
-	@Override
-	public boolean isStored() {
-		return id > 0 && !createEntity;
+	public boolean exists() {
+		if (id > 0 && tableIndex.getRecords().get(id)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override

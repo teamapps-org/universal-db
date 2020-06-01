@@ -192,81 +192,49 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_BOOLEAN}#
 	@Override
 	public boolean get{name}() {
-		if (isChanged({name2})) {
-			return (boolean) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getBooleanValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_SHORT}#
 	@Override
 	public short get{name}() {
-		if (isChanged({name2})) {
-			return (short) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getShortValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_INT}#
 	@Override
 	public int get{name}() {
-		if (isChanged({name2})) {
-			return (int) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+        return getIntValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_LONG}#
 	@Override
 	public long get{name}() {
-		if (isChanged({name2})) {
-			return (long) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getLongValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_FLOAT}#
 	@Override
 	public float get{name}() {
-		if (isChanged({name2})) {
-			return (float) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getFloatValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_DOUBLE}#
 	@Override
 	public double get{name}() {
-		if (isChanged({name2})) {
-			return (double) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getDoubleValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_TEXT}#
 	@Override
 	public String get{name}() {
-		if (isChanged({name2})) {
-			return (String) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+        return getTextValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_TRANSLATABLE_TEXT}#
 	@Override
 	public TranslatableText get{name}() {
-		if (isChanged({name2})) {
-			return (TranslatableText) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getTranslatableTextValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_FILE}#
@@ -366,67 +334,37 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_TIMESTAMP}#
 	@Override
 	public Instant get{name}() {
-    	int value;
-    	if (isChanged({name2})) {
-			value = (int) getChangedValue({name2});
-		} else {
-			value = {name2}.getValue(getId());
-		}
-		return value == 0 ? null : Instant.ofEpochSecond(value);
+	    return getTimestampValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_TIMESTAMP_2}#
 	@Override
 	public int get{name}AsEpochSecond() {
-    	if (isChanged({name2})) {
-			return (int) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getTimestampAsEpochSecond(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_TIMESTAMP_3}#
 	@Override
 	public long get{name}AsEpochMilli() {
-    	if (isChanged({name2})) {
-			return ((long) ((Integer) getChangedValue({name2})).longValue()) * 1000L;
-		} else {
-			return {name2}.getValue(getId()) * 1000L;
-		}
+	    return getTimestampAsEpochMilli(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_DATE}#
 	@Override
 	public Instant get{name}() {
-    	long value;
-    	if (isChanged({name2})) {
-			value = (long) getChangedValue({name2});
-		} else {
-			value = {name2}.getValue(getId());
-		}
-		return value == 0 ? null : Instant.ofEpochMilli(value);
+	    return getDateValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_DATE_2}#
 	@Override
 	public long get{name}AsEpochMilli() {
-    	if (isChanged({name2})) {
-			return (long) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getDateAsEpochMilli(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_TIME}#
 	@Override
 	public Instant get{name}() {
-    	int value;
-    	if (isChanged({name2})) {
-			value = (int) getChangedValue({name2});
-		} else {
-			value = {name2}.getValue(getId());
-		}
-		return value == 0 ? null: Instant.ofEpochSecond(value);
+	    return getTimeValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_TIME_2}#
@@ -442,23 +380,13 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_DATE_TIME}#
 	@Override
 	public Instant get{name}() {
-    	long value;
-    	if (isChanged({name2})) {
-			value = (long) getChangedValue({name2});
-		} else {
-			value = {name2}.getValue(getId());
-		}
-		return value == 0 ? null : Instant.ofEpochMilli(value);
+	    return getDateTimeValue(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_DATE_TIME_2}#
 	@Override
 	public long get{name}AsEpochMilli() {
-    	if (isChanged({name2})) {
-			return (long) getChangedValue({name2});
-		} else {
-			return {name2}.getValue(getId());
-		}
+	    return getDateTimeAsEpochMilli(this.{name2});
 	}
 #
 {ENTITY_GET_METHOD_LOCAL_DATE}#
@@ -500,56 +428,56 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_BOOLEAN}#
 	@Override
 	public {type} set{name}(boolean value) {
-		setChangeValue(this.{name2}, value, table);
+	    setBooleanValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_SHORT}#
 	@Override
 	public {type} set{name}(short value) {
-		setChangeValue(this.{name2}, value, table);
+	    setShortValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_INT}#
 	@Override
 	public {type} set{name}(int value) {
-		setChangeValue(this.{name2}, value, table);
+	    setIntValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_LONG}#
 	@Override
 	public {type} set{name}(long value) {
-		setChangeValue(this.{name2}, value, table);
+	    setLongValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_FLOAT}#
 	@Override
 	public {type} set{name}(float value) {
-		setChangeValue(this.{name2}, value, table);
+	    setFloatValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DOUBLE}#
 	@Override
 	public {type} set{name}(double value) {
-		setChangeValue(this.{name2}, value, table);
+	    setDoubleValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TEXT}#
 	@Override
 	public {type} set{name}(String value) {
-		setChangeValue(this.{name2}, value, table);
+	    setTextValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TRANSLATABLE_TEXT}#
 	@Override
 	public {type} set{name}(TranslatableText value) {
-		setChangeValue(this.{name2}, value, table);
+    	setTranslatableTextValue(value, this.{name2});
 		return this;
 	}
 #
@@ -635,46 +563,42 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_TIMESTAMP}#
 	@Override
 	public {type} set{name}(Instant value) {
-		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
-		setChangeValue(this.{name2}, intValue, table);
+	    setTimestampValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TIMESTAMP_2}#
 	@Override
 	public {type} set{name}AsEpochSecond(int value) {
-		setChangeValue(this.{name2}, value, table);
+	    setTimestampAsEpochSecond(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TIMESTAMP_3}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
-		int intValue = (int) (value / 1000);
-		setChangeValue(this.{name2}, intValue, table);
+	    setTimestampAsEpochMilli(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DATE}#
 	@Override
 	public {type} set{name}(Instant value) {
-		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
-		setChangeValue(this.{name2}, longValue, table);
+	    setDateValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DATE_2}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
-		setChangeValue(this.{name2}, value, table);
+	    setDateAsEpochMilli(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_TIME}#
 	@Override
 	public {type} set{name}(Instant value) {
-		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
-		setChangeValue(this.{name2}, intValue, table);
+	    setTimeValue(value, this.{name2});
 		return this;
 	}
 #
@@ -688,15 +612,14 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_DATE_TIME}#
 	@Override
 	public {type} set{name}(Instant value) {
-		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
-		setChangeValue(this.{name2}, longValue, table);
+	    setDateTimeValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_DATE_TIME_2}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
-		setChangeValue(this.{name2}, value, table);
+	    setDateTimeAsEpochMilli(value, this.{name2});
 		return this;
 	}
 #

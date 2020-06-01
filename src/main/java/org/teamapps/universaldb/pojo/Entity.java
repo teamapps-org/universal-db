@@ -51,8 +51,6 @@ public interface Entity<ENTITY> {
 
 	void delete();
 
-	boolean isCommitted();
-
-	boolean isStored();
+	boolean exists();
 
 }

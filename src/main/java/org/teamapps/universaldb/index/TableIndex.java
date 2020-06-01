@@ -127,6 +127,12 @@ public class TableIndex implements MappedObject {
 		records.setValue(0, false);
 	}
 
+	public void forceFullTextIndexRecreation() {
+		log.warn("FORCED RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
+		recreateFullTextIndex();
+
+	}
+
 	private void recreateFullTextIndex() {
 		try {
 			collectionTextSearchIndex.deleteAllDocuments();
@@ -480,5 +486,9 @@ public class TableIndex implements MappedObject {
 
 	public String getName() {
 		return name;
+	}
+
+	public DatabaseIndex getDatabaseIndex() {
+		return databaseIndex;
 	}
 }
