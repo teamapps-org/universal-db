@@ -519,8 +519,24 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return value == 0 ? null : LocalDate.ofInstant(Instant.ofEpochMilli(value), ZoneOffset.UTC);
 	}
 
+	public void setLocalDateValue(LocalDate value, LongIndex index) {
+		long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
+		setChangeValue(index, longValue, tableIndex);
+	}
 
+	public void setLocalDateAsEpochMilli(long value, LongIndex index) {
+		setChangeValue(index, value, tableIndex);
+	}
 
+	public <ENUM extends Enum<ENUM>> ENUM getEnumValue(ShortIndex index, ENUM[] values) {
+		short shortValue;
+		if (isChanged(index)) {
+			shortValue = (short) getChangedValue(index);
+		} else {
+			shortValue = index.getValue(getId());
+		}
+		return shortValue == 0 ? null : values[shortValue - 1];
+	}
 
 
 	public boolean isChanged(ColumnIndex index) {

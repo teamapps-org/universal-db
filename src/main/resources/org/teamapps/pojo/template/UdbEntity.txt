@@ -55,6 +55,11 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type}, Enti
     }
 
     @Override
+    public {type} create() {
+        return new {udbType}();
+    }
+
+    @Override
     public {type} build(int id) {
         return new {udbType}(id, false);
     }

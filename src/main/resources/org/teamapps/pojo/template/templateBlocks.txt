@@ -198,37 +198,37 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_SHORT}#
 	@Override
 	public short get{name}() {
-	    return getShortValue(this.{name2});
+	    return getShortValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_INT}#
 	@Override
 	public int get{name}() {
-        return getIntValue(this.{name2});
+        return getIntValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_LONG}#
 	@Override
 	public long get{name}() {
-	    return getLongValue(this.{name2});
+	    return getLongValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_FLOAT}#
 	@Override
 	public float get{name}() {
-	    return getFloatValue(this.{name2});
+	    return getFloatValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_DOUBLE}#
 	@Override
 	public double get{name}() {
-	    return getDoubleValue(this.{name2});
+	    return getDoubleValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_TEXT}#
 	@Override
 	public String get{name}() {
-        return getTextValue(this.{name2});
+        return getTextValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_TRANSLATABLE_TEXT}#
@@ -334,37 +334,37 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_TIMESTAMP}#
 	@Override
 	public Instant get{name}() {
-	    return getTimestampValue(this.{name2});
+	    return getTimestampValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_TIMESTAMP_2}#
 	@Override
 	public int get{name}AsEpochSecond() {
-	    return getTimestampAsEpochSecond(this.{name2});
+	    return getTimestampAsEpochSecond({name2});
 	}
 #
 {ENTITY_GET_METHOD_TIMESTAMP_3}#
 	@Override
 	public long get{name}AsEpochMilli() {
-	    return getTimestampAsEpochMilli(this.{name2});
+	    return getTimestampAsEpochMilli({name2});
 	}
 #
 {ENTITY_GET_METHOD_DATE}#
 	@Override
 	public Instant get{name}() {
-	    return getDateValue(this.{name2});
+	    return getDateValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_DATE_2}#
 	@Override
 	public long get{name}AsEpochMilli() {
-	    return getDateAsEpochMilli(this.{name2});
+	    return getDateAsEpochMilli({name2});
 	}
 #
 {ENTITY_GET_METHOD_TIME}#
 	@Override
 	public Instant get{name}() {
-	    return getTimeValue(this.{name2});
+	    return getTimeValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_TIME_2}#
@@ -380,25 +380,19 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_DATE_TIME}#
 	@Override
 	public Instant get{name}() {
-	    return getDateTimeValue(this.{name2});
+	    return getDateTimeValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_DATE_TIME_2}#
 	@Override
 	public long get{name}AsEpochMilli() {
-	    return getDateTimeAsEpochMilli(this.{name2});
+	    return getDateTimeAsEpochMilli({name2});
 	}
 #
 {ENTITY_GET_METHOD_LOCAL_DATE}#
 	@Override
 	public LocalDate get{name}() {
-    	long value;
-    	if (isChanged({name2})) {
-			value = (long) getChangedValue({name2});
-		} else {
-			value = {name2}.getValue(getId());
-		}
-		return value == 0 ? null : LocalDate.ofInstant(Instant.ofEpochMilli(value), ZoneOffset.UTC);
+	    return getLocalDateValue({name2});
 	}
 #
 {ENTITY_GET_METHOD_LOCAL_DATE_2}#
@@ -414,13 +408,7 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_ENUM}#
 	@Override
 	public {name} get{name}() {
-    	short shortValue;
-		if (isChanged({name2})) {
-			shortValue = (short) getChangedValue({name2});
-		} else {
-			shortValue = {name2}.getValue(getId());
-		}
-		return shortValue == 0 ? null : {name}.values()[shortValue - 1];
+	    return getEnumValue({name2}, {name}.values());
 	}
 #
 
@@ -626,14 +614,14 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_LOCAL_DATE}#
 	@Override
 	public {type} set{name}(LocalDate value) {
-		long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
-		setChangeValue(this.{name2}, longValue, table);
+	    setLocalDateValue(value, this.{name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_LOCAL_DATE_2}#
 	@Override
 	public {type} set{name}AsEpochMilli(long value) {
+	    setLocalDateAsEpochMilli(value, this.{name2});
 		setChangeValue(this.{name2}, value, table);
 		return this;
 	}
