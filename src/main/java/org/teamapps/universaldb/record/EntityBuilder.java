@@ -21,7 +21,7 @@ package org.teamapps.universaldb.record;
 
 public interface EntityBuilder<ENTITY> {
 
-	ENTITY create();
+	ENTITY build();
 
 	ENTITY build(int id);
 }
