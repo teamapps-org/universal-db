@@ -97,7 +97,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 		Schema schema = Schema.parse(schemaInfo.getSchema());
 		String pojoPath = schema.getPojoNamespace();
-		this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
+		this.schemaIndex = new SchemaIndex(schema, storagePath);
 
 
 		schemaIndex.setFileStore(fileStore);
@@ -288,5 +288,9 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 	public SchemaStats getClusterSchemaStats() {
 		return schemaStats;
+	}
+
+	public SchemaIndex getSchemaIndex() {
+		return schemaIndex;
 	}
 }
