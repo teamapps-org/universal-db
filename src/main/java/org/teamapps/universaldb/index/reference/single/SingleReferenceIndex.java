@@ -72,6 +72,15 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 	}
 
 	@Override
+	public ColumnIndex getReferencedColumn() {
+		if (reverseSingleIndex != null) {
+			return reverseSingleIndex;
+		} else {
+			return reverseMultiIndex;
+		}
+	}
+
+	@Override
 	public RecordReference getGenericValue(int id) {
 		int value = getValue(id);
 		if (value == 0) {

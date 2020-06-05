@@ -74,6 +74,15 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	}
 
 	@Override
+	public ColumnIndex getReferencedColumn() {
+		if (reverseSingleIndex != null) {
+			return reverseSingleIndex;
+		} else {
+			return reverseMultiIndex;
+		}
+	}
+
+	@Override
 	public MultiReferenceValue getGenericValue(int id) {
 		OfInt references = getReferences(id);
 		if (references == null) {
