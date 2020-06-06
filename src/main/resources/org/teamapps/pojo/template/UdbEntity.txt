@@ -22,7 +22,7 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 {imports}
 
-public class {udbType} extends AbstractUdbEntity<{type}> implements {type}, EntityBuilder<{type}> {
+public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 {staticFields}
 
     private static void setTableIndex(TableIndex tableIndex) {

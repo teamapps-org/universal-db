@@ -45,7 +45,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity<ENTITY> {
+public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity<ENTITY>, EntityBuilder<ENTITY> {
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractUdbEntity.class);
 	private static final AtomicInteger correlationIdGenerator = new AtomicInteger();
