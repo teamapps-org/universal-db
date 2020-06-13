@@ -109,6 +109,9 @@ public class Schema implements SchemaInfoProvider {
 					unresolvedReferenceTableMap.put(column, tokens.get(3));
 					String backReference = tokens.get(5);
 					column.setBackReference(backReference.equals("NONE") ? null : backReference);
+					if (line.contains("CASCADE DELETE REFERENCES")) {
+						column.setCascadeDeleteReferences(true);
+					}
 				} else if (columnType == ColumnType.ENUM) {
 					line = line.trim();
 					String[] values = line.substring(line.indexOf("VALUES (") + 8).replace(")", "").split(", ");

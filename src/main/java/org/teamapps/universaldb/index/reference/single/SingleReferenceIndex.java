@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.reference.single;
 
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
+import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
 import org.teamapps.universaldb.transaction.DataType;
@@ -32,11 +33,12 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, NumericFilter> {
+public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, NumericFilter> implements ReferenceIndex {
 	public static final int ENTRY_SIZE = 4;
 
 	private TableIndex referencedTable;
 	private boolean cyclicReferences;
+	private boolean cascadeDeleteReferences;
 	private SingleReferenceIndex reverseSingleIndex;
 	private MultiReferenceIndex reverseMultiIndex;
 
@@ -45,7 +47,7 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
 	}
 
-	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex) {
+	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {
 		this.referencedTable = referencedTable;
 		if (reverseIndex != null) {
 			if (reverseIndex instanceof SingleReferenceIndex) {
@@ -55,6 +57,7 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 			}
 			cyclicReferences = true;
 		}
+		this.cascadeDeleteReferences = cascadeDeleteReferences;
 	}
 
 	@Override
@@ -69,6 +72,11 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 
 	public TableIndex getReferencedTable() {
 		return referencedTable;
+	}
+
+	@Override
+	public boolean isCascadeDeleteReferences() {
+		return cascadeDeleteReferences;
 	}
 
 	@Override

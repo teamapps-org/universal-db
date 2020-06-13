@@ -25,8 +25,7 @@ import org.teamapps.datamodel.testdb1.Company;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.datamodel.testdb1.Person;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class DeleteTest {
 
@@ -39,9 +38,11 @@ public class DeleteTest {
     public void testDeleteRecord() {
         Person.getAll().forEach(p -> p.delete());
         Person p1 = Person.create().setLastName("p1").save();
+        assertTrue(p1.exists());
         assertEquals(1, Person.getCount());
         p1.delete();
         assertEquals(0, Person.getCount());
+        assertFalse(p1.exists());
     }
 
     @Test
@@ -69,6 +70,19 @@ public class DeleteTest {
         assertTrue("employess of c1", TestBase.compareEntities(c1.getEmployees()));
 
     }
+
+    @Test
+    public void testRemoveReferencesOnEntityDeletion() {
+        Person p = Person.create().setLastName("p");
+        Company c = Company.create().setName("c").addEmployees(p).save();
+        assertEquals(p, c.getEmployees().get(0));
+        assertEquals(1, c.getEmployeesCount());
+        p.delete();
+        assertEquals(0, c.getEmployeesCount());
+
+    }
+
+
 
 
 }

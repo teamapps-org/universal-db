@@ -38,6 +38,7 @@ public class Column implements MappedObject {
 	private Table referencedTable;
 	private String backReference;
 	private List<String> enumValues;
+	private boolean cascadeDeleteReferences;
 
 
 	public Column(Table table, String name, ColumnType type) {
@@ -96,6 +97,14 @@ public class Column implements MappedObject {
 		this.enumValues = enumValues;
 	}
 
+	public boolean isCascadeDeleteReferences() {
+		return cascadeDeleteReferences;
+	}
+
+	public void setCascadeDeleteReferences(boolean cascadeDeleteReferences) {
+		this.cascadeDeleteReferences = cascadeDeleteReferences;
+	}
+
 	public IndexType getIndexType() {
 		return indexType;
 	}
@@ -113,6 +122,9 @@ public class Column implements MappedObject {
 					sb.append("NONE");
 				} else {
 					sb.append(backReference);
+				}
+				if (cascadeDeleteReferences) {
+					sb.append(" CASCADE DELETE REFERENCES");
 				}
 				break;
 			case ENUM:

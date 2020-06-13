@@ -15,7 +15,7 @@ Current UniversalDB version: [![Maven Central](https://maven-badges.herokuapp.co
 <dependency>
   <groupId>org.teamapps</groupId>
   <artifactId>universal-db</artifactId>
-  <version>0.4.4</version>
+  <version>0.4.8</version>
 </dependency>
 ```
 

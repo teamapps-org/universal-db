@@ -102,10 +102,10 @@ public class SchemaIndex {
 						}
 						if (columnIndex instanceof SingleReferenceIndex) {
 							SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) columnIndex;
-							singleReferenceIndex.setReferencedTable(referencedTable, backReference);
+							singleReferenceIndex.setReferencedTable(referencedTable, backReference, column.isCascadeDeleteReferences());
 						} else {
 							MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) columnIndex;
-							multiReferenceIndex.setReferencedTable(referencedTable, backReference);
+							multiReferenceIndex.setReferencedTable(referencedTable, backReference, column.isCascadeDeleteReferences());
 						}
 					}
 				}

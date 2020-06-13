@@ -160,13 +160,22 @@ public class Table implements MappedObject {
 	}
 
 	public Table addReference(String name, Table referencedTable, boolean multiReference) {
-		return addReference(name, referencedTable, multiReference, null);
+		return addReference(name, referencedTable, multiReference, null, false);
+	}
+
+	public Table addReference(String name, Table referencedTable, boolean multiReference, boolean cascadeDeleteReferences) {
+		return addReference(name, referencedTable, multiReference, null, cascadeDeleteReferences);
 	}
 
 	public Table addReference(String name, Table referencedTable, boolean multiReference, String backReference) {
+		return addReference(name, referencedTable, multiReference, backReference, false);
+	}
+
+	public Table addReference(String name, Table referencedTable, boolean multiReference, String backReference, boolean cascadeDeleteReferences) {
 		Column column = addColumn(name, multiReference ? ColumnType.MULTI_REFERENCE : ColumnType.SINGLE_REFERENCE);
 		column.setReferencedTable(referencedTable);
 		column.setBackReference(backReference);
+		column.setCascadeDeleteReferences(cascadeDeleteReferences);
 		return this;
 	}
 

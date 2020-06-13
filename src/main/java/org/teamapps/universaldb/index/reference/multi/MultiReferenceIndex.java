@@ -22,6 +22,7 @@ package org.teamapps.universaldb.index.reference.multi;
 import org.agrona.collections.IntHashSet;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
@@ -36,13 +37,14 @@ import java.util.PrimitiveIterator.OfInt;
 
 import static org.teamapps.universaldb.index.IndexType.MULTI_REFERENCE;
 
-public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, MultiReferenceFilter> {
+public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, MultiReferenceFilter> implements ReferenceIndex {
 
 	private final LongIndex entryIndex;
 	private final ReferenceBlockChain referenceBlockChain;
 
 	private TableIndex referencedTable;
 	private boolean cyclicReferences;
+	private boolean cascadeDeleteReferences;
 	private SingleReferenceIndex reverseSingleIndex;
 	private MultiReferenceIndex reverseMultiIndex;
 
@@ -52,7 +54,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		this.referenceBlockChain = referenceBlockChain;
 	}
 
-	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex) {
+	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {
 		this.referencedTable = referencedTable;
 		if (reverseIndex != null) {
 			if (reverseIndex instanceof SingleReferenceIndex) {
@@ -62,6 +64,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 			}
 			cyclicReferences = true;
 		}
+		this.cascadeDeleteReferences = cascadeDeleteReferences;
 	}
 
 	@Override
@@ -71,6 +74,11 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	public TableIndex getReferencedTable() {
 		return referencedTable;
+	}
+
+	@Override
+	public boolean isCascadeDeleteReferences() {
+		return cascadeDeleteReferences;
 	}
 
 	@Override

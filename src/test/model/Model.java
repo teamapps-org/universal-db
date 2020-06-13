@@ -68,6 +68,18 @@ public class Model implements SchemaInfoProvider {
 				.addText("title")
 				.addReference("companies", company, true, "companyContracts");
 
+
+		Table cascadeTest1 = database.addTable("cascadeTest1", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
+		Table cascadeTest2 = database.addTable("cascadeTest2", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
+
+
+		cascadeTest1.addText("name");
+		cascadeTest1.addReference("ref2s", cascadeTest2, true, "ref1", true);
+
+		cascadeTest2.addText("name");
+		cascadeTest2.addReference("ref1", cascadeTest1, false, "ref2s", false);
+
+
 		return schema.getSchema();
 	}
 }
