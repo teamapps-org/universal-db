@@ -80,18 +80,25 @@ public class EntityChangeSet {
 					Entity entity = entityByReference.get(recordReference);
 					if (entity.getId() == 0) {
 						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+					} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
+						recordReference.setRecordId(entity.getId());
 					}
 				}
 				for (RecordReference recordReference : editValue.getSetReferences()) {
 					Entity entity = entityByReference.get(recordReference);
 					if (entity.getId() == 0) {
 						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+					} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
+						recordReference.setRecordId(entity.getId());
 					}
 				}
 			} else if (column.getType() == IndexType.REFERENCE) {
-				AbstractUdbEntity udbEntity = getReferenceChange(column);
-				if (udbEntity.getId() == 0) {
-					uncommittedEntityReferences.add(udbEntity);
+				RecordReference recordReference = (RecordReference) recordValue.getValue();
+				AbstractUdbEntity entity = getReferenceChange(column);
+				if (entity.getId() == 0) {
+					uncommittedEntityReferences.add(entity);
+				} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
+					recordReference.setRecordId(entity.getId());
 				}
 			}
 		}
