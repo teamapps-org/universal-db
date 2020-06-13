@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
+import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.*;
 import org.teamapps.universaldb.index.translation.TranslatableText;
@@ -337,6 +338,55 @@ public class TableIndex implements MappedObject {
 		records.setValue(id, false);
 		if (keepDeletedRecords) {
 			deletedRecords.setValue(id, true);
+			for (ColumnIndex columnIndex : columnIndices) {
+				if (columnIndex.getColumnType().isReference()) {
+					if (columnIndex.getColumnType() == ColumnType.MULTI_REFERENCE) {
+						MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) columnIndex;
+						ColumnIndex referencedColumn = multiReferenceIndex.getReferencedColumn();
+						if (referencedColumn != null) {
+							List<Integer> references = multiReferenceIndex.getReferencesAsList(id);
+							if (references.isEmpty()) {
+								continue;
+							}
+							if (referencedColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
+								MultiReferenceIndex referencedMultiIndex = (MultiReferenceIndex) referencedColumn;
+								List<Integer> thisRecord = Collections.singletonList(id);
+								for (Integer reference : references) {
+									referencedMultiIndex.removeReferences(reference, thisRecord, false);
+
+								}
+							} else {
+								SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;
+								for (Integer reference : references) {
+									int backReferenceId = referencedSingleIndex.getValue(reference);
+									if (backReferenceId == id) {
+										referencedSingleIndex.setValue(reference, 0);
+									}
+								}
+							}
+						}
+					} else {
+						SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) columnIndex;
+						ColumnIndex referencedColumn = singleReferenceIndex.getReferencedColumn();
+						if (referencedColumn != null) {
+							int reference = singleReferenceIndex.getValue(id);
+							if (reference <= 0) {
+								continue;
+							}
+							if (referencedColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
+								MultiReferenceIndex referencedMultiIndex = (MultiReferenceIndex) referencedColumn;
+								referencedMultiIndex.removeReferences(reference, Collections.singletonList(id), false);
+							} else {
+								SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;
+								int backReference = referencedSingleIndex.getValue(reference);
+								if (backReference == id) {
+									referencedSingleIndex.setValue(reference, 0);
+								}
+							}
+						}
+					}
+				}
+			}
 			return true;
 		} else {
 			for (ColumnIndex columnIndex : columnIndices) {
