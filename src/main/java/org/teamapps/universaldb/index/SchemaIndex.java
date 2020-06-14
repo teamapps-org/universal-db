@@ -114,6 +114,20 @@ public class SchemaIndex {
 		this.schema.merge(schema);
 	}
 
+	public Column getColumn(ColumnIndex index) {
+		String fqn = index.getFQN();
+		for (Database database : schema.getDatabases()) {
+			for (Table table : database.getTables()) {
+				for (Column column : table.getColumns()) {
+					if ((database.getName() + "." + table.getName() + "." + column.getName()).equals(fqn)) {
+						return column;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
 	private TableIndex getTable(Table table) {
 		Database database = table.getDatabase();
 		DatabaseIndex databaseIndex = getDatabase(database.getName());
