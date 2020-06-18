@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,24 +19,17 @@
  */
 package org.teamapps.universaldb.index.file;
 
-import com.google.common.base.Optional;
-import com.optimaize.langdetect.LanguageDetector;
-import com.optimaize.langdetect.LanguageDetectorBuilder;
-import com.optimaize.langdetect.i18n.LdLocale;
-import com.optimaize.langdetect.ngram.NgramExtractors;
-import com.optimaize.langdetect.profiles.LanguageProfile;
-import com.optimaize.langdetect.profiles.LanguageProfileReader;
-import com.optimaize.langdetect.text.CommonTextObjectFactories;
-import com.optimaize.langdetect.text.TextObject;
-import com.optimaize.langdetect.text.TextObjectFactory;
+
+import com.github.pemistahl.lingua.api.Language;
+import com.github.pemistahl.lingua.api.LanguageDetector;
+import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import org.apache.commons.io.IOUtils;
-import org.apache.tika.exception.TikaException;
+import org.apache.tika.language.LanguageProfile;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
-import org.apache.tika.sax.WriteOutContentHandler;
 import org.xml.sax.SAXException;
 
 import javax.crypto.Cipher;
@@ -124,7 +117,7 @@ public class FileUtil {
 			try {
 				parser.parse(bis, handler, meta, new ParseContext());
 			} catch (SAXException e) {
-				if (!e.getClass().toString().contains("WriteLimitReachedException")){
+				if (!e.getClass().toString().contains("WriteLimitReachedException")) {
 					throw e;
 				}
 			}
@@ -153,26 +146,17 @@ public class FileUtil {
 	}
 
 	public static String getFileContentLanguage(String content) {
-		if (languageDetector == null) {
-			try {
-				List<LanguageProfile> languageProfiles = new LanguageProfileReader().readAllBuiltIn();
-				languageDetector = LanguageDetectorBuilder.create(NgramExtractors.standard())
-						.withProfiles(languageProfiles)
-						.build();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 		if (content == null) {
 			return null;
 		}
-		TextObjectFactory largeText = CommonTextObjectFactories.forDetectingOnLargeText();
-		TextObject textObject = largeText.forText(content);
-		Optional<LdLocale> detect = languageDetector.detect(textObject);
-		if (detect.isPresent()) {
-			return detect.get().getLanguage();
-		} else {
+		if (languageDetector == null) {
+			languageDetector = LanguageDetectorBuilder.fromAllBuiltInLanguages().build();
+		}
+		Language language = languageDetector.detectLanguageOf(content);
+		if (language == null) {
 			return null;
+		} else {
+			return language.getIsoCode639_1().name().toLowerCase();
 		}
 	}
 
