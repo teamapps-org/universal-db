@@ -137,7 +137,7 @@ public class OrFilter implements Filter {
     public BitSet localFilter(BitSet localRecords) {
         BitSet result = null;
         for (Filter filter : filters) {
-            BitSet reduced = filter.filter(localRecords);
+            BitSet reduced = filter.localFilter(localRecords);
             if (result == null) {
                 result = reduced;
             } else {
