@@ -95,9 +95,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.optimaize.languagedetector</groupId>
-            <artifactId>language-detector</artifactId>
-            <version>0.6</version>
+            <groupId>com.github.pemistahl</groupId>
+            <artifactId>lingua</artifactId>
+            <version>0.6.1</version>
         </dependency>
 
 
