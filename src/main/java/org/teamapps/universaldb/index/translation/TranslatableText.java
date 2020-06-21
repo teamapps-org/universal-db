@@ -91,6 +91,11 @@ public class TranslatableText {
         return originalText;
     }
 
+    @Override
+    public String toString() {
+        return getText();
+    }
+
     public String getOriginalLanguage() {
         if (originalLanguage == null) {
             parseOriginalValue();
