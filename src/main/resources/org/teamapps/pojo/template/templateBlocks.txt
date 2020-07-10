@@ -298,37 +298,19 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_MULTI_REFERENCE}#
 	@Override
 	public List<{otherType}> get{name}() {
-		if (isChanged({name2})) {
-		    return createEntityList({name2}, {otherType}.getBuilder());
-		} else {
-			if (!{name2}.isEmpty(getId())) {
-				return new EntityArrayList<>({otherType}.getBuilder(), {name2}.getReferences(getId()), {name2}.getReferencesCount(getId()));
-			} else {
-				return Collections.emptyList();
-			}
-		}
+	    return getMultiReferenceValue({name2}, {otherType}.getBuilder());
 	}
 #
 {ENTITY_GET_METHOD_MULTI_REFERENCE_2}#
 	@Override
 	public int get{name}Count() {
-		if (isChanged({name2})) {
-            return get{name}().size();
-		} else {
-            return {name2}.getReferencesCount(getId());
-		}
+	    return getMultiReferenceValueCount({name2}, {otherType}.getBuilder());
 	}
 #
 {ENTITY_GET_METHOD_MULTI_REFERENCE_3}#
 	@Override
 	public BitSet get{name}AsBitSet() {
-		if (isChanged({name2})) {
-            BitSet bitSet = new BitSet();
-            get{name}().stream().map(e -> e.getId()).forEach(id -> bitSet.set(id));
-            return bitSet;
-		} else {
-            return {name2}.getReferencesAsBitSet(getId());
-		}
+	    return getMultiReferenceValueAsBitSet({name2}, {otherType}.getBuilder());
 	}
 #
 {ENTITY_GET_METHOD_TIMESTAMP}#
@@ -502,49 +484,49 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_MULTI_REFERENCE}#
 	@Override
 	public {type} set{name}(List<{otherType}> value) {
-		setMultiReferenceValue(value, {name2}, table);
+		setMultiReferenceValue(value, {name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_MULTI_REFERENCE_2}#
 	@Override
 	public {type} set{name}({otherType} ... value) {
-		setMultiReferenceValue(Arrays.asList(value), {name2}, table);
+		setMultiReferenceValue(Arrays.asList(value), {name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_MULTI_REFERENCE_3}#
 	@Override
 	public {type} add{name}(List<{otherType}> value) {
-		addMultiReferenceValue(value, {name2}, table);
+		addMultiReferenceValue(value, {name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_MULTI_REFERENCE_4}#
 	@Override
 	public {type} add{name}({otherType} ... value) {
-		addMultiReferenceValue(Arrays.asList(value), {name2}, table);
+		addMultiReferenceValue(Arrays.asList(value), {name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_MULTI_REFERENCE_5}#
 	@Override
 	public {type} remove{name}(List<{otherType}> value) {
-		removeMultiReferenceValue(value, {name2}, table);
+		removeMultiReferenceValue(value, {name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_MULTI_REFERENCE_6}#
 	@Override
 	public {type} remove{name}({otherType} ... value) {
-		removeMultiReferenceValue(Arrays.asList(value), {name2}, table);
+		removeMultiReferenceValue(Arrays.asList(value), {name2});
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_MULTI_REFERENCE_7}#
 	@Override
 	public {type} removeAll{name}() {
-		removeAllMultiReferenceValue({name2}, table);
+		removeAllMultiReferenceValue({name2});
 		return this;
 	}
 #
@@ -629,8 +611,7 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_ENUM}#
 	@Override
 	public {type} set{name}({name} value) {
-    	short shortValue = (short) (value != null ? value.ordinal() + 1 : 0);
-    	setChangeValue(this.{name2}, shortValue, table);
+    	setEnumValue(this.{name2}, value);
 		return this;
 	}
 #

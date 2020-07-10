@@ -248,37 +248,37 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected void addMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex, TableIndex tableIndex) {
+	protected void addMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex) {
 		if (entities == null || entities.isEmpty()) {
 			return;
 		}
-		MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex, tableIndex);
+		MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex);
 		List<RecordReference> references = createRecordReferences(entities);
 
 		editValue.addReferences(references);
 	}
 
-	protected void removeMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex, TableIndex tableIndex) {
+	protected void removeMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex) {
 		if (entities == null || entities.isEmpty()) {
 			return;
 		}
-		MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex, tableIndex);
+		MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex);
 		List<RecordReference> references = createRecordReferences(entities);
 		editValue.removeReferences(references);
 	}
 
-	protected void setMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex, TableIndex tableIndex) {
+	protected void setMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex) {
 		if (entities == null || entities.isEmpty()) {
-			removeAllMultiReferenceValue(multiReferenceIndex, tableIndex);
+			removeAllMultiReferenceValue(multiReferenceIndex);
 		} else {
-			MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex, tableIndex);
+			MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex);
 			List<RecordReference> references = createRecordReferences(entities);
 			editValue.setReferences(references);
 		}
 	}
 
-	protected void removeAllMultiReferenceValue(MultiReferenceIndex multiReferenceIndex, TableIndex tableIndex) {
-		MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex, tableIndex);
+	protected void removeAllMultiReferenceValue(MultiReferenceIndex multiReferenceIndex) {
+		MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex);
 		editValue.setRemoveAll();
 	}
 
@@ -293,7 +293,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return references;
 	}
 
-	private MultiReferenceEditValue getOrCreateMultiReferenceEditValue(MultiReferenceIndex multiReferenceIndex, TableIndex tableIndex) {
+	private MultiReferenceEditValue getOrCreateMultiReferenceEditValue(MultiReferenceIndex multiReferenceIndex) {
 		MultiReferenceEditValue editValue;
 		TransactionRecordValue changeValue = getChangeValue(multiReferenceIndex);
 		if (changeValue != null) {
@@ -539,6 +539,40 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return shortValue == 0 ? null : values[shortValue - 1];
 	}
 
+	public <ENUM extends Enum<ENUM>> void setEnumValue(ShortIndex index, ENUM value) {
+		short shortValue = (short) (value != null ? value.ordinal() + 1 : 0);
+		setChangeValue(index, shortValue, tableIndex);
+	}
+
+	public <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> getMultiReferenceValue(MultiReferenceIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
+		if (isChanged(index)) {
+			return createEntityList(index, entityBuilder);
+		} else {
+			if (!index.isEmpty(getId())) {
+				return new EntityArrayList<>(entityBuilder, index.getReferences(getId()), index.getReferencesCount(getId()));
+			} else {
+				return Collections.emptyList();
+			}
+		}
+	}
+
+	public <OTHER_ENTITY extends Entity> int getMultiReferenceValueCount(MultiReferenceIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
+		if (isChanged(index)) {
+			return createEntityList(index, entityBuilder).size();
+		} else {
+			return index.getReferencesCount(getId());
+		}
+	}
+
+	public <OTHER_ENTITY extends Entity> BitSet getMultiReferenceValueAsBitSet(MultiReferenceIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
+		if (isChanged(index)) {
+			BitSet bitSet = new BitSet();
+			createEntityList(index, entityBuilder).stream().map(Entity::getId).forEach(bitSet::set);
+			return bitSet;
+		} else {
+			return index.getReferencesAsBitSet(getId());
+		}
+	}
 
 	public boolean isChanged(ColumnIndex index) {
 		return entityChangeSet != null && entityChangeSet.isChanged(index);
