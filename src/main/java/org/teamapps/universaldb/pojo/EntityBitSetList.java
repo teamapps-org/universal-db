@@ -184,4 +184,9 @@ public class EntityBitSetList<ENTITY> implements List<ENTITY> {
 	public List<ENTITY> subList(int fromIndex, int toIndex) {
 		return stream().skip(fromIndex).limit(toIndex - fromIndex).collect(Collectors.toList());
 	}
+
+	@Override
+	public void sort(Comparator<? super ENTITY> c) {
+		throw new UnsupportedOperationException();
+	}
 }

@@ -58,6 +58,14 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private EntityChangeSet entityChangeSet;
 	private Transaction transaction;
 
+	public static <ENTITY> List<ENTITY> createEntityList(EntityBuilder<ENTITY> entityBuilder, PrimitiveIterator.OfInt recordIdIterator, int count){
+		List<ENTITY> list = new ArrayList<>(count);
+		while (recordIdIterator.hasNext()) {
+			list.add(entityBuilder.build(recordIdIterator.nextInt()));
+		}
+		return list;
+	}
+
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, String ... path) {
 		return sort(table, list, sortFieldName, ascending, null, path);
 	}
@@ -549,7 +557,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			return createEntityList(index, entityBuilder);
 		} else {
 			if (!index.isEmpty(getId())) {
-				return new EntityArrayList<>(entityBuilder, index.getReferences(getId()), index.getReferencesCount(getId()));
+				return createEntityList(entityBuilder, index.getReferences(getId()), index.getReferencesCount(getId()));
 			} else {
 				return Collections.emptyList();
 			}
