@@ -27,6 +27,7 @@ import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.LocalFileStore;
 import org.teamapps.universaldb.schema.Schema;
 import org.teamapps.universaldb.schema.SchemaInfoProvider;
+import org.teamapps.universaldb.schema.Table;
 import org.teamapps.universaldb.transaction.*;
 
 import java.io.File;
@@ -115,6 +116,14 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 				method.invoke(null, table);
 			}
 		}
+	}
+
+	public TableIndex addTable(Table table, String database) {
+		DatabaseIndex db = schemaIndex.getDatabase(database);
+		TableIndex tableIndex = new TableIndex(db, table.getName(), table.getTableConfig());
+		tableIndex.setMappingId(table.getMappingId());
+		tableIndex.merge(table);
+		return tableIndex;
 	}
 
 	private void mapSchema(Schema schema) throws IOException {
