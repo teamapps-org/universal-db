@@ -51,9 +51,9 @@ public class CascadeDeleteTest {
 		assertEquals(1, CascadeTest1.getCount());
 		assertEquals(3, CascadeTest2.getCount());
 
-		assertTrue(test1.exists());
+		assertTrue(test1.isStored());
 		test1.delete();
-		assertFalse(test1.exists());
+		assertFalse(test1.isStored());
 
 		assertEquals(0, CascadeTest1.getCount());
 		assertEquals(0, CascadeTest2.getCount());

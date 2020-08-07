@@ -51,7 +51,7 @@ public interface Entity<ENTITY> {
 
 	void delete();
 
-	boolean exists();
+	boolean isStored();
 
 	Object getEntityValue(String fieldName);
 

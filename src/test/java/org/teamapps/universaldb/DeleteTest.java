@@ -22,7 +22,6 @@ package org.teamapps.universaldb;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.teamapps.datamodel.testdb1.Company;
-import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.datamodel.testdb1.Person;
 
 import static org.junit.Assert.*;
@@ -38,11 +37,11 @@ public class DeleteTest {
     public void testDeleteRecord() {
         Person.getAll().forEach(p -> p.delete());
         Person p1 = Person.create().setLastName("p1").save();
-        assertTrue(p1.exists());
+        assertTrue(p1.isStored());
         assertEquals(1, Person.getCount());
         p1.delete();
         assertEquals(0, Person.getCount());
-        assertFalse(p1.exists());
+        assertFalse(p1.isStored());
     }
 
     @Test

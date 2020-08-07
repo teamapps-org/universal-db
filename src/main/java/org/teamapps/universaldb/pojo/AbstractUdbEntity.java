@@ -679,7 +679,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	@Override
-	public boolean exists() {
+	public boolean isStored() {
 		if (id > 0 && tableIndex.getRecords().get(id)) {
 			return true;
 		} else {
