@@ -92,11 +92,6 @@ public class RawEntity extends AbstractUdbEntity<RawEntity> {
     }
 
     @Override
-    public CompletableFuture<Boolean> saveAsynchronously() {
-        return null;
-    }
-
-    @Override
     public void delete(Transaction transaction) {
 
     }

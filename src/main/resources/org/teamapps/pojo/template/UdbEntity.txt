@@ -83,11 +83,6 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
         return this;
     }
 
-    //@Override
-    //public CompletableFuture<Boolean> saveAsynchronously() {
-        //return saveAsynchronously(table);
-    //}
-
     @Override
     public void delete(Transaction transaction) {
         delete(transaction, table);

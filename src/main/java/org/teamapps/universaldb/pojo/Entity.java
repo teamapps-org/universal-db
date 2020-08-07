@@ -45,8 +45,6 @@ public interface Entity<ENTITY> {
 
 	ENTITY save();
 
-	CompletableFuture<Boolean> saveAsynchronously();
-
 	void delete(Transaction transaction);
 
 	void delete();
