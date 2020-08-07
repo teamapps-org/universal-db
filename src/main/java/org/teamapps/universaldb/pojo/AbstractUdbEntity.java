@@ -154,6 +154,22 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return correlationId;
 	}
 
+	public Object getEntityValue(String fieldName) {
+		ColumnIndex index = tableIndex.getColumnIndex(fieldName);
+		if (index != null) {
+			return index.getGenericValue(getId());
+		} else {
+			return null;
+		}
+	}
+
+	public void setEntityValue(String fieldName, Object value) {
+		ColumnIndex index = tableIndex.getColumnIndex(fieldName);
+		if (index != null) {
+			setChangeValue(index, value, null);
+		}
+	}
+
 	protected void setChangeValue(ColumnIndex index, Object value, TableIndex tableIndex) {
 		checkChangeSet();
 		entityChangeSet.addChangeValue(index, value);

@@ -53,4 +53,8 @@ public interface Entity<ENTITY> {
 
 	boolean exists();
 
+	Object getEntityValue(String fieldName);
+
+	void setEntityValue(String fieldName, Object value);
+
 }
