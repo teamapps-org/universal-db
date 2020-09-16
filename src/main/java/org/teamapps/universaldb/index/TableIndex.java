@@ -376,7 +376,9 @@ public class TableIndex implements MappedObject {
 				}
 				columnIndex.removeValue(id);
 			}
-			collectionTextSearchIndex.delete(id, getFileFieldNames());
+			if (collectionTextSearchIndex != null) {
+				collectionTextSearchIndex.delete(id, getFileFieldNames());
+			}
 			return false;
 		}
 	}
