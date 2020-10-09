@@ -666,6 +666,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return tableIndex;
 	}
 
+	public String getQualifiedName() {
+		return tableIndex.getFQN();
+	}
+
 	public void delete(Transaction transaction, TableIndex tableIndex) {
 		TransactionRecord transactionRecord = new TransactionRecord(tableIndex, id, 0, transaction.getUserId(), true);
 		transaction.addTransactionRecord(transactionRecord);

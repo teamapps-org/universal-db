@@ -23,7 +23,7 @@ import org.teamapps.universaldb.transaction.Transaction;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface Entity<ENTITY> {
+public interface Entity<ENTITY> extends Identifiable{
 
 	int getId();
 
