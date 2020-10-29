@@ -82,6 +82,10 @@ public class TableConfig {
 		this.bitSet = new BitSet();
 	}
 
+	public void merge(TableConfig config) {
+		this.bitSet.or(config.bitSet);
+	}
+
 	public List<TableOption> getTableOptions() {
 		List<TableOption> tableOptions = new ArrayList<>();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {

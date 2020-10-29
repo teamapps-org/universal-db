@@ -264,6 +264,7 @@ public class Table implements MappedObject {
 	}
 
 	public void merge(Table table) {
+		tableConfig.merge(table.getTableConfig());
 		for (Column column : table.getColumns()) {
 			Column localColumn = getColumn(column.getName());
 			if (localColumn == null) {
