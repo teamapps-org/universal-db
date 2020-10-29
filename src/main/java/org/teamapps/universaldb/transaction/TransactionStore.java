@@ -105,6 +105,8 @@ public class TransactionStore implements TransactionIdHandler {
             currentTransactionFilePosition = 8;
         }
 
+        schema = loadSchema();
+
         log.info("Start UniversalDB with path:" + path.getParentFile().getPath());
         log.info("Start transaction-store, file-id:" + currentTransactionFileId + ", file-pos:" + currentTransactionFilePosition + ", transaction-count:" + transactionCount);
 
@@ -148,6 +150,7 @@ public class TransactionStore implements TransactionIdHandler {
         byte[] bytes = bos.toByteArray();
         buffer.putInt(SCHEMA_POS, bytes.length);
         buffer.putBytes(SCHEMA_POS + 4, bytes);
+        setSchema(schema);
     }
 
     public void setSchema(Schema schema) {

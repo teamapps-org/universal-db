@@ -128,13 +128,13 @@ public class SchemaIndex {
 		return null;
 	}
 
-	private TableIndex getTable(Table table) {
+	public TableIndex getTable(Table table) {
 		Database database = table.getDatabase();
 		DatabaseIndex databaseIndex = getDatabase(database.getName());
 		return databaseIndex.getTable(table.getName());
 	}
 
-	private ColumnIndex getColumn(Column column) {
+	public ColumnIndex getColumn(Column column) {
 		Table table = column.getTable();
 		TableIndex tableIndex = getTable(table);
 		return tableIndex.getColumnIndex(column.getName());
