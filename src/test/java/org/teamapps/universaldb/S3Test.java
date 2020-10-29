@@ -21,6 +21,7 @@ package org.teamapps.universaldb;
 
 import com.google.common.io.Files;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.teamapps.s3model.SchemaInfo;
 import org.teamapps.s3model.s3db.S3Table;
@@ -33,7 +34,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-
+@Ignore
 public class S3Test {
 
 	private final static String S3_URL = "https://play.min.io:9000";
