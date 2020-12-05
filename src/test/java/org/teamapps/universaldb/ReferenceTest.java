@@ -23,10 +23,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.teamapps.datamodel.testdb1.Company;
-import org.teamapps.datamodel.testdb1.Contract;
-import org.teamapps.datamodel.testdb1.FieldTest;
-import org.teamapps.datamodel.testdb1.Person;
+import org.teamapps.datamodel.testdb1.*;
 
 import java.util.List;
 
@@ -123,6 +120,38 @@ public class ReferenceTest {
 		Assert.assertEquals(xc1, company.getCompanyContracts().get(0));
 		Assert.assertEquals(p1, c2.getEmployees().get(0));
 		Assert.assertEquals(1, c2.getEmployeesCount());
+
+	}
+
+	@Test
+	public void testSingleReference() {
+		EntityA a1 = EntityA.create()
+				.setValue("A1")
+				.save();
+
+		EntityA a2 = EntityA.create()
+				.setValue("A2")
+				.save();
+
+		EntityB b1 = EntityB.create()
+				.setValue("B1")
+				.save();
+
+		EntityB b2 = EntityB.create()
+				.setValue("B2")
+				.save();
+
+		a1.setEntityB(b1).save();
+
+		Assert.assertEquals("B1", a1.getEntityB().getValue());
+		Assert.assertEquals("A1", b1.getEntityA().getValue());
+
+		a1.setEntityB(b2).save();
+
+		Assert.assertEquals("B2", a1.getEntityB().getValue());
+		Assert.assertEquals("A1", b2.getEntityA().getValue());
+		Assert.assertNull(b1.getEntityA());
+
 
 	}
 

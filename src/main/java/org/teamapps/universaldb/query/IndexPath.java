@@ -91,12 +91,14 @@ public class IndexPath implements Comparable<IndexPath>{
 		increasePath();
 		forwardMultiPath[forwardMultiPath.length - 1] = forwardIndex;
 		cyclicPath = false;
+		createPathId();
 	}
 
 	public void addPath(SingleReferenceIndex forwardIndex) {
 		increasePath();
 		forwardSinglePath[forwardSinglePath.length - 1] = forwardIndex;
 		cyclicPath = false;
+		createPathId();
 	}
 
 	public void addPath(MultiReferenceIndex forwardIndex, MultiReferenceIndex backwardIndex) {

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+
 import org.teamapps.universaldb.schema.*;
 
 public class Model implements SchemaInfoProvider {
@@ -44,7 +45,7 @@ public class Model implements SchemaInfoProvider {
 				.addBinary("binaryField")
 				.addReference("singleReferenceField", table, false, "backRefSingleReferenceField")
 				.addReference("backRefSingleReferenceField", table, false, "singleReferenceField")
-				.addReference("singleReferenceNoBackRefField", table, false )
+				.addReference("singleReferenceNoBackRefField", table, false)
 				.addReference("multiReferenceField", table, true, "backRefMultiReferenceField")
 				.addReference("backRefMultiReferenceField", table, true, "multiReferenceField")
 				.addReference("parent", table, false, "children")
@@ -78,6 +79,20 @@ public class Model implements SchemaInfoProvider {
 
 		cascadeTest2.addText("name");
 		cascadeTest2.addReference("ref1", cascadeTest1, false, "ref2s", false);
+
+
+		Table entityA = database.addTable("entityA");
+		Table entityB = database.addTable("entityB");
+
+		entityA
+				.addText("value")
+				.addReference("entityB", entityB, false, "entityA")
+		;
+
+		entityB
+				.addText("value")
+				.addReference("entityA", entityA, false, "entityB")
+		;
 
 
 		return schema.getSchema();
