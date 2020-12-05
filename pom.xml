@@ -20,7 +20,7 @@
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.4.16</version>
+    <version>0.4.17-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -70,7 +70,7 @@
         <url>https://github.com/teamapps-org/universal-db</url>
         <connection>scm:git:git@github.com:teamapps-org/universal-db.git</connection>
         <developerConnection>scm:git:git@github.com:teamapps-org/universal-db.git</developerConnection>
-        <tag>v0.4.16</tag>
+        <tag>HEAD</tag>
     </scm>
 
 
