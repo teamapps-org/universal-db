@@ -22,8 +22,8 @@ package org.teamapps.universaldb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teamapps.universaldb.distribute.*;
 import org.teamapps.universaldb.distribute.TransactionReader;
+import org.teamapps.universaldb.distribute.*;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.LocalFileStore;
@@ -57,11 +57,11 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 	private TransactionStore transactionStore;
 	private SchemaStats schemaStats;
-    private TransactionWriter transactionWriter;
-    private TransactionReader transactionReader;
-    private TransactionMaster transactionMaster;
+	private TransactionWriter transactionWriter;
+	private TransactionReader transactionReader;
+	private TransactionMaster transactionMaster;
 
-    public static int getUserId() {
+	public static int getUserId() {
 		return THREAD_LOCAL_USER_ID.get();
 	}
 
@@ -129,8 +129,8 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		}
 	}
 
-	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-    	Schema schema = Schema.parse(schemaInfo.getSchema());
+	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws IOException {
+		Schema schema = Schema.parse(schemaInfo.getSchema());
 		Schema localSchema = transactionStore.getSchema();
 		if (!localSchema.isCompatibleWith(schema)) {
 			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
@@ -149,7 +149,10 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 				}
 			}
 		}
+	}
 
+	public void installAuxiliaryModelClassed(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		Schema schema = Schema.parse(schemaInfo.getSchema());
 		String pojoPath = schema.getPojoNamespace();
 		for (Database database : schema.getDatabases()) {
 			String path = pojoPath + "." + database.getName().toLowerCase();
@@ -223,17 +226,17 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 			}
 		}
 
-        transactionWriter = new TransactionWriter(clusterConfig, schemaStats);
+		transactionWriter = new TransactionWriter(clusterConfig, schemaStats);
 
-        transactionReader = new TransactionReader(clusterConfig,
-                schemaStats,
-                this,
-                transactionWriter.getTransactionMap(),
+		transactionReader = new TransactionReader(clusterConfig,
+				schemaStats,
+				this,
+				transactionWriter.getTransactionMap(),
 				this);
 
-        transactionMaster = new TransactionMaster(clusterConfig,
-                schemaStats,
-                this,
+		transactionMaster = new TransactionMaster(clusterConfig,
+				schemaStats,
+				this,
 				this);
 
 	}
@@ -316,14 +319,14 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		return columnById.get(mappingId);
 	}
 
-    @Override
-    public long getAndCommitNextTransactionId() {
-        if (schemaStats != null) {
-            return schemaStats.getAndCommitNextTransactionId();
-        } else {
-            return transactionStore.getAndCommitNextTransactionId();
-        }
-    }
+	@Override
+	public long getAndCommitNextTransactionId() {
+		if (schemaStats != null) {
+			return schemaStats.getAndCommitNextTransactionId();
+		} else {
+			return transactionStore.getAndCommitNextTransactionId();
+		}
+	}
 
 	@Override
 	public long getLastCommittedTransactionId() {
