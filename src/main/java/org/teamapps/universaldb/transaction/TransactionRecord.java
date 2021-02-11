@@ -86,6 +86,9 @@ public class TransactionRecord {
 				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATION_DATE), (int) (System.currentTimeMillis() / 1000));
 				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATED_BY), userId);
 			}
+			if (config.trackModification()) {
+				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), (int) (System.currentTimeMillis() / 1000));
+			}
 		} else {
 			if (config.trackModification()) {
 				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), (int) (System.currentTimeMillis() / 1000));
