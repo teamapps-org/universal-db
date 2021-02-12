@@ -639,6 +639,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			entityChangeSet.setTransactionRecordValues(transaction, transactionRecord, strictChangeVerification);
 			transaction.addTransactionRecord(transactionRecord);
 			clearChanges();
+			createEntity = false;
 		}
 	}
 

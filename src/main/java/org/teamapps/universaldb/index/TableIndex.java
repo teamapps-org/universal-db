@@ -326,7 +326,10 @@ public class TableIndex implements MappedObject {
 			}
 			for (TranslatableTextIndex translatableTextIndex : getTranslatedTextFields()) {
 				if (!textFieldNames.contains(translatableTextIndex.getName())) {
-					recordFullTextIndexValues.add(new FullTextIndexValue(translatableTextIndex.getName(), translatableTextIndex.getValue(id)));
+					TranslatableText translatableTextValue = translatableTextIndex.getValue(id);
+					if (translatableTextValue != null) {
+						recordFullTextIndexValues.add(new FullTextIndexValue(translatableTextIndex.getName(), translatableTextValue));
+					}
 				}
 			}
 			collectionTextSearchIndex.setRecordValues(id, recordFullTextIndexValues, true);
