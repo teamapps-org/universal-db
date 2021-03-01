@@ -84,12 +84,16 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	}
 
 	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider) throws Exception {
-		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
-		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
+		return createStandalone(storagePath, schemaInfoProvider, true);
 	}
 
-	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, FileStore fileStore) throws Exception {
-		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
+	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, boolean writeTransactionLog) throws Exception {
+		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, writeTransactionLog);
+	}
+
+	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, FileStore fileStore, boolean writeTransactionLog) throws Exception {
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, writeTransactionLog);
 	}
 
 	public static UniversalDB createClusterNode(File storagePath, SchemaInfoProvider schemaInfoProvider, ClusterSetConfig clusterConfig) throws Exception {
@@ -98,9 +102,9 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	}
 
 
-	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore) throws Exception {
+	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, boolean writeTransactionLog) throws Exception {
 		this.storagePath = storagePath;
-		this.transactionStore = new TransactionStore(storagePath);
+		this.transactionStore = new TransactionStore(storagePath, writeTransactionLog);
 		Transaction.setDataBase(this);
 
 		Schema schema = Schema.parse(schemaInfo.getSchema());

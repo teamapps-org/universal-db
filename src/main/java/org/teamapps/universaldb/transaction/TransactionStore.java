@@ -51,7 +51,8 @@ public class TransactionStore implements TransactionIdHandler {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionStore.class);
 
-    private File path;
+    private final File path;
+    private final boolean writeTransactionLog;
     private AtomicBuffer buffer;
     private static int storeSize =  200_000;
 
@@ -71,8 +72,9 @@ public class TransactionStore implements TransactionIdHandler {
     private Schema schema;
 
 
-    public TransactionStore(File path) throws IOException {
+    public TransactionStore(File path, boolean writeTransactionLog) throws IOException {
     	this.path = new File(path, "transaction-log");
+    	this.writeTransactionLog = writeTransactionLog;
         File file = new File(this.path, "database.stat");
         buffer = MappedStoreUtil.createAtomicBuffer(file, storeSize);
         init();
@@ -172,6 +174,9 @@ public class TransactionStore implements TransactionIdHandler {
     }
 
     private void writeTransaction(TransactionRequest transactionRequest) throws IOException {
+        if (!writeTransactionLog) {
+            return;
+        }
         if (!transactionRequest.isExecuted()) {
             throw new RuntimeException("Cannot store transaction that has not been executed!");
         }

@@ -81,17 +81,19 @@ public class TransactionRecord {
 
 	public void setModificationData(TableIndex tableIndex, boolean update, int userId) {
 		TableConfig config = tableIndex.getTableConfig();
+		int changeDate = (int) (System.currentTimeMillis() / 1000);
 		if (!update) {
 			if (config.trackCreation()) {
-				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATION_DATE), (int) (System.currentTimeMillis() / 1000));
+				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATION_DATE), changeDate);
 				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATED_BY), userId);
 			}
 			if (config.trackModification()) {
-				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), (int) (System.currentTimeMillis() / 1000));
+				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), changeDate);
+				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFIED_BY), userId);
 			}
 		} else {
 			if (config.trackModification()) {
-				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), (int) (System.currentTimeMillis() / 1000));
+				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), changeDate);
 				addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFIED_BY), userId);
 			}
 		}

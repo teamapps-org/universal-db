@@ -48,7 +48,7 @@ public class TestBase {
 
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDir();
-		UniversalDB universalDB = UniversalDB.createStandalone(tempDir, new SchemaInfo());
+		UniversalDB universalDB = UniversalDB.createStandalone(tempDir, new SchemaInfo(), true);
 	}
 
 	public static File createResourceFile() throws IOException {
