@@ -21,7 +21,7 @@ package org.teamapps.universaldb;
 
 import com.google.common.io.Files;
 import org.apache.commons.io.IOUtils;
-import org.teamapps.datamodel.SchemaInfo;
+import org.teamapps.datamodel.TestBaseSchema;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.pojo.Entity;
 
@@ -48,7 +48,7 @@ public class TestBase {
 
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDir();
-		UniversalDB universalDB = UniversalDB.createStandalone(tempDir, new SchemaInfo(), true);
+		UniversalDB universalDB = UniversalDB.createStandalone(tempDir, new TestBaseSchema(), true);
 	}
 
 	public static File createResourceFile() throws IOException {

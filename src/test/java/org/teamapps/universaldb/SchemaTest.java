@@ -62,9 +62,9 @@ public class SchemaTest {
 				.addReference("children", table, true, "parent");
 
 
-		String schemaDef = schema.getSchema();
+		String schemaDef = schema.getSchemaDefinition();
 		Schema schema2 = Schema.parse(schemaDef);
-		String schemaDef2 = schema2.getSchema();
+		String schemaDef2 = schema2.getSchemaDefinition();
 		assertEquals(schemaDef, schemaDef2);
 		assertTrue(schema.isSameSchema(schema));
 		assertTrue(schema.isCompatibleWith(schema2));
@@ -77,7 +77,7 @@ public class SchemaTest {
 		Database db = schema.addDatabase("db");
 		Table table = db.addTable("table");
 		table.addText("text");
-		String schemaDef = schema.getSchema();
+		String schemaDef = schema.getSchemaDefinition();
 		Schema parsedSchema = Schema.parse(schemaDef);
 		assertEquals("org.test", parsedSchema.getPojoNamespace());
 

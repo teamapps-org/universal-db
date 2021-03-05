@@ -107,7 +107,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		this.transactionStore = new TransactionStore(storagePath, writeTransactionLog);
 		Transaction.setDataBase(this);
 
-		Schema schema = Schema.parse(schemaInfo.getSchema());
+		Schema schema = schemaInfo.getSchema();
 		String pojoPath = schema.getPojoNamespace();
 		this.schemaIndex = new SchemaIndex(schema, storagePath);
 
@@ -134,7 +134,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	}
 
 	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws IOException {
-		Schema schema = Schema.parse(schemaInfo.getSchema());
+		Schema schema = schemaInfo.getSchema();
 		Schema localSchema = transactionStore.getSchema();
 		if (!localSchema.isCompatibleWith(schema)) {
 			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
@@ -156,7 +156,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	}
 
 	public void installAuxiliaryModelClassed(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-		Schema schema = Schema.parse(schemaInfo.getSchema());
+		Schema schema = schemaInfo.getSchema();
 		String pojoPath = schema.getPojoNamespace();
 		for (Database database : schema.getDatabases()) {
 			String path = pojoPath + "." + database.getName().toLowerCase();
@@ -210,7 +210,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		this.schemaStats = new SchemaStats(storagePath);
 		Transaction.setDataBase(this);
 
-		Schema schema = Schema.parse(schemaInfo.getSchema());
+		Schema schema = schemaInfo.getSchema();
 		String pojoPath = schema.getPojoNamespace();
 		this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
 

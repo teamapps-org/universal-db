@@ -21,5 +21,5 @@ package org.teamapps.universaldb.schema;
 
 public interface SchemaInfoProvider {
 
-	String getSchema();
+	Schema getSchema();
 }

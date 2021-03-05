@@ -40,8 +40,7 @@ public class ModelApiGenerator {
 
 		Class<?> schemaClass = Class.forName(schemaClassName);
 		SchemaInfoProvider schemaInfoProvider = (SchemaInfoProvider) schemaClass.getConstructor().newInstance();
-		String schemaData = schemaInfoProvider.getSchema();
-		Schema schema = Schema.parse(schemaData);
+		Schema schema = schemaInfoProvider.getSchema();
 		PojoCodeGenerator pojoCodeGenerator = new PojoCodeGenerator();
 		File basePath = new File(targetPath);
 		if (!basePath.getParentFile().exists() && basePath.getParentFile().getParentFile().exists()) {

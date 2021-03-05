@@ -23,7 +23,7 @@ import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.teamapps.s3model.SchemaInfo;
+import org.teamapps.s3model.TestS3Schema;
 import org.teamapps.s3model.s3db.S3Table;
 import org.teamapps.universaldb.index.file.CachingS3FileStore;
 import org.teamapps.universaldb.index.file.FileValue;
@@ -48,7 +48,7 @@ public class S3Test {
 	public static void init() throws Exception {
 		File tempDir = Files.createTempDir();
 		fileStore = new CachingS3FileStore(tempDir, "test-bucket", S3_URL, S3_KEY, S3_SECRET);
-		UniversalDB.createStandalone(tempDir, new SchemaInfo(), fileStore, true);
+		UniversalDB.createStandalone(tempDir, new TestS3Schema(), fileStore, true);
 	}
 
 

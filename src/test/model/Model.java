@@ -22,8 +22,9 @@ import org.teamapps.universaldb.schema.*;
 
 public class Model implements SchemaInfoProvider {
 
-	public String getSchema() {
+	public Schema getSchema() {
 		Schema schema = Schema.create();
+		schema.setSchemaName("TestBaseSchema");
 		Database database = schema.addDatabase("testDb1");
 		Table table = database.addTable("fieldTest", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
 		table
@@ -95,6 +96,6 @@ public class Model implements SchemaInfoProvider {
 		;
 
 
-		return schema.getSchema();
+		return schema;
 	}
 }

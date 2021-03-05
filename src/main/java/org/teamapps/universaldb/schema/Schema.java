@@ -28,10 +28,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Schema implements SchemaInfoProvider {
+public class Schema {
 
 	private final int schemaVersion = 1;
 	private String pojoNamespace = "org.teamapps.datamodel";
+	private String schemaName = "SchemaInfo";
 	private final List<Database> databases = new ArrayList<>();
 
 	public static Schema create() {
@@ -90,6 +91,12 @@ public class Schema implements SchemaInfoProvider {
 			if (type.equalsIgnoreCase("SCHEMA")) {
 				foundSchema = true;
 				setPojoNamespace(name);
+				if (tokens.size() > 3) {
+					String schemaName = tokens.get(3);
+					if (!schemaName.isBlank()) {
+						setSchemaName(schemaName);
+					}
+				}
 			}
 			if (!foundSchema) {
 				continue;
@@ -100,7 +107,9 @@ public class Schema implements SchemaInfoProvider {
 			if (type.equalsIgnoreCase("TABLE")) {
 				TableConfig tableConfig = TableConfig.parse(line);
 				table = db.addTable(name, tableConfig.getTableOptions());
-
+			}
+			if (type.equalsIgnoreCase("ENUM")) {
+				//enable separate enum definition...
 			}
 			if (columnTypes.contains(type.toUpperCase()) && !Table.isReservedMetaName(name)) {
 				ColumnType columnType = ColumnType.valueOf(type);
@@ -140,7 +149,7 @@ public class Schema implements SchemaInfoProvider {
 	}
 
 	public byte[] getSchemaData() {
-		String schema = getSchema();
+		String schema = getSchemaDefinition();
 		return schema.getBytes(StandardCharsets.UTF_8);
 	}
 
@@ -176,6 +185,14 @@ public class Schema implements SchemaInfoProvider {
 
 	public void setPojoNamespace(String pojoNamespace) {
 		this.pojoNamespace = pojoNamespace;
+	}
+
+	public String getSchemaName() {
+		return schemaName;
+	}
+
+	public void setSchemaName(String schemaName) {
+		this.schemaName = schemaName;
 	}
 
 	public int getSchemaVersion() {
@@ -282,8 +299,9 @@ public class Schema implements SchemaInfoProvider {
 		return sb.toString();
 	}
 
-	@Override
-	public String getSchema() {
+
+
+	public String getSchemaDefinition() {
 		return createDefinition();
 	}
 

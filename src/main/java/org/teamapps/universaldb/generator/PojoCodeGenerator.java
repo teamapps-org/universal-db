@@ -62,8 +62,9 @@ public class PojoCodeGenerator {
 				sb.append("\"").append(line).append("\\n\" + ").append("\n");
 			}
 		}
+		tpl.setValue("type", schema.getSchemaName());
 		tpl.setValue("schema", sb.toString());
-		tpl.writeTemplate("SchemaInfo", baseDir);
+		tpl.writeTemplate(schema.getSchemaName(), baseDir);
 	}
 
 	private void createDbPojos(Database db, File baseDir, String packageName) throws IOException {

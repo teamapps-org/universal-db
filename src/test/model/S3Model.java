@@ -21,8 +21,9 @@ import org.teamapps.universaldb.schema.*;
 
 public class S3Model implements SchemaInfoProvider {
 
-	public String getSchema() {
+	public Schema getSchema() {
 		Schema schema = Schema.create();
+		schema.setSchemaName("TestS3Schema");
 		schema.setPojoNamespace("org.teamapps.s3model");
 		Database database = schema.addDatabase("s3db");
 		Table table = database.addTable("s3Table");
@@ -32,6 +33,6 @@ public class S3Model implements SchemaInfoProvider {
 				.addText("textField")
 				.addFile("fileField");
 
-		return schema.getSchema();
+		return schema;
 	}
 }
