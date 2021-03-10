@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,6 +60,9 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	private TransactionWriter transactionWriter;
 	private TransactionReader transactionReader;
 	private TransactionMaster transactionMaster;
+	private final Map<TableIndex, Class> entityClassByTableIndex = new HashMap<>();
+	private final Map<TableIndex, Class> queryClassByTableIndex = new HashMap<>();
+	private final Map<String, TableIndex> tableIndexByPath = new HashMap<>();
 
 	public static int getUserId() {
 		return THREAD_LOCAL_USER_ID.get();
@@ -118,16 +121,22 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			String path = pojoPath + "." + database.getName().toLowerCase();
-			for (TableIndex table : database.getTables()) {
-				String tableName = table.getName();
-				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
+			for (TableIndex tableIndex : database.getTables()) {
 				try {
+					String tableName = tableIndex.getName();
+					String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
 					Class<?> schemaClass = Class.forName(className);
 					Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
 					method.setAccessible(true);
-					method.invoke(null, table);
+					method.invoke(null, tableIndex);
+
+					entityClassByTableIndex.put(tableIndex, schemaClass);
+					tableIndexByPath.put(tableIndex.getFQN(), tableIndex);
+					String queryClassName = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
+					Class<?> queryClass = Class.forName(queryClassName);
+					queryClassByTableIndex.put(tableIndex, queryClass);
 				} catch (ClassNotFoundException e) {
-					logger.info("Could not load entity class for table:" + table.getFQN());
+					logger.info("Could not load entity class for tableIndex:" + tableIndex.getFQN());
 				}
 			}
 		}
@@ -158,6 +167,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	public void installAuxiliaryModelClassed(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		Schema schema = schemaInfo.getSchema();
 		String pojoPath = schema.getPojoNamespace();
+
 		for (Database database : schema.getDatabases()) {
 			String path = pojoPath + "." + database.getName().toLowerCase();
 			for (Table table : database.getTables()) {
@@ -168,8 +178,26 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
 				method.setAccessible(true);
 				method.invoke(null, tableIndex);
+
+				entityClassByTableIndex.put(tableIndex, schemaClass);
+				tableIndexByPath.put(tableIndex.getFQN(), tableIndex);
+				String queryClassName = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
+				Class<?> queryClass = Class.forName(queryClassName, true, classLoader);
+				queryClassByTableIndex.put(tableIndex, queryClass);
 			}
 		}
+	}
+
+	public Class getEntityClass(TableIndex tableIndex) {
+		return entityClassByTableIndex.get(tableIndex);
+	}
+
+	public Class getQueryClass(TableIndex tableIndex) {
+		return queryClassByTableIndex.get(tableIndex);
+	}
+
+	public TableIndex getTableIndexByPath(String path) {
+		return tableIndexByPath.get(path);
 	}
 
 	public TableIndex addTable(Table table, String database) {
