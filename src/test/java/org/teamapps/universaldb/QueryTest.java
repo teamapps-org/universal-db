@@ -24,6 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.teamapps.datamodel.testdb1.EnumField;
 import org.teamapps.datamodel.testdb1.FieldTest;
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
 import org.teamapps.universaldb.index.enumeration.EnumFilter;
 import org.teamapps.universaldb.index.enumeration.EnumFilterType;
@@ -236,16 +237,16 @@ public class QueryTest {
 		}
 		List<FieldTest> values;
 
-		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("xval", "de")).execute();
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("xval", UserContext.create("de"))).execute();
 		assertEquals(1000, values.size());
 
-		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("de", "de")).execute();
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("de", UserContext.create("de"))).execute();
 		assertEquals(1000, values.size());
 
-		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("fr", "de")).execute();
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("fr", UserContext.create("de"))).execute();
 		assertEquals(0, values.size());
 
-		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("xval", "xy")).execute();
+		values = FieldTest.filter().translatableText(TranslatableTextFilter.termContainsFilter("xval", UserContext.create("xy"))).execute();
 		assertEquals(1000, values.size());
 
 

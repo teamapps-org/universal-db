@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.reference.single;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
@@ -162,7 +163,7 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 		getBuffer(index).putInt(position, value, ByteOrder.LITTLE_ENDIAN);
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			int value1 = getValue(o1.getLeafId());

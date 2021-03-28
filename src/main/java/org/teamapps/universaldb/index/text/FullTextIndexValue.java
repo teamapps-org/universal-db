@@ -51,6 +51,10 @@ public class FullTextIndexValue {
 		return value;
 	}
 
+	public String getValueNonNull() {
+		return value != null ? value : "";
+	}
+
 	public TranslatableText getTranslatableText() {
 		return translatableText;
 	}

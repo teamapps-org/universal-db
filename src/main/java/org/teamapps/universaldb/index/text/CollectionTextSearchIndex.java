@@ -89,7 +89,7 @@ public class CollectionTextSearchIndex {
 					Field field = new Field(fullTextIndexValue.getFieldName(), translatableText.getText(), fieldType);
 					doc.add(field);
 				} else {
-					Field field = new Field(fullTextIndexValue.getFieldName(), fullTextIndexValue.getValue(), fieldType);
+					Field field = new Field(fullTextIndexValue.getFieldName(), fullTextIndexValue.getValueNonNull(), fieldType);
 					doc.add(field);
 				}
 			}
@@ -152,44 +152,19 @@ public class CollectionTextSearchIndex {
 
 			BooleanQuery.Builder fieldQueries = new BooleanQuery.Builder();
 			for (TextFieldFilter filter : filters) {
-				Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
-				fieldQueries.add(query, occur);
-			}
-			BooleanQuery query = fieldQueries.build();
-			searcher.search(query, collector);
-			BitSet resultIds = collector.getResultIds();
-			resultIds.and(bitSet);
-			reader.close();
-			return resultIds;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	public BitSet filter(BitSet bitSet, List<TextFieldFilter> filters, List<TranslatableTextFieldFilter> translationFilters, boolean andFilter) {
-		try {
-			if (filters.isEmpty() && translationFilters.isEmpty()) {
-				return bitSet;
-			}
-			DirectoryReader reader = DirectoryReader.open(writer, false, false);
-			IndexSearcher searcher = new IndexSearcher(reader);
-			SearchCollector collector = new SearchCollector();
-
-			BooleanClause.Occur occur = andFilter ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
-
-			BooleanQuery.Builder fieldQueries = new BooleanQuery.Builder();
-			for (TextFieldFilter filter : filters) {
-				Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
-				fieldQueries.add(query, occur);
-			}
-			for (TranslatableTextFieldFilter filter : translationFilters) {
-				BooleanQuery.Builder translatableQueries = new BooleanQuery.Builder();
-				Query originalLanguage = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
-				Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName() + "_" + filter.getLanguage(), filter.getValue(), queryAnalyzer);
-				translatableQueries.add(originalLanguage, BooleanClause.Occur.SHOULD);
-				translatableQueries.add(query, BooleanClause.Occur.SHOULD);
-				fieldQueries.add(translatableQueries.build(), occur);
+				if (filter.isTranslatableField()) {
+					BooleanQuery.Builder translatableQueries = new BooleanQuery.Builder();
+					Query originalLanguage = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
+					translatableQueries.add(originalLanguage, BooleanClause.Occur.SHOULD);
+					for (String language : filter.getRankedLanguages()) {
+						Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName() + "_" + language, filter.getValue(), queryAnalyzer);
+						translatableQueries.add(query, BooleanClause.Occur.SHOULD);
+					}
+					fieldQueries.add(translatableQueries.build(), occur);
+				} else {
+					Query query = SearchIndexUtil.createQuery(filter.getFilterType(), filter.getFieldName(), filter.getValue(), queryAnalyzer);
+					fieldQueries.add(query, occur);
+				}
 			}
 
 			BooleanQuery query = fieldQueries.build();

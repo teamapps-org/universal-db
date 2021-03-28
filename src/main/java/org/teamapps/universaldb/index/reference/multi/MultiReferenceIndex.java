@@ -20,6 +20,7 @@
 package org.teamapps.universaldb.index.reference.multi;
 
 import org.agrona.collections.IntHashSet;
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
@@ -353,7 +354,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		return MultiReferenceValue.create(dataInputStream);
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			int value1 = getReferencesCount(o1.getLeafId());

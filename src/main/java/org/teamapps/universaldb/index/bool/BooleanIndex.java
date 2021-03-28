@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.bool;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.transaction.DataType;
 
@@ -28,7 +29,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Locale;
 
 public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 
@@ -174,7 +174,7 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		return dataInputStream.readBoolean();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			boolean value1 = getValue(o1.getLeafId());

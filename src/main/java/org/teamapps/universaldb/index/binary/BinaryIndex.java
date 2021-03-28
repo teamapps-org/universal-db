@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.binary;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
@@ -27,7 +28,6 @@ import org.teamapps.universaldb.util.DataStreamUtil;
 import java.io.*;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Supplier;
 
 public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
@@ -121,7 +121,7 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	}
 
 	@Override
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		return sortEntries;
 	}
 

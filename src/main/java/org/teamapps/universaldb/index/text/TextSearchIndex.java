@@ -164,8 +164,15 @@ public class TextSearchIndex {
 			DirectoryReader reader = DirectoryReader.open(writer, false, false);
 			IndexSearcher searcher = new IndexSearcher(reader);
 			SearchCollector collector = new SearchCollector();
-			Query query = SearchIndexUtil.createQuery(textFilter.getFilterType(), VALUE + "_" + textFilter.getLanguage(), textFilter.getValue(), queryAnalyzer);
-			searcher.search(query, collector);
+
+			BooleanQuery.Builder translatableQueries = new BooleanQuery.Builder();
+			Query originalLanguage = SearchIndexUtil.createQuery(textFilter.getFilterType(), VALUE, textFilter.getValue(), queryAnalyzer);
+			translatableQueries.add(originalLanguage, BooleanClause.Occur.SHOULD);
+			for (String language : textFilter.getRankedLanguages()) {
+				Query query = SearchIndexUtil.createQuery(textFilter.getFilterType(), VALUE + "_" + language, textFilter.getValue(), queryAnalyzer);
+				translatableQueries.add(query, BooleanClause.Occur.SHOULD);
+			}
+			searcher.search(translatableQueries.build(), collector);
 			BitSet resultIds = collector.getResultIds();
 			resultIds.and(bitSet);
 			return resultIds;

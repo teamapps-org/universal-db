@@ -21,6 +21,7 @@ package org.teamapps.universaldb.pojo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.SortEntry;
 import org.teamapps.universaldb.index.TableIndex;
@@ -67,14 +68,14 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, String ... path) {
-		return sort(table, list, sortFieldName, ascending, null, path);
+		return sort(table, list, sortFieldName, ascending, UserContext.create(), path);
 	}
 
-	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, Locale locale, String ... path) {
+	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
 		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
 		List<SortEntry<ENTITY>> sortEntries = SortEntry.createSortEntries(list, referencePath);
-		sortEntries = column.sortRecords(sortEntries, ascending, locale);
+		sortEntries = column.sortRecords(sortEntries, ascending, userContext);
 		return sortEntries.stream().map(SortEntry::getEntity).collect(Collectors.toList());
 	}
 
@@ -82,11 +83,11 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return sort(table, builder, recordIds, sortFieldName, ascending, null, path);
 	}
 
-	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, Locale locale, String ... path) {
+	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
 		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(recordIds, referencePath);
-		sortEntries = column.sortRecords(sortEntries, ascending, locale);
+		sortEntries = column.sortRecords(sortEntries, ascending, userContext);
 		List<ENTITY> list = new ArrayList<>();
 		for (SortEntry entry : sortEntries) {
 			list.add(builder.build(entry.getId()));

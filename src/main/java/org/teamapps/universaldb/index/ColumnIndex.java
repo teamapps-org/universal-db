@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
@@ -169,7 +170,7 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 		dataOutputStream.writeInt(getMappingId());
 	}
 
-	List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale);
+	List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext);
 
 	BitSet filter(BitSet records, FILTER filter);
 

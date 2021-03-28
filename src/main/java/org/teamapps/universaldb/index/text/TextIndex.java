@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.text;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
@@ -181,7 +182,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		charIndex.drop();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			String value1 = getValue(o1.getLeafId());

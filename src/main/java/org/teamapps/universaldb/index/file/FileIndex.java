@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.file;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.numeric.LongIndex;
@@ -31,7 +32,6 @@ import java.io.*;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Supplier;
 
 public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
@@ -173,7 +173,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	}
 
 	@Override
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		return sortEntries;
 	}
 

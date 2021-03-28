@@ -19,20 +19,34 @@
  */
 package org.teamapps.universaldb.index.text;
 
+import org.teamapps.universaldb.context.UserContext;
+
+import java.util.List;
+
 public class TextFieldFilter extends TextFilter {
 
 	private final String fieldName;
+	private final boolean translatableField;
 
-	public static TextFieldFilter create(TextFilter filter, String fieldName) {
-		return new TextFieldFilter(filter.getFilterType(), fieldName, filter.getValue());
+	public static TextFieldFilter create(TextFilter filter, String fieldName) { //todo translatableField
+		return new TextFieldFilter(filter.getFilterType(), fieldName, filter.getUserContext() != null, filter.getUserContext(), filter.getValue());
 	}
 
 	public TextFieldFilter(TextFilterType filterType, String fieldName, String value) {
-		super(filterType, value);
+		this(filterType, fieldName, false, null, value);
+	}
+
+	public TextFieldFilter(TextFilterType filterType, String fieldName, boolean translatableField, UserContext userContext, String value) {
+		super(filterType, value, userContext);
 		this.fieldName = fieldName;
+		this.translatableField = translatableField;
 	}
 
 	public String getFieldName() {
 		return fieldName;
+	}
+
+	public boolean isTranslatableField() {
+		return translatableField;
 	}
 }

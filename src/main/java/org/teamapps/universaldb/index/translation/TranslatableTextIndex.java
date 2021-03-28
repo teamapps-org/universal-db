@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.translation;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.text.*;
@@ -31,7 +32,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 
-public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TranslatableTextFilter> {
+public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextFilter> {
 
 	private final LongIndex positionIndex;
 	private final CharIndex charIndex;
@@ -62,11 +63,11 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 		return collectionSearchIndex;
 	}
 
-	public boolean isFilteredByCollectionTextIndex(TranslatableTextFilter filter) {
+	public boolean isFilteredByCollectionTextIndex(TextFilter filter) {
 		return collectionSearchIndex != null && filter.getFilterType().containsFullTextPart();
 	}
 
-	public boolean isFilteredExclusivelyByCollectionTextIndex(TranslatableTextFilter filter) {
+	public boolean isFilteredExclusivelyByCollectionTextIndex(TextFilter filter) {
 		return collectionSearchIndex != null && filter.getFilterType().isFullTextIndexExclusive();
 	}
 
@@ -164,7 +165,7 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 	}
 
 	@Override
-	public BitSet filter(BitSet records, TranslatableTextFilter textFilter) {
+	public BitSet filter(BitSet records, TextFilter textFilter) {
 		return filter(records, textFilter, true);
 	}
 
@@ -186,9 +187,9 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 		charIndex.drop();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) { //todo add locale/language to sorting
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
-		String language = locale.getLanguage();
+		String language = userContext.getLanguage();
 
 		sortEntries.sort((o1, o2) -> {
 			String value1 = getTranslatedValue(o1.getLeafId(), language);
@@ -207,37 +208,37 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 		return sortEntries;
 	}
 
-	public BitSet filter(BitSet records, TranslatableTextFilter translatableTextFilter, boolean performLocalFullTextSearch) {
+	public BitSet filter(BitSet records, TextFilter textFilter, boolean performLocalFullTextSearch) {
 		BitSet fullTextResult = records;
 		if (performLocalFullTextSearch) {
-			if (translatableTextFilter.getFilterType().containsFullTextPart()) {
+			if (textFilter.getFilterType().containsFullTextPart()) {
 				if (searchIndex != null) {
-					fullTextResult = searchIndex.filter(records, translatableTextFilter);
+					fullTextResult = searchIndex.filter(records, textFilter);
 				} else if (collectionSearchIndex != null) {
-					fullTextResult = collectionSearchIndex.filter(records, Collections.emptyList(), Collections.singletonList(TranslatableTextFieldFilter.create(translatableTextFilter, getName())), true);
+					fullTextResult = collectionSearchIndex.filter(records, Collections.singletonList(TextFieldFilter.create(textFilter, getName())), true);
 				} else {
 					return null;
 				}
-				if (!translatableTextFilter.getFilterType().containsIndexPart()) {
+				if (!textFilter.getFilterType().containsIndexPart()) {
 					return fullTextResult;
 				}
 			}
 		}
 
-		if (translatableTextFilter.getFilterType().containsIndexPart()) {
-			switch (translatableTextFilter.getFilterType()) {
+		if (textFilter.getFilterType().containsIndexPart()) {
+			switch (textFilter.getFilterType()) {
 				case EMPTY:
 					return filterEmpty(records);
 				case NOT_EMPTY:
 					return filterNotEmpty(records);
 				case TEXT_EQUALS:
-					return filterEquals(fullTextResult, translatableTextFilter.getValue(), translatableTextFilter.getLanguage());
+					return filterEquals(fullTextResult, textFilter.getValue(), textFilter.getRankedLanguages());
 				case TEXT_NOT_EQUALS:
-					return filterNotEquals(fullTextResult, translatableTextFilter.getValue(), translatableTextFilter.getLanguage());
+					return filterNotEquals(fullTextResult, textFilter.getValue(), textFilter.getRankedLanguages());
 				case TEXT_BYTE_LENGTH_GREATER:
-					return filterLengthGreater(records, Integer.parseInt(translatableTextFilter.getValue()));
+					return filterLengthGreater(records, Integer.parseInt(textFilter.getValue()));
 				case TEXT_BYTE_LENGTH_SMALLER:
-					return filterLengthSmaller(records, Integer.parseInt(translatableTextFilter.getValue()));
+					return filterLengthSmaller(records, Integer.parseInt(textFilter.getValue()));
 				default:
 					return null;
 			}
@@ -296,22 +297,34 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, Trans
 	}
 
 
-	private BitSet filterEquals(BitSet bitSet, String value, String language) {
+	private BitSet filterEquals(BitSet bitSet, String value, List<String> rankedLanguages) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 			TranslatableText translatableText = getValue(id);
-			if (Objects.equals(translatableText.translationLookup(language), value)) {
-				result.set(id);
+			Map<String, String> translationMap = translatableText.getTranslationMap();
+			for (String language : rankedLanguages) {
+				if (Objects.equals(value, translationMap.get(language))) {
+					result.set(id);
+					break;
+				}
 			}
 		}
 		return result;
 	}
 
-	private BitSet filterNotEquals(BitSet bitSet, String value, String language) {
+	private BitSet filterNotEquals(BitSet bitSet, String value, List<String> rankedLanguages) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 			TranslatableText translatableText = getValue(id);
-			if (!Objects.equals(translatableText.translationLookup(language), value)) {
+			Map<String, String> translationMap = translatableText.getTranslationMap();
+			boolean containsValue = false;
+			for (String language : rankedLanguages) {
+				if (Objects.equals(value, translationMap.get(language))) {
+					containsValue = true;
+					break;
+				}
+			}
+			if (!containsValue) {
 				result.set(id);
 			}
 		}

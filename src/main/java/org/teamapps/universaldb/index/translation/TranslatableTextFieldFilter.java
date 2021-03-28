@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.translation;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.text.TextFilterType;
 
 public class TranslatableTextFieldFilter extends TranslatableTextFilter {
@@ -26,11 +27,11 @@ public class TranslatableTextFieldFilter extends TranslatableTextFilter {
     private final String fieldName;
 
     public static TranslatableTextFieldFilter create(TranslatableTextFilter filter, String fieldName) {
-        return new TranslatableTextFieldFilter(filter.getFilterType(), fieldName, filter.getValue(), filter.getLanguage());
+        return new TranslatableTextFieldFilter(filter.getFilterType(), fieldName, filter.getValue(), filter.getUserContext());
     }
 
-    public TranslatableTextFieldFilter(TextFilterType filterType, String fieldName, String value, String language) {
-        super(filterType, value, language);
+    public TranslatableTextFieldFilter(TextFilterType filterType, String fieldName, String value, UserContext userContext) {
+        super(filterType, value, userContext);
         this.fieldName = fieldName;
     }
 

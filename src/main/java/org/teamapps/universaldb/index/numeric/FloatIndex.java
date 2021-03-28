@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.numeric;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.transaction.DataType;
 
@@ -93,7 +94,7 @@ public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> implem
 		return dataInputStream.readFloat();
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			float value1 = getValue(o1.getLeafId());

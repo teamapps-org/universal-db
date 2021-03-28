@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index.numeric;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.transaction.DataType;
 
@@ -81,7 +82,7 @@ public class DoubleIndex extends AbstractBufferIndex<Double, NumericFilter> impl
 		getBuffer(index).putDouble(position, value, ByteOrder.LITTLE_ENDIAN);
 	}
 
-	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, Locale locale) {
+	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		int order = ascending ? 1 : -1;
 		sortEntries.sort((o1, o2) -> {
 			double value1 = getValue(o1.getLeafId());
