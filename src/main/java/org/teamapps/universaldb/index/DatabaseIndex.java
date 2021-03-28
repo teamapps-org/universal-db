@@ -52,7 +52,7 @@ public class DatabaseIndex implements MappedObject {
 		return schemaIndex;
 	}
 
-	public void merge(Database database) {
+	public void merge(Database database, boolean checkFullTextIndex) {
 		Map<String, TableIndex> tableMap = tables.stream().collect(Collectors.toMap(TableIndex::getName, table -> table));
 		for (Table table : database.getTables()) {
 			TableIndex localTable = tableMap.get(table.getName());
@@ -65,8 +65,10 @@ public class DatabaseIndex implements MappedObject {
 			}
 			localTable.merge(table);
 		}
-		for (TableIndex table : tables) {
-			table.checkFullTextIndex();
+		if (checkFullTextIndex) {
+			for (TableIndex table : tables) {
+				table.checkFullTextIndex();
+			}
 		}
 
 	}

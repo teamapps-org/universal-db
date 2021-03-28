@@ -22,10 +22,10 @@ package org.teamapps.universaldb.index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.TableConfig;
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
-import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
@@ -237,8 +237,9 @@ public class TableIndex implements MappedObject {
 			startsWith = true;
 			term = term.substring(0, term.length() - 1);
 		}
-		if (term.startsWith("\"") && term.endsWith("\"")) {
-			term = term.substring(0, term.length() - 2);
+		if (term.contains("\"")) {
+			equals = true;
+			term = term.replace("\"", "");
 		}
 		if (equals) {
 			return negation ? TextFilter.termEqualsFilter(term) : TextFilter.termNotEqualsFilter(term);
@@ -258,7 +259,7 @@ public class TableIndex implements MappedObject {
 	public Filter createFullTextFilter(TextFilter textFilter, boolean orQuery, String... fieldNames) {
 		Filter filter = orQuery ? new OrFilter() : new AndFilter();
 		if (fieldNames == null || fieldNames.length == 0) {
-			columnIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT).forEach(columnIndex -> {
+			columnIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT || columnIndex.getType() == IndexType.TRANSLATABLE_TEXT).forEach(columnIndex -> {
 				IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter);
 				if (orQuery) {
 					filter.or(indexFilter);
@@ -269,7 +270,7 @@ public class TableIndex implements MappedObject {
 		} else {
 			for (String fieldName : fieldNames) {
 				ColumnIndex columnIndex = columnIndexByName.get(fieldName);
-				if (columnIndex != null && columnIndex.getType() == IndexType.TEXT) {
+				if (columnIndex != null && columnIndex.getType() == IndexType.TEXT || columnIndex.getType() == IndexType.TRANSLATABLE_TEXT) {
 					IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter);
 					if (orQuery) {
 						filter.or(indexFilter);
@@ -294,7 +295,7 @@ public class TableIndex implements MappedObject {
 		}
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(records, path);
 
-		return column.sortRecords(sortEntries, ascending, null);
+		return column.sortRecords(sortEntries, ascending, UserContext.create());
 	}
 
 	public int createRecord(int recordId, int correlationId, boolean update) {
@@ -412,7 +413,6 @@ public class TableIndex implements MappedObject {
 				List<Integer> thisRecord = Collections.singletonList(id);
 				for (Integer reference : references) {
 					referencedMultiIndex.removeReferences(reference, thisRecord, false);
-
 				}
 			} else {
 				SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;

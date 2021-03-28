@@ -74,7 +74,7 @@ public class SchemaIndex {
 		this.fileStore = fileStore;
 	}
 
-	public void merge(Schema schema) {
+	public void merge(Schema schema, boolean checkFullTextIndex) {
 		if (!this.schema.isCompatibleWith(schema)) {
 			throw new RuntimeException("Error: cannot merge incompatible schemas:" + this + " with " + schema);
 		}
@@ -88,7 +88,7 @@ public class SchemaIndex {
 			if (localDatabase.getMappingId() == 0) {
 				localDatabase.setMappingId(database.getMappingId());
 			}
-			localDatabase.merge(database);
+			localDatabase.merge(database, checkFullTextIndex);
 		}
 		for (Database database : schema.getDatabases()) {
 			for (Table table : database.getTables()) {

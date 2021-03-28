@@ -151,7 +151,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		localSchema.merge(schema);
 		localSchema.mapSchema();
 		transactionStore.saveSchema(localSchema);
-		schemaIndex.merge(localSchema);
+		schemaIndex.merge(localSchema, false);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			databaseById.put(database.getMappingId(), database);
@@ -220,7 +220,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		}
 		localSchema.mapSchema();
 		transactionStore.saveSchema(localSchema);
-		schemaIndex.merge(localSchema);
+		schemaIndex.merge(localSchema, true);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			databaseById.put(database.getMappingId(), database);
@@ -287,7 +287,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 			schemaStats.saveSchema(localSchema);
 		}
 		localSchema.mapSchema();
-		schemaIndex.merge(localSchema);
+		schemaIndex.merge(localSchema, true);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			databaseById.put(database.getMappingId(), database);
