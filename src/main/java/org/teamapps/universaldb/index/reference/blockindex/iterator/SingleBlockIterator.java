@@ -29,21 +29,36 @@ public class SingleBlockIterator implements PrimitiveIterator.OfInt {
 	private final int offset;
 	private final ReferenceBuffer buffer;
 	private int pos;
+	private int nextValue;
 
 	public SingleBlockIterator(ReferenceBlock block) {
 		this.blockEntries = block.getBlockEntryCount();
 		this.offset = block.getBlockDataPosition();
 		this.buffer = block.getBuffer();
+		retrieveNextValue();
 	}
+
+	private void retrieveNextValue() {
+		if (pos >= blockEntries) {
+			nextValue = 0;
+			return;
+		}
+		nextValue = buffer.readInt(offset + pos * 4);
+		pos++;
+		if (nextValue < 0) {
+			retrieveNextValue();
+		}
+	}
+
 	@Override
 	public int nextInt() {
-		int value = buffer.readInt(offset + pos * 4);
-		pos++;
+		int value = nextValue;
+		retrieveNextValue();
 		return value;
 	}
 
 	@Override
 	public boolean hasNext() {
-		return pos < blockEntries;
+		return nextValue > 0;
 	}
 }

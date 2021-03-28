@@ -201,6 +201,9 @@ public class ReferenceBlockChainImpl implements ReferenceBlockChain, ReferenceBl
 
 	@Override
 	public long add(List<Integer> values, long index) {
+		if (values.size() == 1) {
+			return add(values.get(0), index);
+		}
 		setBlockData(index, writerBlock);
 		if (writerBlock.getBlockType().isSingleBlock()) {
 			int remainingEntries = writerBlock.getRemainingEntries();
@@ -304,25 +307,34 @@ public class ReferenceBlockChainImpl implements ReferenceBlockChain, ReferenceBl
 				deleteBlock(block);
 				return 0;
 			} else {
-				//todo on remove single entry - remove full block? Better:
 				BlockType blockType = BlockType.getEntryType(values.size());
-				if (blockType == block.getBlockType()) {
-					//would the reader check for deleted (negative) values?
-					//todo adapt SingleBlockIterator to handle negative values
+				if (blockType.getId() > BlockType.ENTRIES_2.getId()) {
+					int countDeleted = 0;
+					for (int i = 0; i < blockEntryCount; i++) {
+						int value = block.getBuffer().readInt(dataPosition + i * 4);
+						if (deleteValues.contains(value)) {
+							block.getBuffer().writeInt(value * -1, dataPosition + i * 4);
+							countDeleted++;
+						}
+					}
+					if (countDeleted > 0) {
+						block.writeBlockEntryCount(blockEntryCount - countDeleted);
+					}
+					return block.getIndex();
 				} else {
-					//remove and create new block with values -> see below
+					ReferenceBlock deleteBlock = block.copy();
+					long newIndex = create(values);
+					deleteBlock(deleteBlock);
+					return newIndex;
 				}
-				ReferenceBlock deleteBlock = block.copy();
-				long newIndex = create(values);
-				deleteBlock(deleteBlock);
-				return newIndex;
 			}
 		} else {
-			int countDeleted = 0;
+			int countTotalDeleted = 0;
 			ReferenceBlock startBlock = block.copy();
-			while (block.getNextIndex() != 0) {
+			do {
 				int dataPosition = block.getBlockDataPosition();
 				int blockEntryCount = block.getBlockEntryCount();
+				int countDeleted = 0;
 				for (int i = 0; i < blockEntryCount; i++) {
 					int value = block.getBuffer().readInt(dataPosition + i * 4);
 					if (deleteValues.contains(value)) {
@@ -330,8 +342,17 @@ public class ReferenceBlockChainImpl implements ReferenceBlockChain, ReferenceBl
 						countDeleted++;
 					}
 				}
-			}
-			startBlock.writeStartBlockTotalCount(startBlock.getTotalEntryCount() - countDeleted);
+				if (countDeleted > 0) {
+					int entries = blockEntryCount - countDeleted;
+					block.writeBlockEntryCount(entries);
+					if (entries == 0) {
+						//todo remove block from list
+					}
+					countTotalDeleted += countDeleted;
+				}
+				block = getBlock(block.getNextIndex());
+			} while (block != null);
+			startBlock.writeStartBlockTotalCount(startBlock.getTotalEntryCount() - countTotalDeleted);
 			return index;
 		}
 	}

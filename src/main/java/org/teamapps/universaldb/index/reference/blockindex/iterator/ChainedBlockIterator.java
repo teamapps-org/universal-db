@@ -76,7 +76,5 @@ public class ChainedBlockIterator implements PrimitiveIterator.OfInt {
 	@Override
 	public boolean hasNext() {
 		return nextValue > 0;
-
-
 	}
 }
