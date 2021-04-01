@@ -21,10 +21,7 @@ package org.teamapps.universaldb.generator;
 
 import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.pojo.template.PojoTemplate;
-import org.teamapps.universaldb.schema.Column;
-import org.teamapps.universaldb.schema.Database;
-import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.schema.Table;
+import org.teamapps.universaldb.schema.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,17 +67,15 @@ public class PojoCodeGenerator {
 	private void createDbPojos(Database db, File baseDir, String packageName) throws IOException {
 		File dbPojoDir = new File(baseDir, db.getName().toLowerCase());
 		dbPojoDir.mkdir();
-		for (Table table : db.getTables()) {
+		for (Table table : db.getAllTables()) {
 			createTablePojo(table, dbPojoDir, packageName + "." + db.getName().toLowerCase());
 			createTableQueryPojo(table, dbPojoDir, packageName + "." + db.getName().toLowerCase());
 		}
-
-
 	}
 
 	private void createTablePojo(Table table, File dbPojoDir, String packageName) throws IOException {
-		PojoTemplate tpl = PojoTemplate.createEntityInterface();
-		PojoTemplate udbTpl = PojoTemplate.createUdbEntity();
+		PojoTemplate tpl = table.isView() ? PojoTemplate.createEntityViewInterface() : PojoTemplate.createEntityInterface();
+		PojoTemplate udbTpl = table.isView() ? PojoTemplate.createUdbEntityView() : PojoTemplate.createUdbEntity();
 		String type = tpl.firstUpper(table.getName());
 		String udbType = UDB_PREFIX + type;
 		String query = type + QUERY_SUFFIX;
@@ -117,9 +112,17 @@ public class PojoCodeGenerator {
 			while (loop1 || loop2 || loop3 || loop4) {
 				version++;
 				loop1 = tpl.addInterfaceGetMethod(column, version);
-				loop2 = tpl.addInterfaceSetMethod(column, table, version);
+				if (!table.isView()) {
+					loop2 = tpl.addInterfaceSetMethod(column, table, version);
+				} else {
+					loop2 = false;
+				}
 				loop3 = udbTpl.addUdbEntityGetMethod(column, version);
-				loop4 = udbTpl.addUdbEntitySetMethod(column, table, version);
+				if (!table.isView()) {
+					loop4 = udbTpl.addUdbEntitySetMethod(column, table, version);
+				} else {
+					loop4 = false;
+				}
 			}
 
 			if (column.getType() == ColumnType.ENUM) {

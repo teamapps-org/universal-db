@@ -33,8 +33,10 @@ import java.util.stream.Collectors;
 public class TemplateUtil {
 
 	public static final String ENTITY_INTERFACE_TPL = "EntityInterface.txt";
+	public static final String ENTITY_VIEW_INTERFACE_TPL = "EntityViewInterface.txt";
 	public static final String QUERY_INTERFACE_TPL = "QueryInterface.txt";
 	public static final String UDB_ENTITY_TPL = "UdbEntity.txt";
+	public static final String UDB_ENTITY_VIEW_TPL = "UdbEntityView.txt";
 	public static final String UDB_QUERY_TPL = "UdbQuery.txt";
 	public static final String ENUM_TPL = "Enum.txt";
 

@@ -1,0 +1,110 @@
+package {package};
+
+import org.teamapps.universaldb.*;
+import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.numeric.*;
+import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.translation.*;
+import org.teamapps.universaldb.index.bool.*;
+import org.teamapps.universaldb.index.file.*;
+import org.teamapps.universaldb.index.reference.multi.*;
+import org.teamapps.universaldb.index.reference.single.*;
+import org.teamapps.universaldb.index.binary.*;
+import org.teamapps.universaldb.pojo.*;
+import org.teamapps.universaldb.pojo.template.*;
+import org.teamapps.universaldb.transaction.*;
+import org.teamapps.universaldb.record.*;
+
+import java.util.*;
+import java.time.*;
+import java.io.*;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
+{imports}
+
+public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
+{staticFields}
+
+    private static void setTableIndex(TableIndex tableIndex) {
+        table = tableIndex;
+{staticFieldSetters}
+    }
+
+    public static List<{type}> getAll() {
+        return new EntityBitSetList<>({type}.getBuilder(), table.getRecordBitSet());
+    }
+
+    public static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, String ... path) {
+    	return sort(table, list, sortFieldName, ascending, path);
+    }
+
+    public static List<{type}> sort(BitSet recordIds, String sortFieldName, boolean ascending, String ... path) {
+        return sort(table, {type}.getBuilder(), recordIds, sortFieldName, ascending, path);
+    }
+
+    public static int getCount() {
+        return table.getCount();
+    }
+
+    public {udbType}() {
+        super(table);
+    }
+
+    public {udbType}(int id, boolean createEntity) {
+        super(table, id, createEntity);
+    }
+
+    @Override
+    public {type} build() {
+        return new {udbType}();
+    }
+
+    @Override
+    public {type} build(int id) {
+        return new {udbType}(id, false);
+    }
+
+{methods}
+    @Override
+    public {udbType} save(Transaction transaction, boolean strictChangeVerification) {
+    	throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public {udbType} saveTransactional(boolean strictChangeVerification) {
+    	throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public {udbType} save() {
+    	throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void delete(Transaction transaction) {
+    	throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void delete() {
+    	throw new UnsupportedOperationException();
+    }
+
+	@Override
+	public String toString() {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append(table.getName()).append(": ").append(getId()).append("\n");
+		for (ColumnIndex column : table.getColumnIndices()) {
+			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
+			if (isChanged(column)) {
+				TransactionRecordValue changeValue = getChangeValue(column);
+				sb.append(" -> ").append(changeValue.getValue());
+			}
+			sb.append("\n");
+		}
+		return sb.toString();
+	}
+}
+
+
+

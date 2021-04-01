@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,13 +19,14 @@
  */
 package org.teamapps.universaldb.schema;
 
-import org.teamapps.universaldb.*;
+import org.teamapps.universaldb.TableConfig;
 import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.index.MappedObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Table implements MappedObject {
 	public final static String FIELD_CHECKPOINTS = "metaLastTransactionId";
@@ -52,14 +53,20 @@ public class Table implements MappedObject {
 	private final Database database;
 	private final String name;
 	private final TableConfig tableConfig;
+	private final boolean view;
 	private final List<Column> columns = new ArrayList<>();
+	private final List<Table> views = new ArrayList<>();
 	private int mappingId;
 
-
 	public Table(Database database, String name, TableConfig tableConfig) {
+		this(database, name, tableConfig, false);
+	}
+
+	public Table(Database database, String name, TableConfig tableConfig, boolean view) {
 		this.database = database;
 		this.name = name;
 		this.tableConfig = tableConfig;
+		this.view = view;
 
 		if (tableConfig.isCheckpoints()) {
 			addLong(FIELD_CHECKPOINTS);
@@ -179,7 +186,7 @@ public class Table implements MappedObject {
 		return this;
 	}
 
-	public Table addEnum(String name, String ... values) {
+	public Table addEnum(String name, String... values) {
 		Column column = addColumn(name, ColumnType.ENUM);
 		column.setEnumValues(Arrays.asList(values));
 		return this;
@@ -191,6 +198,11 @@ public class Table implements MappedObject {
 		Column column = new Column(this, name, columnType);
 		columns.add(column);
 		return column;
+	}
+
+	public Table addView(Table view) {
+		views.add(view);
+		return this;
 	}
 
 	public Database getDatabase() {
@@ -205,8 +217,16 @@ public class Table implements MappedObject {
 		return tableConfig;
 	}
 
+	public boolean isView() {
+		return view;
+	}
+
 	public List<Column> getColumns() {
 		return columns;
+	}
+
+	public List<Table> getViews() {
+		return views;
 	}
 
 	public Column addColumn(Column column) {
@@ -236,7 +256,12 @@ public class Table implements MappedObject {
 
 	public String createDefinition() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("\t").append(name).append(" as TABLE ").append(tableConfig.writeConfig()).append("\n");
+		String type = view ? "VIEW" : "TABLE";
+		sb.append("\t").append(name).append(" as ").append(type).append(" ").append(tableConfig.writeConfig());
+		if (!views.isEmpty()) {
+			sb.append(" WITH VIEWS ").append(views.stream().map(Table::getName).collect(Collectors.joining(", ")));
+		}
+		sb.append("\n");
 		columns.forEach(column -> sb.append(column.createDefinition()));
 		return sb.toString();
 	}

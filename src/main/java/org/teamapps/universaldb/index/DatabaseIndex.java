@@ -57,7 +57,7 @@ public class DatabaseIndex implements MappedObject {
 		for (Table table : database.getTables()) {
 			TableIndex localTable = tableMap.get(table.getName());
 			if (localTable == null) {
-				localTable = new TableIndex(this, table.getName(), table.getTableConfig());
+				localTable = new TableIndex(this, table, table.getTableConfig());
 				addTable(localTable);
 			}
 			if (localTable.getMappingId() == 0) {

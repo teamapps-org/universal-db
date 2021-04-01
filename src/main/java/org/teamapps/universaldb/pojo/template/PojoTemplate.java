@@ -58,8 +58,16 @@ public class PojoTemplate {
 		return create(TemplateUtil.ENTITY_INTERFACE_TPL);
 	}
 
+	public static PojoTemplate createEntityViewInterface() throws IOException {
+		return create(TemplateUtil.ENTITY_VIEW_INTERFACE_TPL);
+	}
+
 	public static PojoTemplate createUdbEntity() throws IOException {
 		return create(TemplateUtil.UDB_ENTITY_TPL);
+	}
+
+	public static PojoTemplate createUdbEntityView() throws IOException {
+		return create(TemplateUtil.UDB_ENTITY_VIEW_TPL);
 	}
 
 	public static PojoTemplate createQueryInterface() throws IOException {

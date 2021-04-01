@@ -38,9 +38,9 @@ public class ReferenceTest {
 
 	@Before
 	public void cleanTable() {
-//		Company.getAll().forEach(Entity::delete);
-//		Person.getAll().forEach(Entity::delete);
-//		Contract.getAll().forEach(Entity::delete);
+		Company.getAll().forEach(Entity::delete);
+		Person.getAll().forEach(Entity::delete);
+		Contract.getAll().forEach(Entity::delete);
 	}
 
 	@Test

@@ -53,6 +53,11 @@ public class Database implements MappedObject {
 		return table;
 	}
 
+	public Table addView(String name) {
+		Table view = new Table(this, name, TableConfig.create(), true);
+		return addTable(view);
+	}
+
 	public Schema getSchema() {
 		return schema;
 	}
@@ -61,8 +66,16 @@ public class Database implements MappedObject {
 		return name;
 	}
 
-	public List<Table> getTables() {
+	public List<Table> getAllTables() {
 		return tables;
+	}
+
+	public List<Table> getTables() {
+		return tables.stream().filter(table -> !table.isView()).collect(Collectors.toList());
+	}
+
+	public List<Table> getViewTables() {
+		return tables.stream().filter(Table::isView).collect(Collectors.toList());
 	}
 
 	@Override

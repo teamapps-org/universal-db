@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,6 +52,28 @@ public class Model implements SchemaInfoProvider {
 				.addReference("parent", table, false, "children")
 				.addReference("children", table, true, "parent");
 
+		Table fieldTestView = database.addView("fieldTestView");
+		table.addView(fieldTestView);
+
+		fieldTestView
+				.addBoolean("booleanField")
+				.addShort("shortField")
+				.addInteger("intField")
+				.addLong("longField")
+				.addFloat("floatField")
+				.addDouble("doubleField")
+				.addText("textField")
+				.addTranslatableText("translatableText")
+				.addTimestamp("timestampField")
+				.addTime("timeField")
+				.addDate("dateField")
+				.addDateTime("dateTimeField")
+				.addLocalDate("localDateField")
+				.addEnum("enumField", "firstValue", "secondValue", "thirdValue", "forthValue", "fifthValue")
+				.addFile("fileField")
+				.addBinary("binaryField")
+		;
+
 		Table person = database.addTable("person");
 		Table company = database.addTable("company");
 		Table contract = database.addTable("contract");
@@ -70,10 +92,35 @@ public class Model implements SchemaInfoProvider {
 				.addText("title")
 				.addReference("companies", company, true, "companyContracts");
 
+		Table personView = database.addView("personView");
+		Table personView2 = database.addView("personView2");
+		person.addView(personView);
+		person.addView(personView2);
+		Table companyView = database.addView("companyView");
+		company.addView(companyView);
+		personView
+				.addText("firstName")
+				.addText("lastName")
+				.addReference("company", companyView, false)
+		;
+		personView2
+				.addText("lastName")
+				.addReference("company", companyView, false)
+		;
+		companyView
+				.addText("name")
+				.addReference("employees", personView, true)
+		;
+
+		Table personWithViewRef = database.addTable("personWithViewRef");
+		personWithViewRef
+				.addText("name")
+				.addInteger("value")
+				.addReference("companyView", companyView, false)
+		;
 
 		Table cascadeTest1 = database.addTable("cascadeTest1", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
 		Table cascadeTest2 = database.addTable("cascadeTest2", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
-
 
 		cascadeTest1.addText("name");
 		cascadeTest1.addReference("ref2s", cascadeTest2, true, "ref1", true);

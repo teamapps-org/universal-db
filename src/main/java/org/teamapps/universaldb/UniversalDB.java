@@ -27,10 +27,7 @@ import org.teamapps.universaldb.distribute.*;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.LocalFileStore;
-import org.teamapps.universaldb.schema.Database;
-import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.schema.SchemaInfoProvider;
-import org.teamapps.universaldb.schema.Table;
+import org.teamapps.universaldb.schema.*;
 import org.teamapps.universaldb.transaction.*;
 
 import java.io.File;
@@ -135,6 +132,17 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 					String queryClassName = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
 					Class<?> queryClass = Class.forName(queryClassName);
 					queryClassByTableIndex.put(tableIndex, queryClass);
+
+					for (Table view : tableIndex.getTable().getViews()) {
+						String viewName = view.getName();
+						className = path + ".Udb" + viewName.substring(0, 1).toUpperCase() + viewName.substring(1);
+						schemaClass = Class.forName(className);
+						method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
+						method.setAccessible(true);
+						method.invoke(null, tableIndex);
+					}
+
+
 				} catch (ClassNotFoundException e) {
 					logger.info("Could not load entity class for tableIndex:" + tableIndex.getFQN());
 				}
@@ -202,7 +210,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 	public TableIndex addTable(Table table, String database) {
 		DatabaseIndex db = schemaIndex.getDatabase(database);
-		TableIndex tableIndex = new TableIndex(db, table.getName(), table.getTableConfig());
+		TableIndex tableIndex = new TableIndex(db, table, table.getTableConfig());
 		tableIndex.setMappingId(table.getMappingId());
 		tableIndex.merge(table);
 		return tableIndex;

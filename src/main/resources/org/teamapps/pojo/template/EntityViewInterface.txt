@@ -1,0 +1,42 @@
+package {package};
+
+import org.teamapps.universaldb.pojo.*;
+import org.teamapps.universaldb.record.*;
+import org.teamapps.universaldb.index.file.FileValue;
+import org.teamapps.universaldb.index.translation.*;
+import java.util.*;
+import java.time.*;
+import java.io.*;
+import java.util.function.Supplier;
+{imports}
+
+public interface {type} extends Entity<{type}> {
+
+{staticFieldNames}
+
+    static {type} getById(int id) {
+        return new {udbType}(id, false);
+    }
+
+    static EntityBuilder<{type}> getBuilder() {
+        return new {udbType}(0, false);
+    }
+
+{methods}
+    static List<{type}> getAll() {
+        return {udbType}.getAll();
+    }
+
+    static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, String ... path) {
+        return {udbType}.sort(list, sortFieldName, ascending, path);
+    }
+
+    static int getCount() {
+        return {udbType}.getCount();
+    }
+
+    static {query} filter() {
+        return new {udbQuery}();
+    }
+}
+

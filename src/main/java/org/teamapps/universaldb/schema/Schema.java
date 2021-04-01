@@ -19,11 +19,14 @@
  */
 package org.teamapps.universaldb.schema;
 
-import org.teamapps.universaldb.util.DataStreamUtil;
 import org.teamapps.universaldb.TableConfig;
 import org.teamapps.universaldb.index.ColumnType;
+import org.teamapps.universaldb.util.DataStreamUtil;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -78,6 +81,7 @@ public class Schema {
 		Table table = null;
 		Set<String> columnTypes = ColumnType.getNames();
 		Map<Column, String> unresolvedReferenceTableMap = new HashMap<>();
+		Map<String, Table> tableByViewId = new HashMap<>();
 		for (String line : lines) {
 			if (line.startsWith("/") || line.startsWith("#")) {
 				continue;
@@ -107,24 +111,39 @@ public class Schema {
 			if (type.equalsIgnoreCase("TABLE")) {
 				TableConfig tableConfig = TableConfig.parse(line);
 				table = db.addTable(name, tableConfig.getTableOptions());
+				List<String> viewNames = parseTableViewNames(line);
+				for (String viewName : viewNames) {
+					tableByViewId.put(db.getName() + "." + viewName, table);
+				}
+			}
+			if (type.equalsIgnoreCase("VIEW")) {
+				table = db.addView(name);
+				Table tbl = tableByViewId.get(db.getName() + "." + name);
+				if (tbl != null) {
+					tbl.addView(table);
+				} else {
+					//todo unresolved tables
+				}
 			}
 			if (type.equalsIgnoreCase("ENUM")) {
 				//enable separate enum definition...
 			}
 			if (columnTypes.contains(type.toUpperCase()) && !Table.isReservedMetaName(name)) {
 				ColumnType columnType = ColumnType.valueOf(type);
-				Column column = table.addColumn(name, columnType);
-				if (columnType.isReference()) {
-					unresolvedReferenceTableMap.put(column, tokens.get(3));
-					String backReference = tokens.get(5);
-					column.setBackReference(backReference.equals("NONE") ? null : backReference);
-					if (line.contains("CASCADE DELETE REFERENCES")) {
-						column.setCascadeDeleteReferences(true);
+				if (table != null) {
+					Column column = table.addColumn(name, columnType);
+					if (columnType.isReference()) {
+						unresolvedReferenceTableMap.put(column, tokens.get(3));
+						String backReference = tokens.get(5);
+						column.setBackReference(backReference.equals("NONE") ? null : backReference);
+						if (line.contains("CASCADE DELETE REFERENCES")) {
+							column.setCascadeDeleteReferences(true);
+						}
+					} else if (columnType == ColumnType.ENUM) {
+						line = line.trim();
+						String[] values = line.substring(line.indexOf("VALUES (") + 8).replace(")", "").split(", ");
+						column.setEnumValues(Arrays.asList(values));
 					}
-				} else if (columnType == ColumnType.ENUM) {
-					line = line.trim();
-					String[] values = line.substring(line.indexOf("VALUES (") + 8).replace(")", "").split(", ");
-					column.setEnumValues(Arrays.asList(values));
 				}
 			}
 		}
@@ -135,9 +154,17 @@ public class Schema {
 			String dbName = parts[0];
 			String tableName = parts[1];
 			Database refDb = getDatabases().stream().filter(database -> database.getName().equals(dbName)).findAny().orElse(null);
-			Table referenceTable = refDb.getTables().stream().filter(refTable -> refTable.getName().equals(tableName)).findAny().orElse(null);
+			Table referenceTable = refDb.getAllTables().stream().filter(refTable -> refTable.getName().equals(tableName)).findAny().orElse(null);
 			column.setReferencedTable(referenceTable);
 		}
+	}
+	
+	private List<String> parseTableViewNames(String line) {
+		if (line.contains(" WITH VIEWS ")) {
+			String[] parts = line.substring(line.lastIndexOf(" WITH VIEWS ") + 12).strip().split(", ");
+			return Arrays.asList(parts);
+		}
+		return Collections.emptyList();
 	}
 
 	public Schema(byte[] data) throws IOException {

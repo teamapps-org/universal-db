@@ -49,6 +49,7 @@ public class TableIndex implements MappedObject {
 	private static final Logger log = LoggerFactory.getLogger(TableIndex.class);
 
 	private final DatabaseIndex databaseIndex;
+	private final Table table;
 	private final String name;
 	private final String parentFQN;
 	private final File path;
@@ -68,13 +69,14 @@ public class TableIndex implements MappedObject {
 	private List<TranslatableTextIndex> translatedTextFields;
 	private int mappingId;
 
-	public TableIndex(DatabaseIndex database, String name, TableConfig tableConfig) {
-		this(database, database.getPath(), database.getFQN(), name, tableConfig);
+	public TableIndex(DatabaseIndex database, Table table, TableConfig tableConfig) {
+		this(database, database.getPath(), database.getFQN(), table, tableConfig);
 	}
 
-	public TableIndex(DatabaseIndex databaseIndex, File parentPath, String parentFQN, String name, TableConfig tableConfig) {
+	public TableIndex(DatabaseIndex databaseIndex, File parentPath, String parentFQN, Table table, TableConfig tableConfig) {
 		this.databaseIndex = databaseIndex;
-		this.name = name;
+		this.table = table;
+		this.name = table.getName();
 		this.parentFQN = parentFQN;
 		this.path = new File(parentPath, name);
 		path.mkdir();
@@ -163,6 +165,9 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
+	public Table getTable() {
+		return table;
+	}
 
 	public FileStore getFileStore() {
 		return databaseIndex.getSchemaIndex().getFileStore();
