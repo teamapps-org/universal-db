@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,8 +52,7 @@ public class Model implements SchemaInfoProvider {
 				.addReference("parent", table, false, "children")
 				.addReference("children", table, true, "parent");
 
-		Table fieldTestView = database.addView("fieldTestView");
-		table.addView(fieldTestView);
+		Table fieldTestView = database.addView("fieldTestView", table);
 
 		fieldTestView
 				.addBoolean("booleanField")
@@ -92,12 +91,9 @@ public class Model implements SchemaInfoProvider {
 				.addText("title")
 				.addReference("companies", company, true, "companyContracts");
 
-		Table personView = database.addView("personView");
-		Table personView2 = database.addView("personView2");
-		person.addView(personView);
-		person.addView(personView2);
-		Table companyView = database.addView("companyView");
-		company.addView(companyView);
+		Table personView = database.addView("personView", person);
+		Table personView2 = database.addView("personView2", person);
+		Table companyView = database.addView("companyView", company);
 		personView
 				.addText("firstName")
 				.addText("lastName")

@@ -81,7 +81,6 @@ public class Schema {
 		Table table = null;
 		Set<String> columnTypes = ColumnType.getNames();
 		Map<Column, String> unresolvedReferenceTableMap = new HashMap<>();
-		Map<String, Table> tableByViewId = new HashMap<>();
 		for (String line : lines) {
 			if (line.startsWith("/") || line.startsWith("#")) {
 				continue;
@@ -111,19 +110,10 @@ public class Schema {
 			if (type.equalsIgnoreCase("TABLE")) {
 				TableConfig tableConfig = TableConfig.parse(line);
 				table = db.addTable(name, tableConfig.getTableOptions());
-				List<String> viewNames = parseTableViewNames(line);
-				for (String viewName : viewNames) {
-					tableByViewId.put(db.getName() + "." + viewName, table);
-				}
 			}
 			if (type.equalsIgnoreCase("VIEW")) {
-				table = db.addView(name);
-				Table tbl = tableByViewId.get(db.getName() + "." + name);
-				if (tbl != null) {
-					tbl.addView(table);
-				} else {
-					//todo unresolved tables
-				}
+				String referencedTablePath = tokens.get(4);
+				table = db.addView(name, referencedTablePath);
 			}
 			if (type.equalsIgnoreCase("ENUM")) {
 				//enable separate enum definition...
@@ -157,14 +147,6 @@ public class Schema {
 			Table referenceTable = refDb.getAllTables().stream().filter(refTable -> refTable.getName().equals(tableName)).findAny().orElse(null);
 			column.setReferencedTable(referenceTable);
 		}
-	}
-	
-	private List<String> parseTableViewNames(String line) {
-		if (line.contains(" WITH VIEWS ")) {
-			String[] parts = line.substring(line.lastIndexOf(" WITH VIEWS ") + 12).strip().split(", ");
-			return Arrays.asList(parts);
-		}
-		return Collections.emptyList();
 	}
 
 	public Schema(byte[] data) throws IOException {

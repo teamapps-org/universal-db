@@ -111,7 +111,6 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		String pojoPath = schema.getPojoNamespace();
 		this.schemaIndex = new SchemaIndex(schema, storagePath);
 
-
 		schemaIndex.setFileStore(fileStore);
 
 		mapSchema(schema);
@@ -133,19 +132,27 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 					Class<?> queryClass = Class.forName(queryClassName);
 					queryClassByTableIndex.put(tableIndex, queryClass);
 
-					for (Table view : tableIndex.getTable().getViews()) {
-						String viewName = view.getName();
-						className = path + ".Udb" + viewName.substring(0, 1).toUpperCase() + viewName.substring(1);
-						schemaClass = Class.forName(className);
-						method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
-						method.setAccessible(true);
-						method.invoke(null, tableIndex);
-					}
-
-
 				} catch (ClassNotFoundException e) {
 					logger.info("Could not load entity class for tableIndex:" + tableIndex.getFQN());
 				}
+			}
+		}
+		installTableViews(schemaInfo, UniversalDB.class.getClassLoader());
+	}
+
+	public void installTableViews(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		Schema schema = schemaInfo.getSchema();
+		String pojoPath = schema.getPojoNamespace();
+		for (Database database : schema.getDatabases()) {
+			String path = pojoPath + "." + database.getName().toLowerCase();
+			for (Table table : database.getViewTables()) {
+				TableIndex tableIndex = schemaIndex.getTableByPath(table.getReferencedTablePath());
+				String tableName = table.getName();
+				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
+				Class<?> schemaClass = Class.forName(className, true, classLoader);
+				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
+				method.setAccessible(true);
+				method.invoke(null, tableIndex);
 			}
 		}
 	}

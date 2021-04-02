@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,19 +54,20 @@ public class Table implements MappedObject {
 	private final String name;
 	private final TableConfig tableConfig;
 	private final boolean view;
+	private final String referencedTablePath;
 	private final List<Column> columns = new ArrayList<>();
-	private final List<Table> views = new ArrayList<>();
 	private int mappingId;
 
 	public Table(Database database, String name, TableConfig tableConfig) {
-		this(database, name, tableConfig, false);
+		this(database, name, tableConfig, false, null);
 	}
 
-	public Table(Database database, String name, TableConfig tableConfig, boolean view) {
+	public Table(Database database, String name, TableConfig tableConfig, boolean view, String referencedTablePath) {
 		this.database = database;
 		this.name = name;
 		this.tableConfig = tableConfig;
 		this.view = view;
+		this.referencedTablePath = referencedTablePath;
 
 		if (tableConfig.isCheckpoints()) {
 			addLong(FIELD_CHECKPOINTS);
@@ -200,11 +201,6 @@ public class Table implements MappedObject {
 		return column;
 	}
 
-	public Table addView(Table view) {
-		views.add(view);
-		return this;
-	}
-
 	public Database getDatabase() {
 		return database;
 	}
@@ -221,12 +217,12 @@ public class Table implements MappedObject {
 		return view;
 	}
 
-	public List<Column> getColumns() {
-		return columns;
+	public String getReferencedTablePath() {
+		return referencedTablePath;
 	}
 
-	public List<Table> getViews() {
-		return views;
+	public List<Column> getColumns() {
+		return columns;
 	}
 
 	public Column addColumn(Column column) {
@@ -256,10 +252,11 @@ public class Table implements MappedObject {
 
 	public String createDefinition() {
 		StringBuilder sb = new StringBuilder();
-		String type = view ? "VIEW" : "TABLE";
-		sb.append("\t").append(name).append(" as ").append(type).append(" ").append(tableConfig.writeConfig());
-		if (!views.isEmpty()) {
-			sb.append(" WITH VIEWS ").append(views.stream().map(Table::getName).collect(Collectors.joining(", ")));
+		sb.append("\t").append(name).append(" as ");
+		if (view) {
+			sb.append("VIEW REFERENCING ").append(referencedTablePath);
+		} else {
+			sb.append("TABLE ").append(tableConfig.writeConfig());
 		}
 		sb.append("\n");
 		columns.forEach(column -> sb.append(column.createDefinition()));

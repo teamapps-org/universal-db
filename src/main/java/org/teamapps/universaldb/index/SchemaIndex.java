@@ -134,6 +134,21 @@ public class SchemaIndex {
 		return databaseIndex.getTable(table.getName());
 	}
 
+	public TableIndex getTableByPath(String path) {
+		if (path == null || !path.contains(".")) {
+			return null;
+		}
+		String[] parts = path.split("\\.");
+		if (parts.length != 2) {
+			return null;
+		}
+		DatabaseIndex database = getDatabase(parts[0]);
+		if (database != null) {
+			return database.getTable(parts[1]);
+		}
+		return null;
+	}
+
 	public ColumnIndex getColumn(Column column) {
 		Table table = column.getTable();
 		TableIndex tableIndex = getTable(table);

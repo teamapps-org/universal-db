@@ -53,8 +53,13 @@ public class Database implements MappedObject {
 		return table;
 	}
 
-	public Table addView(String name) {
-		Table view = new Table(this, name, TableConfig.create(), true);
+	public Table addView(String name, String referencedTablePath) {
+		Table view = new Table(this, name, TableConfig.create(), true, referencedTablePath);
+		return addTable(view);
+	}
+
+	public Table addView(String name, Table referencedTable) {
+		Table view = new Table(this, name, TableConfig.create(), true, referencedTable.getFQN());
 		return addTable(view);
 	}
 
