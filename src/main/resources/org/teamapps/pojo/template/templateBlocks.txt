@@ -10,6 +10,9 @@ protected static {type} {name};
 {INTERFACE_GET_METHOD_BOOLEAN}#
     boolean get{name}();
 #
+{INTERFACE_GET_METHOD_BOOLEAN_2}#
+    boolean is{name}();
+#
 {INTERFACE_GET_METHOD_SHORT}#
     short get{name}();
 #
@@ -192,6 +195,12 @@ protected static {type} {name};
 {ENTITY_GET_METHOD_BOOLEAN}#
 	@Override
 	public boolean get{name}() {
+	    return getBooleanValue({name2});
+	}
+#
+{ENTITY_GET_METHOD_BOOLEAN_2}#
+	@Override
+	public boolean is{name}() {
 	    return getBooleanValue({name2});
 	}
 #
