@@ -51,6 +51,8 @@ public interface Entity<ENTITY> extends Identifiable{
 
 	boolean isStored();
 
+	boolean isDeleted();
+
 	Object getEntityValue(String fieldName);
 
 	void setEntityValue(String fieldName, Object value);

@@ -34,6 +34,7 @@ import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.record.EntityBuilder;
+import org.teamapps.universaldb.schema.Table;
 import org.teamapps.universaldb.transaction.Transaction;
 import org.teamapps.universaldb.transaction.TransactionRecord;
 import org.teamapps.universaldb.transaction.TransactionRecordValue;
@@ -694,6 +695,11 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	@Override
+	public boolean isDeleted() {
+		return tableIndex.isDeleted(id);
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
@@ -711,5 +717,23 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		} else {
 			return getCorrelationId();
 		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(tableIndex.getName()).append(": ").append(getId()).append("\n");
+		List<ColumnIndex> sortedFields = new ArrayList<>();
+		sortedFields.addAll(tableIndex.getColumnIndices().stream().filter(column -> !Table.isReservedMetaName(column.getName())).collect(Collectors.toList()));
+		sortedFields.addAll(tableIndex.getColumnIndices().stream().filter(column -> Table.isReservedMetaName(column.getName())).collect(Collectors.toList()));
+		for (ColumnIndex column : sortedFields) {
+			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
+			if (isChanged(column)) {
+				TransactionRecordValue changeValue = getChangeValue(column);
+				sb.append(" -> ").append(changeValue.getValue());
+			}
+			sb.append("\n");
+		}
+		return sb.toString();
 	}
 }

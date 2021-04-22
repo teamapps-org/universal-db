@@ -196,6 +196,14 @@ public class TableIndex implements MappedObject {
 		return deletedRecords.getBitSet();
 	}
 
+	public boolean isDeleted(int id) {
+		if (deletedRecords != null) {
+			return deletedRecords.getValue(id);
+		} else {
+			return !records.getValue(id);
+		}
+	}
+
 	public void addIndex(ColumnType type, String name) {
 		ColumnIndex column = ColumnIndex.createColumn(this, name, type);
 		addIndex(column);

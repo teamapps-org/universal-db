@@ -31,6 +31,12 @@ public class DoubleValueIterator implements PrimitiveIterator.OfInt {
 	public DoubleValueIterator(int value1, int value2) {
 		this.value1 = value1;
 		this.value2 = value2;
+		if (value1 < 0) {
+			first = false;
+			if (value2 < 0) {
+				next = false;
+			}
+		}
 	}
 
 	@Override
