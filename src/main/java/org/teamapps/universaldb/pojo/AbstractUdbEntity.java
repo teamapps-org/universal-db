@@ -340,7 +340,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setBooleanValue(boolean value, BooleanIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getBooleanValue(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public short getShortValue(ShortIndex index) {
@@ -352,7 +354,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setShortValue(short value, ShortIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getShortValue(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public int getIntValue(IntegerIndex index) {
@@ -364,7 +368,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setIntValue(int value, IntegerIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getIntValue(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public long getLongValue(LongIndex index) {
@@ -376,7 +382,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setLongValue(long value, LongIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getLongValue(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public float getFloatValue(FloatIndex index) {
@@ -388,7 +396,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setFloatValue(float value, FloatIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getFloatValue(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public double getDoubleValue(DoubleIndex index) {
@@ -400,7 +410,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setDoubleValue(double value, DoubleIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getDoubleValue(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public String getTextValue(TextIndex index) {
@@ -412,7 +424,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setTextValue(String value, TextIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (!Objects.equals(getTextValue(index), value)) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public TranslatableText getTranslatableTextValue(TranslatableTextIndex index) {
@@ -454,17 +468,23 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setTimestampValue(Instant value, IntegerIndex index) {
-		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
-		setChangeValue(index, intValue, tableIndex);
+		if (!Objects.equals(getTimestampValue(index), value)) {
+			Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
+			setChangeValue(index, intValue, tableIndex);
+		}
 	}
 
 	public void setTimestampAsEpochSecond(int value, IntegerIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getTimestampAsEpochSecond(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public void setTimestampAsEpochMilli(long value, IntegerIndex index) {
-		int intValue = (int) (value / 1000);
-		setChangeValue(index, intValue, tableIndex);
+		if (getTimestampAsEpochMilli(index) != value) {
+			int intValue = (int) (value / 1000);
+			setChangeValue(index, intValue, tableIndex);
+		}
 	}
 
 	public Instant getTimeValue(IntegerIndex index) {
@@ -478,8 +498,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setTimeValue(Instant value, IntegerIndex index) {
-		Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
-		setChangeValue(index, intValue, tableIndex);
+		if (!Objects.equals(getTimeValue(index), value)) {
+			Integer intValue = value != null ? (int) value.getEpochSecond() : 0;
+			setChangeValue(index, intValue, tableIndex);
+		}
 	}
 
 	public Instant getDateValue(LongIndex index) {
@@ -501,12 +523,16 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setDateValue(Instant value, LongIndex index) {
-		Long longValue = value != null ? value.toEpochMilli() : 0;
-		setChangeValue(index, longValue, tableIndex);
+		if (!Objects.equals(getDateValue(index), value)) {
+			Long longValue = value != null ? value.toEpochMilli() : 0;
+			setChangeValue(index, longValue, tableIndex);
+		}
 	}
 
 	public void setDateAsEpochMilli(long value, LongIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getDateAsEpochMilli(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public Instant getDateTimeValue(LongIndex index) {
@@ -528,12 +554,16 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setDateTimeValue(Instant value, LongIndex index) {
-		Long longValue = value != null ? (long) value.toEpochMilli() : 0;
-		setChangeValue(index, longValue, tableIndex);
+		if (!Objects.equals(getDateTimeValue(index), value)) {
+			Long longValue = value != null ? (long) value.toEpochMilli() : 0;
+			setChangeValue(index, longValue, tableIndex);
+		}
 	}
 
 	public void setDateTimeAsEpochMilli(long value, LongIndex index) {
-		setChangeValue(index, value, tableIndex);
+		if (getDateTimeAsEpochMilli(index) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public LocalDate getLocalDateValue(LongIndex index) {
@@ -547,11 +577,14 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setLocalDateValue(LocalDate value, LongIndex index) {
-		long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
-		setChangeValue(index, longValue, tableIndex);
+		if (!Objects.equals(getLocalDateValue(index), value)) {
+			long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
+			setChangeValue(index, longValue, tableIndex);
+		}
 	}
 
 	public void setLocalDateAsEpochMilli(long value, LongIndex index) {
+		//todo check for diff
 		setChangeValue(index, value, tableIndex);
 	}
 
@@ -567,7 +600,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public <ENUM extends Enum<ENUM>> void setEnumValue(ShortIndex index, ENUM value) {
 		short shortValue = (short) (value != null ? value.ordinal() + 1 : 0);
-		setChangeValue(index, shortValue, tableIndex);
+		if (getShortValue(index) != shortValue) {
+			setChangeValue(index, shortValue, tableIndex);
+		}
 	}
 
 	public <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> getMultiReferenceValue(MultiReferenceIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
