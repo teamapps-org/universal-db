@@ -103,7 +103,6 @@ public class AbstractResizingAtomicStore {
 	}
 
 	private void updateBufferSize(int bufferIndex, int bufferSize) {
-		System.out.println("update size, index:" + bufferIndex + ", size:" + bufferSize);
 		File file = getStoreFile(bufferIndex);
 		try {
 			RandomAccessFile ras = new RandomAccessFile(file, "rw");
