@@ -31,6 +31,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashSet;
@@ -47,7 +48,7 @@ public class ResizableAtomicMappedBuffer {
 
     public ResizableAtomicMappedBuffer(File file, int bufferSize) {
         this.file = file;
-        this.bufferSize = bufferSize;
+        this.bufferSize = file.exists() ? (int) Math.max(bufferSize, file.length()) : bufferSize;
         createBuffer();
     }
 
@@ -73,12 +74,16 @@ public class ResizableAtomicMappedBuffer {
         }
     }
 
+    public AtomicBuffer getBuffer() {
+        return buffer;
+    }
+
     private void updateBufferSize()  {
         try {
             RandomAccessFile  ras = new RandomAccessFile(file, "rw");
             if (!file.exists() || file.length() < bufferSize) {
-                ras.seek(bufferSize - 10);
-                ras.write(new byte[10]);
+                ras.seek(bufferSize - 4);
+                ras.write(new byte[4]);
             }
             MappedByteBuffer mappedByteBuffer = ras.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, bufferSize);
             try {

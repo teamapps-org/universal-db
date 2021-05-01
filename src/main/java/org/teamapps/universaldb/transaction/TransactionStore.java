@@ -164,7 +164,7 @@ public class TransactionStore implements TransactionIdHandler {
             long transactionId = transactionRequest.getTransaction().getTransactionId();
             if (currentTransactionId != transactionId) {
                 //todo: enforce disconnect!
-                throw new RuntimeException("Cannot execute transaction with unexptected transaction id, expected" + currentTransactionId + ", actual:" + transactionId);
+                throw new RuntimeException("Cannot execute transaction with unexpected transaction id, expected" + currentTransactionId + ", actual:" + transactionId);
             }
             transactionRequest.executeResolvedTransaction(this);
         } else {

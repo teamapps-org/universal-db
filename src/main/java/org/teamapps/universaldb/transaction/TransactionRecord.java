@@ -67,7 +67,6 @@ public class TransactionRecord {
 		this.update = update;
 		this.deleteRecord = deleteRecord;
 		this.recordTransactionId = strictChangeVerification ? tableIndex.getTransactionId(recordId) : 0;
-		TableConfig config = tableIndex.getTableConfig();
 		recordValues = new ArrayList<>();
 		if (deleteRecord) {
 			if (recordId <= 0) {
@@ -139,6 +138,18 @@ public class TransactionRecord {
 
 	public List<TransactionRecordValue> getRecordValues() {
 		return recordValues;
+	}
+
+	public boolean isUpdate() {
+		return update;
+	}
+
+	public boolean isDeleteRecord() {
+		return deleteRecord;
+	}
+
+	public long getRecordTransactionId() {
+		return recordTransactionId;
 	}
 
 	public void writeTransactionValue(DataOutputStream dataOutputStream) throws IOException {
