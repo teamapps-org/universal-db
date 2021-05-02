@@ -89,6 +89,10 @@ public class AbstractBlockEntryAtomicStore extends AbstractResizingAtomicStore {
 		return 0;
 	}
 
+	public boolean isEmpty(int id) {
+		return positionBuffer.getLong(id) == 0;
+	}
+
 	protected void removeEntry(long position) {
 		if (position > 0) {
 			int bufferIndex = getBufferIndex(position);
