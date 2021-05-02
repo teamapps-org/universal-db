@@ -52,7 +52,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	public byte getByte(int id) {
-		if (id > getMaximumId(1)) {
+		if (id <= 0 || id > getMaximumId(1)) {
 			return 0;
 		}
 		int bufferIndex = id / BYTE_ENTRIES_PER_FILE;
@@ -70,7 +70,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	public short getShort(int id) {
-		if (id > getMaximumId(2)) {
+		if (id <= 0 || id > getMaximumId(2)) {
 			return 0;
 		}
 		int bufferIndex = id / SHORT_ENTRIES_PER_FILE;
@@ -89,7 +89,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 
 
 	public int getInt(int id) {
-		if (id > getMaximumId(4)) {
+		if (id <= 0 || id > getMaximumId(4)) {
 			return 0;
 		}
 		int bufferIndex = id / INTEGER_ENTRIES_PER_FILE;
@@ -107,7 +107,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	public float getFloat(int id) {
-		if (id > getMaximumId(4)) {
+		if (id <= 0 || id > getMaximumId(4)) {
 			return 0;
 		}
 		int bufferIndex = id / INTEGER_ENTRIES_PER_FILE;
@@ -125,7 +125,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	public long getLong(int id) {
-		if (id > getMaximumId(8)) {
+		if (id <= 0 || id > getMaximumId(8)) {
 			return 0;
 		}
 		int bufferIndex = id / LONG_ENTRIES_PER_FILE;
@@ -143,7 +143,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	public double getDouble(int id) {
-		if (id > getMaximumId(8)) {
+		if (id <= 0 || id > getMaximumId(8)) {
 			return 0;
 		}
 		int bufferIndex = id / LONG_ENTRIES_PER_FILE;

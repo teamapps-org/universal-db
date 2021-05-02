@@ -3,6 +3,7 @@ package org.teamapps.universaldb.index.buffer;
 import org.agrona.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
 
@@ -71,6 +72,28 @@ public class BlockChainEntry {
 			}
 			pos += 4;
 		}
+	}
+
+	public boolean containsBlockEntry(int entry) {
+		int pos = offset + chainType.getDataOffset();
+		for (int i = 0; i < chainType.getItems(); i++) {
+			int value = readInt(pos);
+			if (value == entry) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean containsBlockEntry(BitSet bitSet) {
+		int pos = offset + chainType.getDataOffset();
+		for (int i = 0; i < chainType.getItems(); i++) {
+			int value = readInt(pos);
+			if (value > 0 && bitSet.get(value)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public int writeBlockEntries(int startListPos, int length, List<Integer> list) {
