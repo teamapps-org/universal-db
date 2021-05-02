@@ -167,9 +167,6 @@ public class ReferenceTest {
 		}
 		for (Person person : persons) {
 			expected.remove(person);
-			if (expected.size() == 1807) {
-				System.out.println("now!");
-			}
 			company.removeEmployees(person).save();
 			checkReferenceCount(company, expected);
 		}
