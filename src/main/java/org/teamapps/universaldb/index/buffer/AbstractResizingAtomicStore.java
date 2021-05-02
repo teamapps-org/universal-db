@@ -20,14 +20,12 @@ public class AbstractResizingAtomicStore {
 	protected static final int MIN_FILE_SIZE = 120_000;
 	protected static final int MAX_FILE_SIZE = 1966_080_000;
 
-
 	private final File path;
 	private final String name;
 	private final long maxTotalSize;
 	private AtomicBuffer[] buffers;
 	private int lastBufferSize;
 	private long totalCapacity;
-
 
 	public AbstractResizingAtomicStore(File path, String name) {
 		this.path = path;
@@ -144,6 +142,17 @@ public class AbstractResizingAtomicStore {
 
 	private File getStoreFile(int index) {
 		return new File(getPath(), getName() + "-" + index + ".idx");
+	}
+
+	public void flush() {
+		for (AtomicBuffer buffer : buffers) {
+			MappedByteBuffer byteBuffer = (MappedByteBuffer) buffer.byteBuffer();
+			byteBuffer.force();
+		}
+	}
+
+	public void close() {
+		flush();
 	}
 
 	public void drop() {

@@ -12,12 +12,12 @@ public class BlockChainAtomicStore extends AbstractBlockEntryAtomicStore {
 	}
 
 	public int getEntryCount(int id) {
-		long position = getBlockPosition(id);
-		if (position > 0) {
-			BlockChainEntry block = getBlock(position);
-			return block.getTotalCount();
-		}
-		return 0;
+		BlockChainEntry block = getBlock(getBlockPosition(id));
+		return block != null ? block.getTotalCount() : 0;
+	}
+
+	public boolean isEmpty(int id) {
+		return getBlockPosition(id) == 0;
 	}
 
 	public List<Integer> getEntries(int id) {
@@ -31,7 +31,7 @@ public class BlockChainAtomicStore extends AbstractBlockEntryAtomicStore {
 				chainEntry.readBlockEntries(list);
 			}
 			if (position != getBlockPosition(id)) {
-				//chain has become invalid while reading
+				//chain has become invalid while reading - reloading entries
 				return getEntries(id);
 			}
 			return list;
@@ -57,6 +57,14 @@ public class BlockChainAtomicStore extends AbstractBlockEntryAtomicStore {
 			return removedEntryCount;
 		}
 		return 0;
+	}
+
+	public void removeEntry(int id, int value) {
+		removeEntries(id, Collections.singletonList(value));
+	}
+
+	public void removeAllEntries(int id) {
+		setEntries(id, null);
 	}
 
 	public void addEntries(int id, List<Integer> entries) {
@@ -97,6 +105,10 @@ public class BlockChainAtomicStore extends AbstractBlockEntryAtomicStore {
 		} else {
 			setEntries(id, entries);
 		}
+	}
+
+	public void addEntry(int id, int value) {
+		addEntries(id, Collections.singletonList(value));
 	}
 
 	public void setEntries(int id, List<Integer> entries) {
