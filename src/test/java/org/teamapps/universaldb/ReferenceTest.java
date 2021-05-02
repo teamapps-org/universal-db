@@ -29,6 +29,9 @@ import org.teamapps.universaldb.pojo.Entity;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.*;
+
+
 public class ReferenceTest {
 
 	@BeforeClass
@@ -214,6 +217,37 @@ public class ReferenceTest {
 			company.removeEmployees(remove).save();
 			checkReferenceCount(company, expected);
 		}
+
+	}
+
+	@Test
+	public void testSetReference() {
+		Company c1 = Company.create().setName("c1");
+		Company c2 = Company.create().setName("c2");
+		Company c3 = Company.create().setName("c3");
+
+		Person p1 = Person.create().setLastName("p1");
+		Person p2 = Person.create().setLastName("p2");
+		Person p3 = Person.create().setLastName("p3");
+
+		c1.addEmployees(p1);
+		c1.addEmployees(p2);
+		c1.save();
+
+		assertEquals(2, c1.getEmployeesCount());
+		assertEquals(2, c1.getEmployees().size());
+		checkReferenceCount(c1, new HashSet<>(Arrays.asList(p1, p2)));
+		assertEquals(c1, p1.getCompany());
+		assertEquals(c1, p2.getCompany());
+
+		c1.setEmployees(p3).save();
+		assertEquals(1, c1.getEmployeesCount());
+		assertEquals(1, c1.getEmployees().size());
+		checkReferenceCount(c1, new HashSet<>(Arrays.asList(p3)));
+
+		assertEquals(c1, p3.getCompany());
+		assertNull(p1.getCompany());
+		assertNull(p2.getCompany());
 
 	}
 

@@ -143,7 +143,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public void setReferenceEditValue(int id, MultiReferenceEditValue editValue) {
 		if (!editValue.getSetReferences().isEmpty()) {
 			List<Integer> references = RecordReference.createRecordIdsList(editValue.getSetReferences());
-			setReferences(id, references);
+			setReferences(id, references, false);
 		} else if (editValue.isRemoveAll()) {
 			removeAllReferences(id);
 			if (!editValue.getAddReferences().isEmpty()) {
@@ -162,9 +162,17 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		}
 	}
 
-	public void setReferences(int id, List<Integer> references) {
-		//todo why is there no check with previous values?
+	public void setReferences(int id, List<Integer> references, boolean cyclic) {
+		if (cyclicReferences && !cyclic) {
+			List<Integer> previousEntries = referenceStore.getEntries(id);
+			if (!previousEntries.isEmpty()) {
+				removeCyclicReferences(id, previousEntries);
+			}
+		}
 		referenceStore.setEntries(id, references);
+		if (cyclicReferences && !cyclic) {
+			addCyclicReferences(id, references);
+		}
 	}
 
 	public void addReferences(int id, List<Integer> references, boolean cyclic) {
@@ -276,7 +284,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 			for (int i = 0; i < count; i++) {
 				references.add(dataInputStream.readInt());
 			}
-			setReferences(id, references);
+			setReferences(id, references, true);
 		} catch (EOFException ignore) { } finally {
 			this.cyclicReferences = cyclicReferencesValue;
 		}
