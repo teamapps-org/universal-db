@@ -60,10 +60,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private EntityChangeSet entityChangeSet;
 	private Transaction transaction;
 
-	public static <ENTITY> List<ENTITY> createEntityList(EntityBuilder<ENTITY> entityBuilder, PrimitiveIterator.OfInt recordIdIterator, int count){
-		List<ENTITY> list = new ArrayList<>(count);
-		while (recordIdIterator.hasNext()) {
-			list.add(entityBuilder.build(recordIdIterator.nextInt()));
+	public static <ENTITY> List<ENTITY> createEntityList(EntityBuilder<ENTITY> entityBuilder, List<Integer> recordIds){
+		List<ENTITY> list = new ArrayList<>();
+		for (Integer recordId : recordIds) {
+			list.add(entityBuilder.build(recordId));
 		}
 		return list;
 	}
@@ -192,11 +192,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		TransactionRecordValue changeValue = getChangeValue(index);
 		MultiReferenceEditValue editValue = (MultiReferenceEditValue) changeValue.getValue();
 		MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) index;
-		PrimitiveIterator.OfInt references = multiReferenceIndex.getReferences(getId());
-		return createEntityList(editValue, references, entityBuilder);
+		return createEntityList(editValue, multiReferenceIndex.getReferencesAsList(id), entityBuilder);
 	}
 
-	protected <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> createEntityList(MultiReferenceEditValue editValue, PrimitiveIterator.OfInt referenceIterator, EntityBuilder<OTHER_ENTITY> entityBuilder) {
+	protected <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> createEntityList(MultiReferenceEditValue editValue, List<Integer> referencedRecords, EntityBuilder<OTHER_ENTITY> entityBuilder) {
 		Map<RecordReference, OTHER_ENTITY> entityByReference = (Map<RecordReference, OTHER_ENTITY>) entityChangeSet.getEntityByReference();
 		List<OTHER_ENTITY> list = new ArrayList<>();
 		if (!editValue.getSetReferences().isEmpty() || editValue.isRemoveAll()) {
@@ -237,12 +236,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			});
 			Set<Integer> addEntitySet = new HashSet<>();
 			addEntities.forEach(entity -> addEntitySet.add(entity.getId()));
-			if (referenceIterator != null) {
-				while (referenceIterator.hasNext()) {
-					int recordId = referenceIterator.nextInt();
-					if (!removeSet.contains(recordId) && !addEntitySet.contains(recordId)) {
-						list.add(entityBuilder.build(recordId));
-					}
+			for (Integer recordId : referencedRecords) {
+				if (!removeSet.contains(recordId) && !addEntitySet.contains(recordId)) {
+					list.add(entityBuilder.build(recordId));
 				}
 			}
 			list.addAll(addEntities);
@@ -610,7 +606,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			return createEntityList(index, entityBuilder);
 		} else {
 			if (!index.isEmpty(getId())) {
-				return createEntityList(entityBuilder, index.getReferences(getId()), index.getReferencesCount(getId()));
+				return createEntityList(entityBuilder, index.getReferencesAsList(getId()));
 			} else {
 				return Collections.emptyList();
 			}

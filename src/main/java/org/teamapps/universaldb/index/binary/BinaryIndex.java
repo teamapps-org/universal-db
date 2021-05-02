@@ -21,6 +21,8 @@ package org.teamapps.universaldb.index.binary;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
@@ -32,15 +34,11 @@ import java.util.function.Supplier;
 
 public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 
-	private final LongIndex positionIndex;
-	private final ByteArrayIndex byteArrayIndex;
-	private final boolean compressContent;
+	private BlockEntryAtomicStore atomicStore;
 
 	public BinaryIndex(String name, TableIndex table, boolean compressContent, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		this.compressContent = compressContent;
-		positionIndex = new LongIndex(name, table, columnType);
-		byteArrayIndex = new ByteArrayIndex(getPath(), name, this.compressContent);
+		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
 	}
 
 	@Override
@@ -64,12 +62,7 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	}
 
 	public int getLength(int id) {
-		long index = positionIndex.getValue(id);
-		if (index > 0) {
-			return byteArrayIndex.getByteArrayLength(index);
-		} else {
-			return 0;
-		}
+		return atomicStore.getBlockLength(id);
 	}
 
 	public Supplier<InputStream> getInputStreamSupplier(int id) {
@@ -84,24 +77,11 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	}
 
 	public byte[] getValue(int id) {
-		long index = positionIndex.getValue(id);
-		if (index == 0) {
-			return null;
-		}
-		return byteArrayIndex.getByteArray(index);
+		return atomicStore.getBytes(id);
 	}
 
 	public void setValue(int id, byte[] value) {
-		long index = positionIndex.getValue(id);
-		if (index != 0) {
-			byteArrayIndex.removeByteArray(index);
-		}
-		if (value != null && value.length > 0) {
-			index = byteArrayIndex.setByteArray(value);
-			positionIndex.setValue(id, index);
-		} else {
-			positionIndex.setValue(id, 0);
-		}
+		atomicStore.setBytes(id, value);
 	}
 
 	@Override
@@ -143,20 +123,20 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 		} catch (EOFException ignore) {}
 	}
 
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
+	}
+
 	@Override
 	public BitSet filter(BitSet records, BinaryFilter binaryFilter) {
 		return null;
 	}
 
-	@Override
-	public void close() {
-		positionIndex.close();
-		byteArrayIndex.close();
-	}
-
-	@Override
-	public void drop() {
-		positionIndex.drop();
-		byteArrayIndex.drop();
-	}
 }

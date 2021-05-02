@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
@@ -30,17 +31,13 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class ShortIndex extends AbstractBufferIndex<Short, NumericFilter> implements NumericIndex {
+public class ShortIndex extends AbstractIndex<Short, NumericFilter> implements NumericIndex {
 
-	public static final int ENTRY_SIZE = 2;
+	private PrimitiveEntryAtomicStore atomicStore;
 
 	public ShortIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-	}
-
-	@Override
-	protected int getEntrySize() {
-		return ENTRY_SIZE;
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
 	}
 
 	@Override
@@ -64,22 +61,11 @@ public class ShortIndex extends AbstractBufferIndex<Short, NumericFilter> implem
 	}
 
 	public short getValue(int id) {
-		if (id > getMaximumId()) {
-			return 0;
-		}
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-
-		int position = (id - offset) * ENTRY_SIZE;
-		return getBuffer(index).getShort(position, ByteOrder.LITTLE_ENDIAN);
+		return atomicStore.getShort(id);
 	}
 
 	public void setValue(int id, short value) {
-		ensureBufferSize(id);
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-		int position = (id - offset) * ENTRY_SIZE;
-		getBuffer(index).putShort(position, value, ByteOrder.LITTLE_ENDIAN);
+		atomicStore.setShort(id, value);
 	}
 
 	@Override
@@ -120,6 +106,16 @@ public class ShortIndex extends AbstractBufferIndex<Short, NumericFilter> implem
 			short value = dataInputStream.readShort();
 			setValue(id, value);
 		} catch (EOFException ignore) {}
+	}
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
 	}
 
 	@Override

@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.reference.single;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
@@ -34,9 +35,9 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, NumericFilter> implements ReferenceIndex {
-	public static final int ENTRY_SIZE = 4;
+public class SingleReferenceIndex extends AbstractIndex<RecordReference, NumericFilter> implements ReferenceIndex {
 
+	private final PrimitiveEntryAtomicStore atomicStore;
 	private TableIndex referencedTable;
 	private boolean cyclicReferences;
 	private boolean cascadeDeleteReferences;
@@ -46,6 +47,7 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 
 	public SingleReferenceIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
 	}
 
 	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {
@@ -59,11 +61,6 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 			cyclicReferences = true;
 		}
 		this.cascadeDeleteReferences = cascadeDeleteReferences;
-	}
-
-	@Override
-	protected int getEntrySize() {
-		return ENTRY_SIZE;
 	}
 
 	@Override
@@ -114,14 +111,7 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 	}
 
 	public int getValue(int id) {
-		if (id > getMaximumId()) {
-			return 0;
-		}
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-
-		int position = (id - offset) * ENTRY_SIZE;
-		return getBuffer(index).getInt(position, ByteOrder.LITTLE_ENDIAN);
+		return atomicStore.getInt(id);
 	}
 
 	public void setValue(int id, int value) {
@@ -156,11 +146,7 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 	}
 
 	public void setIndexValue(int id, int value) {
-		ensureBufferSize(id);
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-		int position = (id - offset) * ENTRY_SIZE;
-		getBuffer(index).putInt(position, value, ByteOrder.LITTLE_ENDIAN);
+		atomicStore.setInt(id, value);
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
@@ -212,6 +198,16 @@ public class SingleReferenceIndex extends AbstractBufferIndex<RecordReference, N
 			int value = dataInputStream.readInt();
 			setIndexValue(id, value);
 		} catch (EOFException ignore) {}
+	}
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
 	}
 
 	@Override

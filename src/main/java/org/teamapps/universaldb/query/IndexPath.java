@@ -23,10 +23,7 @@ import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Objects;
-import java.util.PrimitiveIterator;
+import java.util.*;
 
 public class IndexPath implements Comparable<IndexPath>{
 
@@ -232,34 +229,20 @@ public class IndexPath implements Comparable<IndexPath>{
 				int value = forwardSinglePath[pathPos].getValue(id);
 				return matchingLeafRecords.get(value);
 			} else {
-				PrimitiveIterator.OfInt references = forwardMultiPath[pathPos].getReferences(id);
-				if (references == null) {
-					return false;
-				} else {
-					while (references.hasNext()) {
-						if (matchingLeafRecords.get(references.nextInt())) {
-							return true;
-						}
-					}
-					return false;
-				}
+				return forwardMultiPath[pathPos].containsReference(id, matchingLeafRecords);
 			}
 		} else {
 			if (forwardSinglePath[pathPos] != null) {
 				int value = forwardSinglePath[pathPos].getValue(id);
 				return isMatch(pathPos + 1, maxPos, value, matchingLeafRecords);
 			} else {
-				PrimitiveIterator.OfInt references = forwardMultiPath[pathPos].getReferences(id);
-				if (references == null) {
-					return false;
-				} else {
-					while (references.hasNext()) {
-						if (isMatch(pathPos + 1, maxPos, references.nextInt(), matchingLeafRecords)) {
-							return true;
-						}
+				List<Integer> references = forwardMultiPath[pathPos].getReferencesAsList(id);
+				for (Integer recordId : references) {
+					if (isMatch(pathPos + 1, maxPos, recordId, matchingLeafRecords)) {
+						return true;
 					}
-					return false;
 				}
+				return false;
 			}
 		}
 	}

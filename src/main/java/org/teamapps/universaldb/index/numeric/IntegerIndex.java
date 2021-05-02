@@ -21,23 +21,20 @@ package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.*;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> implements NumericIndex {
+public class IntegerIndex extends AbstractIndex<Integer, NumericFilter> implements NumericIndex {
 
-	public static final int ENTRY_SIZE = 4;
+	private PrimitiveEntryAtomicStore atomicStore;
 
 	public IntegerIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-	}
-
-	@Override
-	protected int getEntrySize() {
-		return ENTRY_SIZE;
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
 	}
 
 	@Override
@@ -61,26 +58,11 @@ public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> im
 	}
 
 	public int getValue(int id) {
-		if (id > getMaximumId()) {
-			return 0;
-		}
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-
-		int position = (id - offset) * ENTRY_SIZE;
-		return getBuffer(index).getInt(position, ByteOrder.LITTLE_ENDIAN);
+		return atomicStore.getInt(id);
 	}
 
 	public void setValue(int id, int value) {
-		setIndexValue(id, value);
-	}
-
-	public void setIndexValue(int id, int value) {
-		ensureBufferSize(id);
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-		int position = (id - offset) * ENTRY_SIZE;
-		getBuffer(index).putInt(position, value, ByteOrder.LITTLE_ENDIAN);
+		atomicStore.setInt(id, value);
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
@@ -122,6 +104,16 @@ public class IntegerIndex extends AbstractBufferIndex<Integer, NumericFilter> im
 			int value = dataInputStream.readInt();
 			setValue(id, value);
 		} catch (EOFException ignore) {}
+	}
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
 	}
 
 	@Override

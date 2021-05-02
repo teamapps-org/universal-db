@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,11 +26,12 @@ import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
-import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
-import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChainImpl;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
-import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
+import org.teamapps.universaldb.index.text.FullTextIndexValue;
+import org.teamapps.universaldb.index.text.TextFilter;
+import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.query.AndFilter;
@@ -61,9 +62,8 @@ public class TableIndex implements MappedObject {
 
 	private List<ColumnIndex> columnIndices;
 	private Map<String, ColumnIndex> columnIndexByName;
-	private CharIndex collectionCharIndex;
 	private CollectionTextSearchIndex collectionTextSearchIndex;
-	private ReferenceBlockChain referenceBlockChain;
+	//	private ReferenceBlockChain referenceBlockChain;
 	private List<String> fileFieldNames;
 	private List<TextIndex> textFields;
 	private List<TranslatableTextIndex> translatedTextFields;
@@ -94,20 +94,6 @@ public class TableIndex implements MappedObject {
 	}
 
 
-	public ReferenceBlockChain getReferenceBlockChain() {
-		if (referenceBlockChain == null) {
-			referenceBlockChain = new ReferenceBlockChainImpl(path, "ref.graph");
-		}
-		return referenceBlockChain;
-	}
-
-	public CharIndex getCollectionCharIndex() {
-		if (collectionCharIndex == null) {
-			collectionCharIndex = new CharIndex(path, "coll-text");
-		}
-		return collectionCharIndex;
-	}
-
 	public CollectionTextSearchIndex getCollectionTextSearchIndex() {
 		if (collectionTextSearchIndex == null) {
 			collectionTextSearchIndex = new CollectionTextSearchIndex(path, "coll-text");
@@ -121,8 +107,8 @@ public class TableIndex implements MappedObject {
 		}
 		if (
 				(!records.getValue(0) && getCount() > 0) ||
-				getCount() > 0 && collectionTextSearchIndex.getMaxDoc() == 0
-		){
+						getCount() > 0 && collectionTextSearchIndex.getMaxDoc() == 0
+		) {
 			long time = System.currentTimeMillis();
 			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
 			recreateFullTextIndex();

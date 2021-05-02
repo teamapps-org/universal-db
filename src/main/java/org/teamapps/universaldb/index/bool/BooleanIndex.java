@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.bool;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
@@ -30,33 +31,22 @@ import java.io.IOException;
 import java.util.BitSet;
 import java.util.List;
 
-public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
+public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 
-	public static final int ENTRY_SIZE = 1;
-	public static final byte[] BIT_MASKS = new byte[8];
-
-	static {
-		BIT_MASKS[0] = 0b00000001;
-		BIT_MASKS[1] = 0b00000010;
-		BIT_MASKS[2] = 0b00000100;
-		BIT_MASKS[3] = 0b00001000;
-		BIT_MASKS[4] = 0b00010000;
-		BIT_MASKS[5] = 0b00100000;
-		BIT_MASKS[6] = 0b01000000;
-		BIT_MASKS[7] = (byte) 0b10000000;
-	}
+	private PrimitiveEntryAtomicStore atomicStore;
 
 	private int maxSetId;
 	private int numberOfSetIds;
 
 	public BooleanIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
 		recalculateMaxSetIndex();
 		recalculateNumberOfSetIds();
 	}
 
 	private void recalculateMaxSetIndex() {
-		int maximumId = getMaximumId() * 8;
+		int maximumId = (int) (atomicStore.getTotalCapacity() * 8) - 1;
 		int maxId = 0;
 		for (int id = maximumId; id > 0; id--) {
 			if (getValue(id)) {
@@ -77,10 +67,6 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		numberOfSetIds = count;
 	}
 
-	@Override
-	protected int getEntrySize() {
-		return ENTRY_SIZE;
-	}
 
 	@Override
 	public IndexType getType() {
@@ -102,6 +88,17 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 		setValue(id, false);
 	}
 
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
+	}
+
 	@Override
 	public BitSet filter(BitSet records, BooleanFilter booleanFilter) {
 		if (booleanFilter.getFilterValue()) {
@@ -112,29 +109,10 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 	}
 
 	public boolean getValue(int id) {
-		if (id > getMaximumId() * 8) {
-			return false;
-		}
-		int index = getIndexForId(id / 8);
-		int offset = getOffsetForIndex(index);
-
-		int position = (id / 8) - offset;
-
-		int bit = id % 8;
-		byte b = getBuffer(index).getByte(position);
-		boolean value = false;
-		if ((b & BIT_MASKS[bit]) == BIT_MASKS[bit]) {
-			value = true;
-		}
-		return value;
+		return atomicStore.getBoolean(id);
 	}
 
 	public void setValue(int id, boolean value) {
-		ensureBufferSize((id / 8) + 1);
-		int index = getIndexForId(id / 8);
-		int offset = getOffsetForIndex(index);
-		int position = (id / 8) - offset;
-
 		if (id > 0 && value != getValue(id)) {
 			if (value) {
 				numberOfSetIds++;
@@ -142,15 +120,7 @@ public class BooleanIndex extends AbstractBufferIndex<Boolean, BooleanFilter> {
 				numberOfSetIds--;
 			}
 		}
-
-		int bit = id % 8;
-		byte b = getBuffer(index).getByte(position);
-		if (value) {
-			b = (byte) (b | BIT_MASKS[bit]);
-		} else {
-			b = (byte) (b & ~BIT_MASKS[bit]);
-		}
-		getBuffer(index).putByte(position, b);
+		atomicStore.setBoolean(id, value);
 		if (value) {
 			if (id > maxSetId) {
 				maxSetId = id;
