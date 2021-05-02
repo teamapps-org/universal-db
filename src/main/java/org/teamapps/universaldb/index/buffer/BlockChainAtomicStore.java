@@ -39,6 +39,58 @@ public class BlockChainAtomicStore extends AbstractBlockEntryAtomicStore {
 		return Collections.emptyList();
 	}
 
+	public boolean containsEntry(int id, int entry) {
+		long position = getBlockPosition(id);
+		BlockChainEntry startEntry = getBlock(position);
+		if (startEntry != null) {
+			if (startEntry.containsBlockEntry(entry)) {
+				if (position != getBlockPosition(id)) {
+					return containsEntry(id, entry);
+				}
+				return true;
+			}
+			BlockChainEntry chainEntry = startEntry;
+			while ((chainEntry = getNextBlock(chainEntry)) != null) {
+				if (chainEntry.containsBlockEntry(entry)) {
+					if (position != getBlockPosition(id)) {
+						return containsEntry(id, entry);
+					}
+					return true;
+				}
+			}
+			if (position != getBlockPosition(id)) {
+				return containsEntry(id, entry);
+			}
+		}
+		return false;
+	}
+
+	public boolean containsEntry(int id, BitSet bitSet) {
+		long position = getBlockPosition(id);
+		BlockChainEntry startEntry = getBlock(position);
+		if (startEntry != null) {
+			if (startEntry.containsBlockEntry(bitSet)) {
+				if (position != getBlockPosition(id)) {
+					return containsEntry(id, bitSet);
+				}
+				return true;
+			}
+			BlockChainEntry chainEntry = startEntry;
+			while ((chainEntry = getNextBlock(chainEntry)) != null) {
+				if (chainEntry.containsBlockEntry(bitSet)) {
+					if (position != getBlockPosition(id)) {
+						return containsEntry(id, bitSet);
+					}
+					return true;
+				}
+			}
+			if (position != getBlockPosition(id)) {
+				return containsEntry(id, bitSet);
+			}
+		}
+		return false;
+	}
+
 	public int removeEntries(int id, List<Integer> entries) {
 		if (entries == null || entries.isEmpty()) {
 			return 0;
