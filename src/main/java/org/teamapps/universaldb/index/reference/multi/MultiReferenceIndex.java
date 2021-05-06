@@ -46,7 +46,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	private SingleReferenceIndex reverseSingleIndex;
 	private MultiReferenceIndex reverseMultiIndex;
 
-	private boolean ensureNoDuplicates;
+	private boolean ensureNoDuplicates = true;
 
 	public MultiReferenceIndex(String name, TableIndex table, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);

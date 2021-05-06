@@ -20,7 +20,7 @@
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.4.25-SNAPSHOT</version>
+    <version>0.5.1-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -48,11 +48,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <slf4j-version>1.7.25</slf4j-version>
-        <guava-version>29.0-jre</guava-version>
-        <apache-commons-io>2.7</apache-commons-io>
+        <guava-version>30.1.1-jre</guava-version>
+        <apache-commons-io>2.8.0</apache-commons-io>
         <junit.version>4.13.1</junit.version>
-        <tika-version>1.24.1</tika-version>
-        <lucene-version>8.2.0</lucene-version>
+        <tika-version>1.26</tika-version>
+        <lucene-version>8.8.2</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -104,7 +104,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.0.7</version>
+            <version>1.10.0</version>
         </dependency>
 
         <dependency>
@@ -123,7 +123,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.9</version>
+            <version>3.12.0</version>
         </dependency>
 
         <dependency>

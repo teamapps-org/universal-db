@@ -206,7 +206,6 @@ public class ReferenceTest {
 		List<Person> addedPersons = new ArrayList<>();
 		for (Person person : persons) {
 			expected.add(person);
-			long time = System.currentTimeMillis();
 			company.addEmployees(person).save();
 			addedPersons.add(person);
 			checkReferenceCount(company, expected);
