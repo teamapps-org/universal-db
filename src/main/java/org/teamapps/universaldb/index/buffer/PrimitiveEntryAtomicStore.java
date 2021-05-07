@@ -160,4 +160,8 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 		buffer.putDouble(offset, value, byteOrder);
 	}
 
+	protected AtomicBuffer getFirstBuffer() {
+		return getBuffer(0);
+	}
+
 }

@@ -60,7 +60,7 @@ public class BlockEntryAtomicStoreTest {
 	@Test
 	public void getText() {
 		StringBuilder sb = new StringBuilder();
-		for (int id = 1; id < 1_000; id++) {
+		for (int id = 1; id < 10_000; id++) {
 			sb.append(id).append("-");
 		}
 		String value = sb.toString();
