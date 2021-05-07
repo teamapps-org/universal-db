@@ -36,6 +36,7 @@ public class BlockEntryAtomicStore extends AbstractBlockEntryAtomicStore {
 			setBlockPosition(id, position);
 		} else {
 			long position = findNextBlockPosition(getFreeSpacePosition(), length + 4);
+			setFreeSpacePosition(position + length + 4);
 			ensureCapacity(position + length + 4);
 			int bufferIndex = getBufferIndex(position);
 			int offset = getOffset(position, bufferIndex);
@@ -43,7 +44,6 @@ public class BlockEntryAtomicStore extends AbstractBlockEntryAtomicStore {
 			atomicBuffer.putInt(offset, length, byteOrder);
 			atomicBuffer.putBytes(offset + 4, bytes);
 			setBlockPosition(id, position);
-			setFreeSpacePosition(position + length + 4);
 		}
 		removeEntry(lastPosition);
 	}
@@ -63,6 +63,9 @@ public class BlockEntryAtomicStore extends AbstractBlockEntryAtomicStore {
 	}
 
 	public void removeBytes(int id) {
+		if (id == 0) {
+			return;
+		}
 		long position = getBlockPosition(id);
 		if (position > 0) {
 			removeEntry(position);

@@ -19,12 +19,10 @@
  */
 package org.teamapps.universaldb.index.reference.multi;
 
-import org.agrona.collections.IntHashSet;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.buffer.BlockChainAtomicStore;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
-import org.teamapps.universaldb.index.reference.blockindex.ReferenceBlockChain;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.transaction.DataType;
@@ -35,24 +33,24 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.stream.Collectors;
 
 import static org.teamapps.universaldb.index.IndexType.MULTI_REFERENCE;
 
 public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, MultiReferenceFilter> implements ReferenceIndex {
 
-	private final LongIndex entryIndex;
-	private final ReferenceBlockChain referenceBlockChain;
-
+	private final BlockChainAtomicStore referenceStore;
 	private TableIndex referencedTable;
 	private boolean cyclicReferences;
 	private boolean cascadeDeleteReferences;
 	private SingleReferenceIndex reverseSingleIndex;
 	private MultiReferenceIndex reverseMultiIndex;
 
-	public MultiReferenceIndex(String name, TableIndex table, ColumnType columnType, ReferenceBlockChain referenceBlockChain) {
+	private boolean ensureNoDuplicates = true;
+
+	public MultiReferenceIndex(String name, TableIndex table, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		this.entryIndex = new LongIndex(name, table, columnType);
-		this.referenceBlockChain = referenceBlockChain;
+		this.referenceStore = new BlockChainAtomicStore(table.getPath(), name);
 	}
 
 	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {
@@ -93,12 +91,8 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public MultiReferenceValue getGenericValue(int id) {
-		OfInt references = getReferences(id);
-		if (references == null) {
-			return null;
-		} else {
-			return new ReferenceIteratorValue(references, getReferencesCount(id));
-		}
+		List<Integer> entries = referenceStore.getEntries(id);
+		return entries != null ? new ReferenceIteratorValue(entries) : null;
 	}
 
 	@Override
@@ -114,87 +108,42 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public void removeValue(int id) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			referenceBlockChain.removeAll(index);
-		}
-	}
-
-	public OfInt getReferences(int id) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			return referenceBlockChain.getReferences(index);
-		} else {
-			return null;
-		}
+		referenceStore.removeAllEntries(id);
 	}
 
 	public boolean isEmpty(int id) {
-		if (id == 0) {
-			return true;
-		} else {
-			return entryIndex.getValue(id) <= 0;
-		}
+		return referenceStore.isEmpty(id);
 	}
 
 	public int getReferencesCount(int id) {
-		if (id == 0) {
-			return 0;
-		}
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			return referenceBlockChain.getReferencesCount(index);
-		} else {
-			return 0;
-		}
+		return  referenceStore.getEntryCount(id);
 	}
 
 	public List<Integer> getReferencesAsList(int id) {
-		OfInt references = getReferences(id);
-		if (references == null) {
-			return Collections.emptyList();
-		} else {
-			List<Integer> list = new ArrayList<>();
-			while (references.hasNext()) {
-				list.add(references.nextInt());
-			}
-			return list;
-		}
+		return referenceStore.getEntries(id);
 	}
 
-	public IntHashSet getReferencesAsPrimitiveSet(int id) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			int referencesCount = referenceBlockChain.getReferencesCount(index);
-			IntHashSet set = new IntHashSet(referencesCount);
-			OfInt references = referenceBlockChain.getReferences(index);
-			while (references.hasNext()) {
-				set.add(references.nextInt());
-			}
-			return set;
-		} else {
-			return new IntHashSet();
-		}
+	public boolean containsReference(int id, int reference) {
+		return referenceStore.containsEntry(id, reference);
+	}
+
+	public boolean containsReference(int id, BitSet reference) {
+		return referenceStore.containsEntry(id, reference);
 	}
 
 	public BitSet getReferencesAsBitSet(int id) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			BitSet bitSet = new BitSet();
-			OfInt references = referenceBlockChain.getReferences(index);
-			while (references.hasNext()) {
-				bitSet.set(references.nextInt());
-			}
-			return bitSet;
-		} else {
-			return new BitSet();
+		BitSet bitSet = new BitSet();
+		List<Integer> entries = referenceStore.getEntries(id);
+		if (entries != null) {
+			entries.forEach(bitSet::set);
 		}
+		return bitSet;
 	}
 
 	public void setReferenceEditValue(int id, MultiReferenceEditValue editValue) {
 		if (!editValue.getSetReferences().isEmpty()) {
 			List<Integer> references = RecordReference.createRecordIdsList(editValue.getSetReferences());
-			setReferences(id, references);
+			setReferences(id, references, false);
 		} else if (editValue.isRemoveAll()) {
 			removeAllReferences(id);
 			if (!editValue.getAddReferences().isEmpty()) {
@@ -213,81 +162,48 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		}
 	}
 
-	public void setReferences(int id, List<Integer> references) {
-		long index = entryIndex.getValue(id);
-		long newIndex = referenceBlockChain.create(references);
-		entryIndex.setValue(id, newIndex);
-		if (cyclicReferences) {
-			if (index > 0) {
-				List<Integer> addIds = new ArrayList<>();
-				List<Integer> removeIds = new ArrayList<>();
-				calculateChangedIds(index, references, addIds, removeIds);
-				addCyclicReferences(id, addIds);
-				removeCyclicReferences(id, removeIds);
-			} else {
-				addCyclicReferences(id, references);
+	public void setReferences(int id, List<Integer> references, boolean cyclic) {
+		if (cyclicReferences && !cyclic) {
+			List<Integer> previousEntries = referenceStore.getEntries(id);
+			if (!previousEntries.isEmpty()) {
+				removeCyclicReferences(id, previousEntries);
 			}
 		}
-		if (index > 0) {
-			referenceBlockChain.removeAll(index);
-		}
-	}
-
-	public void addReferences(int id, List<Integer> references) {
-		addReferences(id, references, false);
-	}
-
-	public void addReferences(int id, List<Integer> references, boolean cyclic) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			OfInt iterator = referenceBlockChain.getReferences(index);
-			Set<Integer> addSet = new HashSet<>();
-			while (iterator.hasNext()) {
-				int reference = iterator.nextInt();
-				if (addSet.contains(reference)) { //todo: check this!!!
-					references.remove(reference);
-					addSet.add(reference);
-				}
-			}
-
-			index = referenceBlockChain.add(references, index);
-		} else {
-			index = referenceBlockChain.create(references);
-		}
-		entryIndex.setValue(id, index);
+		referenceStore.setEntries(id, references);
 		if (cyclicReferences && !cyclic) {
 			addCyclicReferences(id, references);
 		}
 	}
 
-	public void removeReferences(int id, List<Integer> references) {
-		removeReferences(id, references, false);
+	public void addReferences(int id, List<Integer> references, boolean cyclic) {
+		if (ensureNoDuplicates && !referenceStore.isEmpty(id)) {
+			Set<Integer> existingSet = new HashSet<>(referenceStore.getEntries(id));
+			references = references.stream().filter(value -> !existingSet.contains(value)).collect(Collectors.toList());
+		}
+		referenceStore.addEntries(id, references);
+		if (cyclicReferences && !cyclic) {
+			addCyclicReferences(id, references);
+		}
 	}
 
 	public void removeReferences(int id, List<Integer> references, boolean cyclic) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			index = referenceBlockChain.remove(new HashSet<>(references), index);
-			entryIndex.setValue(id, index);
+		if (referenceStore.isEmpty(id)) {
+			return;
 		}
+		referenceStore.removeEntries(id, references);
 		if (cyclicReferences && !cyclic) {
 			removeCyclicReferences(id, references);
 		}
 	}
 
 	public void removeAllReferences(int id) {
-		long index = entryIndex.getValue(id);
-		if (index > 0) {
-			if (cyclicReferences) {
-				OfInt oldReferences = referenceBlockChain.getReferences(index);
-				List<Integer> removeReferences = new ArrayList<>();
-				while (oldReferences.hasNext()) {
-					removeReferences.add(oldReferences.next());
-				}
-				removeCyclicReferences(id, removeReferences);
-			}
-			referenceBlockChain.removeAll(index);
-			entryIndex.setValue(id, 0);
+		if (referenceStore.isEmpty(id)) {
+			return;
+		}
+		List<Integer> removeEntries = referenceStore.getEntries(id);
+		referenceStore.removeAllEntries(id);
+		if (cyclicReferences) {
+			removeCyclicReferences(id, removeEntries);
 		}
 	}
 
@@ -318,25 +234,6 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		} else {
 			for (Integer reference : references) {
 				reverseMultiIndex.removeReferences(reference, Collections.singletonList(id), true);
-			}
-		}
-	}
-
-	private void calculateChangedIds(long index, List<Integer> references, List<Integer> addIds, List<Integer> removeIds) {
-		Set<Integer> referenceSet = new HashSet<>(references);
-		Set<Integer> ignoreIdSet = new HashSet<>();
-		OfInt oldReferences = referenceBlockChain.getReferences(index);
-		while (oldReferences.hasNext()) {
-			Integer recordId = oldReferences.next();
-			if (referenceSet.contains(recordId)) {
-				ignoreIdSet.add(recordId);
-			} else {
-				removeIds.add(recordId);
-			}
-		}
-		for (Integer reference : references) {
-			if (!ignoreIdSet.contains(reference)) {
-				addIds.add(reference);
 			}
 		}
 	}
@@ -387,7 +284,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 			for (int i = 0; i < count; i++) {
 				references.add(dataInputStream.readInt());
 			}
-			setReferences(id, references);
+			setReferences(id, references, true);
 		} catch (EOFException ignore) { } finally {
 			this.cyclicReferences = cyclicReferencesValue;
 		}
@@ -424,34 +321,22 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public void close() {
-		entryIndex.close();
-		referenceBlockChain.flush();
+		referenceStore.close();
 	}
 
 	@Override
 	public void drop() {
-		entryIndex.drop();
-		referenceBlockChain.drop();
+		referenceStore.drop();
 	}
 
 	public BitSet filterEquals(BitSet bitSet, Set<Integer> compareIds) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
-				int referencesCount = referenceBlockChain.getReferencesCount(index);
-				if (referencesCount == compareIds.size()) {
-					OfInt references = referenceBlockChain.getReferences(index);
-					boolean containsDifference = false;
-					while (references.hasNext()) {
-						if (!compareIds.contains(references.nextInt())) {
-							containsDifference = true;
-							break;
-						}
-					}
-					if (!containsDifference) {
-						result.set(id);
-					}
+			int count = referenceStore.getEntryCount(id);
+			if (count == compareIds.size()) {
+				HashSet<Integer> referenceSet = new HashSet<>(referenceStore.getEntries(id));
+				if (referenceSet.equals(compareIds)) {
+					result.set(id);
 				}
 			}
 		}
@@ -461,25 +346,13 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public BitSet filterNotEquals(BitSet bitSet, Set<Integer> compareIds) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index <= 0) {
+			int count = referenceStore.getEntryCount(id);
+			if (count != compareIds.size()) {
 				result.set(id);
 			} else {
-				int referencesCount = referenceBlockChain.getReferencesCount(index);
-				if (referencesCount != compareIds.size()) {
+				HashSet<Integer> referenceSet = new HashSet<>(referenceStore.getEntries(id));
+				if (!referenceSet.equals(compareIds)) {
 					result.set(id);
-				} else {
-					OfInt references = referenceBlockChain.getReferences(index);
-					boolean containsDifference = false;
-					while (references.hasNext()) {
-						if (!compareIds.contains(references.nextInt())) {
-							containsDifference = true;
-							break;
-						}
-					}
-					if (containsDifference) {
-						result.set(id);
-					}
 				}
 			}
 		}
@@ -489,8 +362,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public BitSet filterIsEmpty(BitSet bitSet) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index <= 0) {
+			if (referenceStore.isEmpty(id)) {
 				result.set(id);
 			}
 		}
@@ -500,8 +372,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public BitSet filterIsNotEmpty(BitSet bitSet) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
+			if (!referenceStore.isEmpty(id)) {
 				result.set(id);
 			}
 		}
@@ -511,14 +382,11 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	private BitSet filterContainsAny(BitSet bitSet, Set<Integer> compareIds) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
-				OfInt references = referenceBlockChain.getReferences(index);
-				while (references.hasNext()) {
-					if (compareIds.contains(references.nextInt())) {
-						result.set(id);
-						break;
-					}
+			List<Integer> entries = referenceStore.getEntries(id);
+			for (Integer entry : entries) {
+				if (compareIds.contains(entry)) {
+					result.set(id);
+					break;
 				}
 			}
 		}
@@ -535,13 +403,10 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		BitSet compareSet = new BitSet();
 		compareIds.forEach(compareSet::set);
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
-				BitSet referencesAsBitSet = getReferencesAsBitSet(id);
-				referencesAsBitSet.and(compareSet);
-				if (referencesAsBitSet.equals(compareSet)) {
-					result.set(id);
-				}
+			BitSet referencesAsBitSet = getReferencesAsBitSet(id);
+			referencesAsBitSet.and(compareSet);
+			if (referencesAsBitSet.equals(compareSet)) {
+				result.set(id);
 			}
 		}
 		return result;
@@ -555,12 +420,8 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public BitSet filterEntryCountEquals(BitSet bitSet, int count) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
-				int referencesCount = referenceBlockChain.getReferencesCount(index);
-				if (referencesCount == count) {
-					result.set(id);
-				}
+			if (referenceStore.getEntryCount(id) == count) {
+				result.set(id);
 			}
 		}
 		return result;
@@ -569,12 +430,8 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public BitSet filterEntryCountGreater(BitSet bitSet, int count) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
-				int referencesCount = referenceBlockChain.getReferencesCount(index);
-				if (referencesCount > count) {
-					result.set(id);
-				}
+			if (referenceStore.getEntryCount(id) > count) {
+				result.set(id);
 			}
 		}
 		return result;
@@ -583,13 +440,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	public BitSet filterEntryCountSmaller(BitSet bitSet, int count) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = entryIndex.getValue(id);
-			if (index > 0) {
-				int referencesCount = referenceBlockChain.getReferencesCount(index);
-				if (referencesCount < count) {
-					result.set(id);
-				}
-			} else {
+			if (referenceStore.getEntryCount(id) < count) {
 				result.set(id);
 			}
 		}

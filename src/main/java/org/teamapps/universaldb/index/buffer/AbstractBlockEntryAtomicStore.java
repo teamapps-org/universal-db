@@ -33,7 +33,7 @@ public class AbstractBlockEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	private void init() {
-		freeSpacePosition = positionBuffer.getLong(0);
+		freeSpacePosition = positionBuffer.getFirstBuffer().getLong(0, byteOrder);
 		if (freeSpacePosition == 0) {
 			freeSpacePosition = 8;
 		}

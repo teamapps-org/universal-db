@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
@@ -30,17 +31,13 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.*;
 
-public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> implements NumericIndex {
+public class FloatIndex extends AbstractIndex<Float, NumericFilter> implements NumericIndex {
 
-	public static final int ENTRY_SIZE = 4;
+	private PrimitiveEntryAtomicStore atomicStore;
 
 	public FloatIndex(String name, TableIndex table, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-	}
-
-	@Override
-	protected int getEntrySize() {
-		return ENTRY_SIZE;
+		atomicStore = new PrimitiveEntryAtomicStore(table.getPath(), name);
 	}
 
 	@Override
@@ -64,22 +61,11 @@ public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> implem
 	}
 
 	public float getValue(int id) {
-		if (id > getMaximumId()) {
-			return 0;
-		}
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-
-		int position = (id - offset) * ENTRY_SIZE;
-		return getBuffer(index).getFloat(position, ByteOrder.LITTLE_ENDIAN);
+		return atomicStore.getFloat(id);
 	}
 
 	public void setValue(int id, float value) {
-		ensureBufferSize(id);
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-		int position = (id - offset) * ENTRY_SIZE;
-		getBuffer(index).putFloat(position, value, ByteOrder.LITTLE_ENDIAN);
+		atomicStore.setFloat(id, value);
 	}
 
 	@Override
@@ -120,6 +106,17 @@ public class FloatIndex extends AbstractBufferIndex<Float, NumericFilter> implem
 			float value = dataInputStream.readFloat();
 			setValue(id, value);
 		} catch (EOFException ignore) {}
+	}
+
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
 	}
 
 	@Override

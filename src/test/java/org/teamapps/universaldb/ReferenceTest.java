@@ -29,6 +29,9 @@ import org.teamapps.universaldb.pojo.Entity;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.*;
+
+
 public class ReferenceTest {
 
 	@BeforeClass
@@ -60,8 +63,8 @@ public class ReferenceTest {
 		c1.addEmployees(p2);
 		c1.addEmployees(p3);
 
-//		Assert.assertEquals(1, Company.getCount());
-//		Assert.assertEquals(1, Person.getCount());
+		Assert.assertEquals(1, Company.getCount());
+		Assert.assertEquals(1, Person.getCount());
 
 		Assert.assertTrue("check references I", TestBase.compareEntities(c1.getEmployees(), p0, p1, p2, p3));
 	}
@@ -116,7 +119,7 @@ public class ReferenceTest {
 
 	}
 
-	//@Test
+	@Test
 	public void testCommittedMultiReferences() {
 		Company company = Company.create().setName("company");
 		List<Person> persons = new ArrayList<>();
@@ -139,7 +142,7 @@ public class ReferenceTest {
 		Assert.assertEquals(10_000, company.getEmployees().size());
 	}
 
-	//@Test
+	@Test
 	public void testCommittedMultiReferences2() {
 		Company company = Company.create().setName("company");
 
@@ -151,8 +154,9 @@ public class ReferenceTest {
 		Assert.assertEquals(10_000, company.getEmployees().size());
 	}
 
-	//@Test
+	@Test
 	public void testCommittedMultiReferences3() {
+		cleanTable();
 		Company company = Company.create().setName("company").save();
 		List<Person> persons = new ArrayList<>();
 		for (int i = 1; i <= 5_000; i++) {
@@ -164,24 +168,24 @@ public class ReferenceTest {
 			company.addEmployees(person).save();
 			checkReferenceCount(company, expected);
 		}
-		System.out.println("next");
 		for (Person person : persons) {
 			expected.remove(person);
 			company.removeEmployees(person).save();
 			checkReferenceCount(company, expected);
 		}
-		System.out.println("other");
 		Iterator<Person> personIterator = persons.iterator();
 		List<Person> addedPersons = new ArrayList<>();
 		while (personIterator.hasNext()) {
 			Person person = personIterator.next();
 			company.addEmployees(person).save();
 			addedPersons.add(person);
+			expected.add(person);
 			checkReferenceCount(company, expected);
 			if (personIterator.hasNext()) {
 				person = personIterator.next();
 				company.addEmployees(person).save();
 				addedPersons.add(person);
+				expected.add(person);
 				checkReferenceCount(company, expected);
 				Person remove = addedPersons.remove(0);
 				expected.remove(remove);
@@ -191,7 +195,7 @@ public class ReferenceTest {
 		}
 	}
 
-	//@Test
+	@Test
 	public void testCommittedMultiReferences4() {
 		Company company = Company.create().setName("company").save();
 		List<Person> persons = new ArrayList<>();
@@ -202,12 +206,10 @@ public class ReferenceTest {
 		List<Person> addedPersons = new ArrayList<>();
 		for (Person person : persons) {
 			expected.add(person);
-			long time = System.currentTimeMillis();
 			company.addEmployees(person).save();
 			addedPersons.add(person);
 			checkReferenceCount(company, expected);
 		}
-		System.out.println("next");
 		for (Person person : persons) {
 			Person remove = addedPersons.remove(addedPersons.size() - 1);
 			expected.remove(remove);
@@ -217,10 +219,41 @@ public class ReferenceTest {
 
 	}
 
+	@Test
+	public void testSetReference() {
+		Company c1 = Company.create().setName("c1");
+		Company c2 = Company.create().setName("c2");
+		Company c3 = Company.create().setName("c3");
+
+		Person p1 = Person.create().setLastName("p1");
+		Person p2 = Person.create().setLastName("p2");
+		Person p3 = Person.create().setLastName("p3");
+
+		c1.addEmployees(p1);
+		c1.addEmployees(p2);
+		c1.save();
+
+		assertEquals(2, c1.getEmployeesCount());
+		assertEquals(2, c1.getEmployees().size());
+		checkReferenceCount(c1, new HashSet<>(Arrays.asList(p1, p2)));
+		assertEquals(c1, p1.getCompany());
+		assertEquals(c1, p2.getCompany());
+
+		c1.setEmployees(p3).save();
+		assertEquals(1, c1.getEmployeesCount());
+		assertEquals(1, c1.getEmployees().size());
+		checkReferenceCount(c1, new HashSet<>(Arrays.asList(p3)));
+
+		assertEquals(c1, p3.getCompany());
+		assertNull(p1.getCompany());
+		assertNull(p2.getCompany());
+
+	}
+
 	public void checkReferenceCount(Company company, Set<Person> expected) {
-		Assert.assertEquals("Wrong references", expected, new HashSet<>(company.getEmployees()));
 		Assert.assertEquals("Wrong count of references", expected.size(), company.getEmployeesCount());
 		Assert.assertEquals("Wrong number of references", expected.size(), company.getEmployees().size());
+		Assert.assertEquals("Wrong references", expected, new HashSet<>(company.getEmployees()));
 	}
 
 

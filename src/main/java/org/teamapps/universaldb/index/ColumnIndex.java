@@ -39,6 +39,7 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.PrimitiveIterator;
+import java.util.stream.Collectors;
 
 public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 
@@ -74,7 +75,7 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 				column = new SingleReferenceIndex(name, table, columnType);
 				break;
 			case MULTI_REFERENCE:
-				column = new MultiReferenceIndex(name, table, columnType, table.getReferenceBlockChain());
+				column = new MultiReferenceIndex(name, table, columnType);
 				break;
 			case FILE:
 				column = new FileIndex(name, table, columnType, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
@@ -94,23 +95,7 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 			switch (getType()) {
 				case MULTI_REFERENCE:
 					ReferenceIteratorValue referenceIteratorValue = (ReferenceIteratorValue) value;
-					PrimitiveIterator.OfInt idIterator = referenceIteratorValue.getIdIterator();
-					StringBuilder sb = new StringBuilder();
-					sb.append("(");
-					int counter = 0;
-					while (idIterator.hasNext()) {
-						if (counter > 0) {
-							sb.append(", ");
-						}
-						if (counter > 100) {
-							sb.append("...");
-							break;
-						}
-						sb.append(idIterator.nextInt());
-						counter++;
-					}
-					sb.append(")");
-					return sb.toString();
+					return "(" + referenceIteratorValue.getAsList().stream().limit(100).map(v -> "" + v).collect(Collectors.joining(", ")) + ")";
 				case FILE:
 					FileValue fileValue = (FileValue) value;
 					if (fileValue.getMetaData() != null) {

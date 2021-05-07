@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,27 +21,27 @@ package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteOrder;
-import java.util.*;
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> implements NumericIndex {
+public class LongIndex extends AbstractIndex<Long, NumericFilter> implements NumericIndex {
 
-	public static final int ENTRY_SIZE = 8;
+	private PrimitiveEntryAtomicStore atomicStore;
 
 	public LongIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
 	}
 
-	@Override
-	protected int getEntrySize() {
-		return ENTRY_SIZE;
-	}
 
 	@Override
 	public IndexType getType() {
@@ -64,22 +64,11 @@ public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> implemen
 	}
 
 	public long getValue(int id) {
-		if (id > getMaximumId()) {
-			return 0;
-		}
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-
-		int position = (id - offset) * ENTRY_SIZE;
-		return getBuffer(index).getLong(position, ByteOrder.LITTLE_ENDIAN);
+		return atomicStore.getLong(id);
 	}
 
 	public void setValue(int id, long value) {
-		ensureBufferSize(id);
-		int index = getIndexForId(id);
-		int offset = getOffsetForIndex(index);
-		int position = (id - offset) * ENTRY_SIZE;
-		getBuffer(index).putLong(position, value, ByteOrder.LITTLE_ENDIAN);
+		atomicStore.setLong(id, value);
 	}
 
 	@Override
@@ -119,7 +108,18 @@ public class LongIndex extends AbstractBufferIndex<Long, NumericFilter> implemen
 			int id = dataInputStream.readInt();
 			long value = dataInputStream.readLong();
 			setValue(id, value);
-		} catch (EOFException ignore) {}
+		} catch (EOFException ignore) {
+		}
+	}
+
+	@Override
+	public void close() {
+		atomicStore.close();
+	}
+
+	@Override
+	public void drop() {
+		atomicStore.drop();
 	}
 
 	@Override

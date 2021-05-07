@@ -21,6 +21,8 @@ package org.teamapps.universaldb.index.text;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
@@ -34,23 +36,20 @@ import java.util.*;
 
 public class TextIndex extends AbstractIndex<String, TextFilter> {
 
-	private final LongIndex positionIndex;
-	private final CharIndex charIndex;
+	private BlockEntryAtomicStore atomicStore;
 	private final TextSearchIndex searchIndex;
 	private final CollectionTextSearchIndex collectionSearchIndex;
 
 	public TextIndex(String name, TableIndex table, ColumnType columnType, CollectionTextSearchIndex collectionSearchIndex) {
 		super(name, table, columnType, FullTextIndexingOptions.INDEXED);
-		this.positionIndex = new LongIndex(name, table, columnType);
-		this.charIndex = table.getCollectionCharIndex();
+		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
 	public TextIndex(String name, TableIndex table, ColumnType columnType, boolean withLocalSearchIndex) {
 		super(name, table, columnType, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
-		this.positionIndex = new LongIndex(name, table, columnType);
-		this.charIndex = table.getCollectionCharIndex();
+		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
 		if (withLocalSearchIndex) {
 			searchIndex = new TextSearchIndex(getPath(), name);
 		} else {
@@ -92,35 +91,15 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	}
 
 	public String getValue(int id) {
-		long index = positionIndex.getValue(id);
-		if (index == 0) {
-			return null;
-		}
-		return charIndex.getText(index);
+		return atomicStore.getText(id);
 	}
 
 	public void setValue(int id, String value) {
-		boolean update = false;
-		if (searchIndex != null && positionIndex.getValue(id) > 0) {
-			update = true;
-		}
-		long index = positionIndex.getValue(id);
-		if (index != 0) {
-			charIndex.removeText(index);
-		}
-		if (value != null && !value.isEmpty()) {
-			index = charIndex.setText(value);
-			positionIndex.setValue(id, index);
-		} else {
-			positionIndex.setValue(id, 0);
-		}
+		boolean update = !atomicStore.isEmpty(id);
+		atomicStore.setText(id, value);
 		if (searchIndex != null) {
-			if (!update && (value == null || value.isEmpty())) {
-				return;
-			} else {
-				String textValue = value == null ? "" : value;
-				searchIndex.addValue(id, textValue, update);
-			}
+			String textValue = value == null ? "" : value;
+			searchIndex.addValue(id, textValue, update);
 		}
 	}
 
@@ -169,8 +148,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		if (searchIndex != null) {
 			searchIndex.commit(true);
 		}
-		positionIndex.close();
-		charIndex.close();
+		atomicStore.close();
 	}
 
 	@Override
@@ -178,8 +156,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 		if (searchIndex != null) {
 			searchIndex.drop();
 		}
-		positionIndex.drop();
-		charIndex.drop();
+		atomicStore.drop();
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
@@ -244,8 +221,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	public BitSet filterEmpty(BitSet bitSet) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index == 0) {
+			if (atomicStore.isEmpty(id)) {
 				result.set(id);
 			}
 		}
@@ -255,8 +231,7 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	public BitSet filterNotEmpty(BitSet bitSet) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index != 0) {
+			if (!atomicStore.isEmpty(id)) {
 				result.set(id);
 			}
 		}
@@ -266,12 +241,9 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	public BitSet filterLengthGreater(BitSet bitSet, int length) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index > 0) {
-				int textByteLength = charIndex.getTextByteLength(index);
-				if (textByteLength > length) {
-					result.set(id);
-				}
+			int blockLength = atomicStore.getBlockLength(id);
+			if (blockLength > length) {
+				result.set(id);
 			}
 		}
 		return result;
@@ -280,12 +252,9 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	public BitSet filterLengthSmaller(BitSet bitSet, int length) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index > 0) {
-				int textByteLength = charIndex.getTextByteLength(index);
-				if (textByteLength < length) {
-					result.set(id);
-				}
+			int blockLength = atomicStore.getBlockLength(id);
+			if (blockLength < length) {
+				result.set(id);
 			}
 		}
 		return result;

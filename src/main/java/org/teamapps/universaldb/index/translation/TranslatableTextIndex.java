@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,11 @@ package org.teamapps.universaldb.index.translation;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.numeric.LongIndex;
-import org.teamapps.universaldb.index.text.*;
+import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
+import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
+import org.teamapps.universaldb.index.text.TextFieldFilter;
+import org.teamapps.universaldb.index.text.TextFilter;
+import org.teamapps.universaldb.index.text.TextSearchIndex;
 import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
@@ -34,23 +37,20 @@ import java.util.*;
 
 public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextFilter> {
 
-	private final LongIndex positionIndex;
-	private final CharIndex charIndex;
+	private BlockEntryAtomicStore atomicStore;
 	private final TextSearchIndex searchIndex;
 	private final CollectionTextSearchIndex collectionSearchIndex;
 
 	public TranslatableTextIndex(String name, TableIndex table, ColumnType columnType, CollectionTextSearchIndex collectionSearchIndex) {
 		super(name, table, columnType, FullTextIndexingOptions.INDEXED);
-		this.positionIndex = new LongIndex(name, table, columnType);
-		this.charIndex = table.getCollectionCharIndex();
+		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
 	public TranslatableTextIndex(String name, TableIndex table, ColumnType columnType, boolean withLocalSearchIndex) {
 		super(name, table, columnType, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
-		this.positionIndex = new LongIndex(name, table, columnType);
-		this.charIndex = table.getCollectionCharIndex();
+		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
 		if (withLocalSearchIndex) {
 			searchIndex = new TextSearchIndex(getPath(), name);
 		} else {
@@ -102,34 +102,19 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	}
 
 	public TranslatableText getValue(int id) {
-		long index = positionIndex.getValue(id);
-		if (index == 0) {
-			return null;
-		}
-		return new TranslatableText(charIndex.getText(index));
+		String text = atomicStore.getText(id);
+		return text != null ? new TranslatableText(text) : null;
 	}
 
 	public void setValue(int id, TranslatableText value) {
-		boolean update = false;
-		if (searchIndex != null && positionIndex.getValue(id) > 0) {
-			update = true;
-		}
-		long index = positionIndex.getValue(id);
-		if (index != 0) {
-			charIndex.removeText(index);
-		}
+		boolean update = !atomicStore.isEmpty(id);
 		String encodedValue = value != null ? value.getEncodedValue() : null;
-		if (encodedValue != null) {
-			index = charIndex.setText(encodedValue);
-			positionIndex.setValue(id, index);
-		} else {
-			positionIndex.setValue(id, 0);
-		}
+		atomicStore.setText(id, encodedValue);
 		if (searchIndex != null) {
-			if (!update && encodedValue == null) {
-				return;
-			} else {
+			if (value != null) {
 				searchIndex.addValue(id, value, update);
+			} else {
+				searchIndex.removeValue(id);
 			}
 		}
 	}
@@ -161,7 +146,8 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 			int id = dataInputStream.readInt();
 			TranslatableText value = DataStreamUtil.readTranslatableText(dataInputStream);
 			setValue(id, value);
-		} catch (EOFException ignore) {}
+		} catch (EOFException ignore) {
+		}
 	}
 
 	@Override
@@ -174,8 +160,7 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 		if (searchIndex != null) {
 			searchIndex.commit(true);
 		}
-		positionIndex.close();
-		charIndex.close();
+		atomicStore.close();
 	}
 
 	@Override
@@ -183,8 +168,7 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 		if (searchIndex != null) {
 			searchIndex.drop();
 		}
-		positionIndex.drop();
-		charIndex.drop();
+		atomicStore.drop();
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
@@ -249,8 +233,7 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	public BitSet filterEmpty(BitSet bitSet) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index == 0) {
+			if (atomicStore.isEmpty(id)) {
 				result.set(id);
 			}
 		}
@@ -260,8 +243,7 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	public BitSet filterNotEmpty(BitSet bitSet) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index != 0) {
+			if (!atomicStore.isEmpty(id)) {
 				result.set(id);
 			}
 		}
@@ -271,12 +253,9 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	public BitSet filterLengthGreater(BitSet bitSet, int length) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index > 0) {
-				int textByteLength = charIndex.getTextByteLength(index);
-				if (textByteLength > length) {
-					result.set(id);
-				}
+			int blockLength = atomicStore.getBlockLength(id);
+			if (blockLength > length) {
+				result.set(id);
 			}
 		}
 		return result;
@@ -285,17 +264,13 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	public BitSet filterLengthSmaller(BitSet bitSet, int length) {
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
-			long index = positionIndex.getValue(id);
-			if (index > 0) {
-				int textByteLength = charIndex.getTextByteLength(index);
-				if (textByteLength < length) {
-					result.set(id);
-				}
+			int blockLength = atomicStore.getBlockLength(id);
+			if (blockLength < length) {
+				result.set(id);
 			}
 		}
 		return result;
 	}
-
 
 	private BitSet filterEquals(BitSet bitSet, String value, List<String> rankedLanguages) {
 		BitSet result = new BitSet();

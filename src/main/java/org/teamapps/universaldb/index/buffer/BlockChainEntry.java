@@ -66,9 +66,6 @@ public class BlockChainEntry {
 			int value = readInt(pos);
 			if (value > 0) {
 				list.add(value);
-				if (list.size() == blockCount) {
-					return;
-				}
 			}
 			pos += 4;
 		}

@@ -29,12 +29,10 @@ import java.util.PrimitiveIterator;
 
 public class ReferenceIteratorValue implements MultiReferenceValue {
 
-	private final PrimitiveIterator.OfInt idIterator;
-	private final int referencesCount;
+	private final List<Integer> recordIds;
 
-	public ReferenceIteratorValue(PrimitiveIterator.OfInt idIterator, int referencesCount) {
-		this.idIterator = idIterator;
-		this.referencesCount = referencesCount;
+	public ReferenceIteratorValue(List<Integer> recordIds) {
+		this.recordIds = recordIds;
 	}
 
 	@Override
@@ -52,26 +50,18 @@ public class ReferenceIteratorValue implements MultiReferenceValue {
 
 	}
 
-	public PrimitiveIterator.OfInt getIdIterator() {
-		return idIterator;
-	}
-
 	public int getReferencesCount() {
-		return referencesCount;
+		return recordIds.size();
 	}
 
 	public List<Integer> getAsList() {
-		List<Integer> list = new ArrayList<>();
-		while (idIterator.hasNext()) {
-			list.add(idIterator.nextInt());
-		}
-		return list;
+		return recordIds;
 	}
 
 	public BitSet getAsBitSet() {
 		BitSet bitSet = new BitSet();
-		while (idIterator.hasNext()) {
-			bitSet.set(idIterator.nextInt());
+		if (recordIds != null) {
+			recordIds.forEach(bitSet::set);
 		}
 		return bitSet;
 	}
