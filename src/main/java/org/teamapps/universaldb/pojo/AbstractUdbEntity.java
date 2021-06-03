@@ -421,7 +421,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public void setTextValue(String value, TextIndex index) {
 		if (!Objects.equals(getTextValue(index), value)) {
-			setChangeValue(index, value, tableIndex);
+ 			setChangeValue(index, value, tableIndex);
 		}
 	}
 
@@ -573,15 +573,17 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setLocalDateValue(LocalDate value, LongIndex index) {
-		if (!Objects.equals(getLocalDateValue(index), value)) {
-			long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
+		long longValue = value != null ? value.atStartOfDay(ZoneOffset.UTC).toEpochSecond() * 1000L : 0;
+		LocalDate currentValue = getLocalDateValue(index);
+		if (!Objects.equals(currentValue, value) && (currentValue != null || longValue != 0)) {
 			setChangeValue(index, longValue, tableIndex);
 		}
 	}
 
 	public void setLocalDateAsEpochMilli(long value, LongIndex index) {
-		//todo check for diff
-		setChangeValue(index, value, tableIndex);
+		if (index.getValue(getId()) != value) {
+			setChangeValue(index, value, tableIndex);
+		}
 	}
 
 	public <ENUM extends Enum<ENUM>> ENUM getEnumValue(ShortIndex index, ENUM[] values) {
@@ -718,7 +720,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	@Override
 	public boolean isStored() {
-		if (id > 0 && tableIndex.getRecords().get(id)) {
+		if (id > 0 && tableIndex.isStored(id)) {
 			return true;
 		} else {
 			return false;

@@ -171,6 +171,10 @@ public class TableIndex implements MappedObject {
 		return records.getBitSet();
 	}
 
+	public boolean isStored(int id) {
+		return records.getValue(id);
+	}
+
 	public int getCount() {
 		return records.getCount();
 	}
