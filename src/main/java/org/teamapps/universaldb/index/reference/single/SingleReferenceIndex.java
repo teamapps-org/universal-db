@@ -32,7 +32,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.*;
 
 public class SingleReferenceIndex extends AbstractIndex<RecordReference, NumericFilter> implements ReferenceIndex {
@@ -47,7 +46,7 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 
 	public SingleReferenceIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
 	}
 
 	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {

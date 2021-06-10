@@ -39,7 +39,7 @@ public class LongIndex extends AbstractIndex<Long, NumericFilter> implements Num
 
 	public LongIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
 	}
 
 

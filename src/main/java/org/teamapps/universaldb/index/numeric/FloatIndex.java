@@ -28,7 +28,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.*;
 
 public class FloatIndex extends AbstractIndex<Float, NumericFilter> implements NumericIndex {
@@ -37,7 +36,7 @@ public class FloatIndex extends AbstractIndex<Float, NumericFilter> implements N
 
 	public FloatIndex(String name, TableIndex table, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(table.getPath(), name);
+		atomicStore = new PrimitiveEntryAtomicStore(table.getDataPath(), name);
 	}
 
 	@Override

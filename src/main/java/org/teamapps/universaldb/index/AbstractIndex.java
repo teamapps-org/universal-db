@@ -24,7 +24,8 @@ import java.util.BitSet;
 
 public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, FILTER> {
 
-	private final File path;
+	private final File dataPath;
+	private final File fullTextIndexPath;
 	private final String name;
 	private final TableIndex table;
 	private final ColumnType columnType;
@@ -34,14 +35,19 @@ public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, F
 
 	public AbstractIndex(String name, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions) {
 		this.name = name;
-		this.path = table.getPath();
+		this.dataPath = table.getDataPath();
+		this.fullTextIndexPath = table.getFullTextIndexPath();
 		this.table = table;
 		this.columnType = columnType;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
 	}
 
-	public File getPath() {
-		return path;
+	public File getDataPath() {
+		return dataPath;
+	}
+
+	public File getFullTextIndexPath() {
+		return fullTextIndexPath;
 	}
 
 	@Override

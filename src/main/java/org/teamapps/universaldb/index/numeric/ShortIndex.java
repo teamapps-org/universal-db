@@ -28,7 +28,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.*;
 
 public class ShortIndex extends AbstractIndex<Short, NumericFilter> implements NumericIndex {
@@ -37,7 +36,7 @@ public class ShortIndex extends AbstractIndex<Short, NumericFilter> implements N
 
 	public ShortIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
 	}
 
 	@Override

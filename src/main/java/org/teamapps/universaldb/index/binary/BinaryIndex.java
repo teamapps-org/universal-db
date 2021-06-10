@@ -22,8 +22,6 @@ package org.teamapps.universaldb.index.binary;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
@@ -38,7 +36,7 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 
 	public BinaryIndex(String name, TableIndex table, boolean compressContent, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
+		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
 	}
 
 	@Override

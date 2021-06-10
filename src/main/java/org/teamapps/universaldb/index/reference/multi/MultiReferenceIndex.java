@@ -32,7 +32,6 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
-import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.Collectors;
 
 import static org.teamapps.universaldb.index.IndexType.MULTI_REFERENCE;
@@ -50,7 +49,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	public MultiReferenceIndex(String name, TableIndex table, ColumnType columnType) {
 		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		this.referenceStore = new BlockChainAtomicStore(table.getPath(), name);
+		this.referenceStore = new BlockChainAtomicStore(table.getDataPath(), name);
 	}
 
 	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {

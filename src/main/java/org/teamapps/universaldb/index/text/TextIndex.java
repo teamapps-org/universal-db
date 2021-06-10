@@ -22,8 +22,6 @@ package org.teamapps.universaldb.index.text;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
@@ -42,16 +40,16 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 
 	public TextIndex(String name, TableIndex table, ColumnType columnType, CollectionTextSearchIndex collectionSearchIndex) {
 		super(name, table, columnType, FullTextIndexingOptions.INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
+		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
 	public TextIndex(String name, TableIndex table, ColumnType columnType, boolean withLocalSearchIndex) {
 		super(name, table, columnType, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
+		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
 		if (withLocalSearchIndex) {
-			searchIndex = new TextSearchIndex(getPath(), name);
+			searchIndex = new TextSearchIndex(getFullTextIndexPath(), name);
 		} else {
 			searchIndex = null;
 		}

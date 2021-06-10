@@ -25,7 +25,6 @@ import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.*;
-import java.nio.ByteOrder;
 import java.util.*;
 
 public class IntegerIndex extends AbstractIndex<Integer, NumericFilter> implements NumericIndex {
@@ -34,7 +33,7 @@ public class IntegerIndex extends AbstractIndex<Integer, NumericFilter> implemen
 
 	public IntegerIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
 	}
 
 	@Override

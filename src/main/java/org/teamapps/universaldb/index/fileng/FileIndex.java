@@ -61,16 +61,16 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> implements F
 		nameIndex = new TextIndex(name + "-file-name", table, columnType, false);
 		sizeIndex = new LongIndex(name + "-file-size", table, columnType);
 		if (indexFileContent) {
-			textContentIndex = new FileTextContentIndex(table.getPath(), name + "-file-fulltext-content");
+			textContentIndex = new FileTextContentIndex(table.getDataPath(), name + "-file-fulltext-content");
 		}
 		if (indexFileVersions) {
 			versionIndex = new ShortIndex(name + "-file-version", table, columnType);
 			versionDataIndex = new FileVersionDataIndex(name, table);
 		}
-		fullTextIndex = new CollectionTextSearchIndex(getPath(), name);
+		fullTextIndex = new CollectionTextSearchIndex(getFullTextIndexPath(), name);
 		filePath = getFQN().replace('.', '/');
 
-		localFileStorePath = new File(table.getPath(), name + "-file-store"); //todo separate base path?
+		localFileStorePath = new File(table.getDataPath(), name + "-file-store"); //todo separate base path?
 
 		remoteFileStore = null; //todo
 	}

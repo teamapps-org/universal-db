@@ -53,7 +53,8 @@ public class TableIndex implements MappedObject {
 	private final Table table;
 	private final String name;
 	private final String parentFQN;
-	private final File path;
+	private final File dataPath;
+	private final File fullTextIndexPath;
 	private final TableConfig tableConfig;
 	private boolean keepDeletedRecords;
 	private BooleanIndex records;
@@ -63,23 +64,24 @@ public class TableIndex implements MappedObject {
 	private List<ColumnIndex> columnIndices;
 	private Map<String, ColumnIndex> columnIndexByName;
 	private CollectionTextSearchIndex collectionTextSearchIndex;
-	//	private ReferenceBlockChain referenceBlockChain;
 	private List<String> fileFieldNames;
 	private List<TextIndex> textFields;
 	private List<TranslatableTextIndex> translatedTextFields;
 	private int mappingId;
 
 	public TableIndex(DatabaseIndex database, Table table, TableConfig tableConfig) {
-		this(database, database.getPath(), database.getFQN(), table, tableConfig);
+		this(database, database.getFQN(), table, tableConfig);
 	}
 
-	public TableIndex(DatabaseIndex databaseIndex, File parentPath, String parentFQN, Table table, TableConfig tableConfig) {
+	public TableIndex(DatabaseIndex databaseIndex, String parentFQN, Table table, TableConfig tableConfig) {
 		this.databaseIndex = databaseIndex;
 		this.table = table;
 		this.name = table.getName();
 		this.parentFQN = parentFQN;
-		this.path = new File(parentPath, name);
-		path.mkdir();
+		this.dataPath = new File(databaseIndex.getDataPath(), name);
+		this.fullTextIndexPath = new File(databaseIndex.getFullTextIndexPath(), name);
+		dataPath.mkdir();
+		fullTextIndexPath.mkdir();
 		records = new BooleanIndex("coll-recs", this, ColumnType.BOOLEAN);
 		this.tableConfig = tableConfig;
 
@@ -96,7 +98,7 @@ public class TableIndex implements MappedObject {
 
 	public CollectionTextSearchIndex getCollectionTextSearchIndex() {
 		if (collectionTextSearchIndex == null) {
-			collectionTextSearchIndex = new CollectionTextSearchIndex(path, "coll-text");
+			collectionTextSearchIndex = new CollectionTextSearchIndex(fullTextIndexPath, "coll-text");
 		}
 		return collectionTextSearchIndex;
 	}
@@ -159,8 +161,12 @@ public class TableIndex implements MappedObject {
 		return databaseIndex.getSchemaIndex().getFileStore();
 	}
 
-	public File getPath() {
-		return path;
+	public File getDataPath() {
+		return dataPath;
+	}
+
+	public File getFullTextIndexPath() {
+		return fullTextIndexPath;
 	}
 
 	public TableConfig getTableConfig() {

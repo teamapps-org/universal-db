@@ -30,6 +30,7 @@ public class LocalFileStore extends AbstractFileStore {
 	public LocalFileStore(File storePath) {
 		this.storePath = storePath;
 		this.encrypt = false;
+		storePath.mkdir();
 	}
 
 	public LocalFileStore(File storePath, boolean encrypt) {

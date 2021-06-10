@@ -43,16 +43,16 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 
 	public TranslatableTextIndex(String name, TableIndex table, ColumnType columnType, CollectionTextSearchIndex collectionSearchIndex) {
 		super(name, table, columnType, FullTextIndexingOptions.INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
+		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
 	public TranslatableTextIndex(String name, TableIndex table, ColumnType columnType, boolean withLocalSearchIndex) {
 		super(name, table, columnType, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getPath(), name);
+		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
 		if (withLocalSearchIndex) {
-			searchIndex = new TextSearchIndex(getPath(), name);
+			searchIndex = new TextSearchIndex(getFullTextIndexPath(), name);
 		} else {
 			searchIndex = null;
 		}

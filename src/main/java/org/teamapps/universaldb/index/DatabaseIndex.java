@@ -32,20 +32,27 @@ public class DatabaseIndex implements MappedObject {
 
 	private final SchemaIndex schemaIndex;
 	private final String name;
-	private final File path;
+	private final File dataPath;
+	private final File fullTextIndexPath;
 	private final List<TableIndex> tables;
 	private int mappingId;
 
 	public DatabaseIndex(SchemaIndex schema, String name) {
 		this.schemaIndex = schema;
 		this.name = name;
-		this.path = new File(schema.getPath(), name);
-		path.mkdir();
+		this.dataPath = new File(schema.getDataPath(), name);
+		this.fullTextIndexPath = new File(schema.getFullTextIndexPath(), name);
+		dataPath.mkdir();
+		fullTextIndexPath.mkdir();
 		this.tables = new ArrayList<>();
 	}
 
-	public File getPath() {
-		return path;
+	public File getDataPath() {
+		return dataPath;
+	}
+
+	public File getFullTextIndexPath() {
+		return fullTextIndexPath;
 	}
 
 	public SchemaIndex getSchemaIndex() {

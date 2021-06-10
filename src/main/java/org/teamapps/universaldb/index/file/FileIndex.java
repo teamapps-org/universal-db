@@ -50,7 +50,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 		this.uuidIndex = new TextIndex(name + "-file-uuid", table, columnType, false);
 		this.hashIndex = new TextIndex(name + "-file-hash", table, columnType, false);
 		this.sizeIndex = new LongIndex(name + "-file-size", table, columnType);
-		this.fileDataIndex = fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getPath(), name) : null;
+		this.fileDataIndex = fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getFullTextIndexPath(), name) : null;
 		this.metaDataIndex = fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table, true, columnType) : null;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
 		this.filePath = getFQN().replace('.', '/');

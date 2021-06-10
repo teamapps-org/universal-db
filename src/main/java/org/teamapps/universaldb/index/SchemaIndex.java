@@ -36,18 +36,26 @@ import java.util.stream.Collectors;
 public class SchemaIndex {
 
 	private final Schema schema;
-	private final File path;
+	private final File dataPath;
+	private final File fullTextIndexPath;
 	private final List<DatabaseIndex> databases;
 	private FileStore fileStore;
 
 	public SchemaIndex(Schema schema, File path) {
 		this.schema = schema;
-		this.path = path;
+		this.dataPath = new File(path, "data");
+		this.fullTextIndexPath = new File(path, "full-text-index");
+		dataPath.mkdir();
+		fullTextIndexPath.mkdir();
 		databases = new ArrayList<>();
 	}
 
-	public File getPath() {
-		return path;
+	public File getDataPath() {
+		return dataPath;
+	}
+
+	public File getFullTextIndexPath() {
+		return fullTextIndexPath;
 	}
 
 	public void addDataBase(DatabaseIndex database) {

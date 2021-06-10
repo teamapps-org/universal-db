@@ -40,7 +40,7 @@ public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 
 	public BooleanIndex(String name, TableIndex tableIndex, ColumnType columnType) {
 		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getPath(), name);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
 		recalculateMaxSetIndex();
 		recalculateNumberOfSetIds();
 	}
