@@ -215,6 +215,7 @@
                     <modelClasses>
                         <modelClass>Model</modelClass>
                         <modelClass>S3Model</modelClass>
+                        <modelClass>MyAppModel</modelClass>
                     </modelClasses>
                 </configuration>
             </plugin>
