@@ -22,6 +22,7 @@ package org.teamapps.universaldb.pojo;
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.numeric.IntegerIndex;
+import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.transaction.Transaction;
 
@@ -67,7 +68,7 @@ public class RawEntity extends AbstractUdbEntity<RawEntity> {
 
     public void setReference(String fieldName, RawEntity value) {
         ColumnIndex columnIndex = getTableIndex().getColumnIndex(fieldName);
-        setSingleReferenceValue(columnIndex, value, null);
+        setSingleReferenceValue((SingleReferenceIndex) columnIndex, value, null);
     }
 
     public RawEntity(TableIndex tableIndex, int id, boolean createEntity) {

@@ -177,15 +177,18 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		entityChangeSet.addChangeValue(index, value);
 	}
 
-	protected void setSingleReferenceValue(ColumnIndex index, Entity reference, TableIndex tableIndex) {
+	protected void setSingleReferenceValue(SingleReferenceIndex index, Entity reference, TableIndex tableIndex) {
 		AbstractUdbEntity entity = (AbstractUdbEntity) reference;
 		RecordReference recordReference = null;
 		if (entity != null) {
 			recordReference = new RecordReference(entity.getId(), entity.getCorrelationId());
 		}
-		checkChangeSet();
-		entityChangeSet.addChangeValue(index, recordReference);
-		entityChangeSet.setReferenceChange(index, entity);
+		int currentValue = index.getValue(getId());
+		if ((currentValue == 0 && entity != null) || (entity != null && (entity.getId() == 0 || entity.getId() != currentValue))) {
+			checkChangeSet();
+			entityChangeSet.addChangeValue(index, recordReference);
+			entityChangeSet.setReferenceChange(index, entity);
+		}
 	}
 
 	protected <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> createEntityList(ColumnIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
@@ -420,6 +423,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setTextValue(String value, TextIndex index) {
+		if (value != null && value.isEmpty()) {
+			value = null;
+		}
 		if (!Objects.equals(getTextValue(index), value)) {
  			setChangeValue(index, value, tableIndex);
 		}
