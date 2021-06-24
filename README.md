@@ -15,7 +15,7 @@ Current UniversalDB version: [![Maven Central](https://maven-badges.herokuapp.co
 <dependency>
   <groupId>org.teamapps</groupId>
   <artifactId>universal-db</artifactId>
-  <version>0.4.11</version>
+  <version>0.5.2</version>
 </dependency>
 ```
 
@@ -39,7 +39,7 @@ Add this to your pom.xml:
                         <configuration>
                             <modelSourceDirectory>${project.basedir}/src/main/model</modelSourceDirectory>
                             <modelClasses>
-                                <modelClass>Model</modelClass>
+                                <modelClass>MyAppModel</modelClass>
                             </modelClasses>
                         </configuration>
                     </execution>
@@ -51,40 +51,91 @@ Add this to your pom.xml:
 
 ## Create UniversalDB schema 
 
-Add a source folder e.g. `/src/main/model` and create a model class e.g. `Model` with the model you want to use:
+Add a source folder e.g. `/src/main/model` and create a model class e.g. `MyAppModel` with the model you want to use:
 
 ```java
-import org.teamapps.universaldb.Database;
-import org.teamapps.universaldb.Schema;
-import org.teamapps.universaldb.SchemaInfoProvider;
-import org.teamapps.universaldb.index.Table;
+import org.teamapps.universaldb.schema.*;
 
-public class Model implements SchemaInfoProvider {
+public class MyAppModel implements SchemaInfoProvider {
 
-	public String getSchema() {
-		Schema schema = Schema.create();
-		Database database = schema.createDatabase("db");
-		Table table = database.createTable("table1");
-		Table table2 = database.createTable("table2");
-		table
-				.addText("text1")
-				.addText("text2")
-				.addTimestamp("timestamp")
-				.addEnum("enumValue", "value1", "value2", "value3")
-				.addInteger("number")
-				.addLong("bigNumber")
-				.addReference("reference", table2, true, "backRef");
+    public Schema getSchema() {
+        Schema schema = Schema.create("org.teamapps.myapp.model");
+        schema.setSchemaName("MyAppSchema");
+        Database database = schema.addDatabase("myAppDb");
+        Table user = database.addTable("user");
+        Table project = database.addTable("project");
+        user
+                .addText("name")
+                .addText("text2")
+                .addTimestamp("timestamp")
+                .addEnum("enumValue", "value1", "value2", "value3")
+                .addInteger("number")
+                .addLong("bigNumber")
+                .addReference("projects", project, true, "manager");
 
-		table2
-				.addText("text")
-				.addReference("backRef", table, false, "reference");
+        project
+                .addText("title")
+                .addReference("manager", user, false, "projects");
 
-		return schema.getSchema();
-	}
+        return schema;
+    }
 }
 ```
-After compiling you will have a Table and a Table2 class to work with.
+After compiling you will have a User and a Project class to work with.
 
+```java
+package org.teamapps.myapp;
+
+import org.teamapps.myapp.model.myappdb.Project;
+import org.teamapps.myapp.model.myappdb.User;
+import org.teamapps.myapp.model.myappdb.UserQuery;
+import org.teamapps.universaldb.UniversalDB;
+import org.teamapps.myapp.model.MyAppSchema;
+import org.teamapps.universaldb.index.text.TextFilter;
+
+import java.io.File;
+import java.util.List;
+
+public class MyApp {
+
+    public static void main(String[] args) throws Exception {
+        startDb();
+        createInitialData();
+        query1();
+        filterQuery1();
+    }
+    private static void startDb() throws Exception {
+        File storagePath = new File("./server-data/db-storage");
+        if (!storagePath.exists()) {
+            if (!storagePath.mkdirs()) System.out.println("Error creating Database directory!");
+        }
+        UniversalDB.createStandalone(storagePath, new MyAppSchema());
+    }
+    private static void createInitialData() {
+        if (User.getCount() > 0) {
+            System.out.println("DB already contains data, don't create new entries");
+            return;
+        }
+        User user1 = User.create().setName("FirstUser").save();
+        Project project1 = Project.create().setTitle("ProjectOne");
+        user1.addProjects(project1).save();
+    }
+    private static void query1() {
+        User.getAll().forEach(user -> {
+            user.getProjects().forEach(project -> {
+                System.out.println(user.getName()+ " has project " + project.getTitle());
+            });
+        });
+    }
+    private static void filterQuery1() {
+        UserQuery firstQuery = User.filter().name(TextFilter.termContainsFilter("First"));
+        List<User> firstUserList = firstQuery.execute();
+        long firstUserProjectCount = Project.filter().filterManager(firstQuery).execute().stream().count();
+        System.out.println("There are " + firstUserProjectCount + " projects where the Manager's name contains 'First'");
+    }
+}
+
+```
 
 ## License
 
