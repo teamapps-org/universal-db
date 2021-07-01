@@ -229,6 +229,18 @@
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-map</artifactId>
             <version>3.20.80</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>xstream</artifactId>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.17</version>
         </dependency>
 
 
