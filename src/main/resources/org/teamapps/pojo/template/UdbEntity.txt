@@ -34,6 +34,10 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
         return new EntityBitSetList<>({type}.getBuilder(), table.getRecordBitSet());
     }
 
+    public static List<{type}> getDeletedRecords() {
+        return new EntityBitSetList<>({type}.getBuilder(), table.getDeletedRecordsBitSet());
+    }
+
     public static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, String ... path) {
     	return sort(table, list, sortFieldName, ascending, path);
     }
@@ -67,30 +71,35 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 {methods}
     @Override
     public {udbType} save(Transaction transaction, boolean strictChangeVerification) {
-        save(transaction, table, strictChangeVerification);
+        saveRecord(transaction, strictChangeVerification);
         return this;
     }
 
     @Override
     public {udbType} saveTransactional(boolean strictChangeVerification) {
-        save(UniversalDB.getThreadLocalTransaction(), table, strictChangeVerification);
+        saveRecord(UniversalDB.getThreadLocalTransaction(), strictChangeVerification);
         return this;
     }
 
     @Override
     public {udbType} save() {
-        save(table);
+        saveRecord();
         return this;
     }
 
     @Override
     public void delete(Transaction transaction) {
-        delete(transaction, table);
+        deleteRecord(transaction);
     }
 
     @Override
     public void delete() {
-        delete(table);
+        deleteRecord();
+    }
+
+    @Override
+    public void restoreDeleted() {
+        restoreDeletedRecord();
     }
 }
 

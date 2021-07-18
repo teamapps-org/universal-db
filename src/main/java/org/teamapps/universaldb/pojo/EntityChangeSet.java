@@ -103,8 +103,7 @@ public class EntityChangeSet {
 			}
 		}
 		for (AbstractUdbEntity entity : uncommittedEntityReferences) {
-			TableIndex tableIndex = entity.getTableIndex();
-			entity.save(transaction, tableIndex, strictChangeVerification);
+			entity.save(transaction, strictChangeVerification);
 		}
 	}
 

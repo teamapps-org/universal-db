@@ -35,6 +35,10 @@ public interface {type} extends Entity<{type}> {
         return {udbType}.getAll();
     }
 
+    static List<{type}> getDeletedRecords() {
+        return {udbType}.getDeletedRecords();
+    }
+
     static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, String ... path) {
         return {udbType}.sort(list, sortFieldName, ascending, path);
     }

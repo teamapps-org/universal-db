@@ -165,6 +165,14 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 		return new EntityBitSetList<>(entityBuilder, result);
 	}
 
+	public List<ENTITY> executeOnDeletedRecords() {
+		if (!tableIndex.getTableConfig().keepDeleted()) {
+			throw new RuntimeException("Query error: this table has no 'keep deleted' option set.");
+		}
+		BitSet result = filter(tableIndex.getDeletedRecordsBitSet());
+		return new EntityBitSetList<>(entityBuilder, result);
+	}
+
 	public ENTITY executeExpectSingleton() {
 		BitSet result = filter(tableIndex.getRecordBitSet());
 		int id = result.nextSetBit(1);

@@ -38,8 +38,10 @@ public class Table implements MappedObject {
 	public final static String FIELD_MODIFIED_BY = "metaModifiedBy";
 	public final static String FIELD_DELETION_DATE = "metaDeletionDate";
 	public final static String FIELD_DELETED_BY = "metaDeletedBy";
+	public final static String FIELD_RESTORE_DATE = "metaRestoreDate";
+	public final static String FIELD_RESTORED_BY = "metaRestoredBy";
 
-	public static final String[] FORBIDDEN_COLUMN_NAMES = new String[]{FIELD_CHECKPOINTS, FIELD_VERSIONING, FIELD_HIERARCHY, FIELD_CREATION_DATE, FIELD_CREATED_BY, FIELD_MODIFICATION_DATE, FIELD_MODIFIED_BY, FIELD_DELETION_DATE, FIELD_DELETED_BY};
+	public static final String[] FORBIDDEN_COLUMN_NAMES = new String[]{FIELD_CHECKPOINTS, FIELD_VERSIONING, FIELD_HIERARCHY, FIELD_CREATION_DATE, FIELD_CREATED_BY, FIELD_MODIFICATION_DATE, FIELD_MODIFIED_BY, FIELD_DELETION_DATE, FIELD_DELETED_BY, FIELD_RESTORE_DATE, FIELD_RESTORED_BY};
 
 	public static boolean isReservedMetaName(String name) {
 		for (String columnName : FORBIDDEN_COLUMN_NAMES) {
@@ -89,6 +91,8 @@ public class Table implements MappedObject {
 		if (tableConfig.keepDeleted()) {
 			addTimestamp(FIELD_DELETION_DATE);
 			addInteger(FIELD_DELETED_BY);
+			addTimestamp(FIELD_RESTORE_DATE);
+			addInteger(FIELD_RESTORED_BY);
 		}
 	}
 

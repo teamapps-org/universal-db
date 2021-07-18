@@ -49,6 +49,10 @@ public interface Entity<ENTITY> extends Identifiable{
 
 	void delete();
 
+	void restoreDeleted();
+
+	boolean isRestorable();
+
 	boolean isStored();
 
 	boolean isDeleted();

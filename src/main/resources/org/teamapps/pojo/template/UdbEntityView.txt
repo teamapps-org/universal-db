@@ -90,6 +90,11 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
     	throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void restoreDeleted() {
+    	throw new UnsupportedOperationException();
+    }
+
 	@Override
 	public String toString() {
     	StringBuilder sb = new StringBuilder();

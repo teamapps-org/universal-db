@@ -672,11 +672,11 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public void save(Transaction transaction, TableIndex tableIndex, boolean strictChangeVerification) {
+	public void saveRecord(Transaction transaction, boolean strictChangeVerification) {
 		if (entityChangeSet != null) {
 			this.transaction = transaction;
 			boolean update = !createEntity;
-			TransactionRecord transactionRecord = new TransactionRecord(tableIndex, id, correlationId, transaction.getUserId(), update, false, strictChangeVerification);
+			TransactionRecord transactionRecord = TransactionRecord.createOrUpdateRecord(tableIndex, id, correlationId, transaction.getUserId(), update, strictChangeVerification);
 			entityChangeSet.setTransactionRecordValues(transaction, transactionRecord, strictChangeVerification);
 			transaction.addTransactionRecord(transactionRecord);
 			clearChanges();
@@ -684,19 +684,19 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public void save(TableIndex tableIndex) {
-		save(tableIndex, false);
+	public void saveRecord() {
+		saveRecord( false);
 	}
 
-	public CompletableFuture<Boolean> saveAsynchronously(TableIndex tableIndex) {
-		save(tableIndex, true);
+	public CompletableFuture<Boolean> saveAsynchronously() {
+		saveRecord(true);
 		return new CompletableFuture<>();
 	}
 
-	public void save(TableIndex tableIndex, boolean asynchronous) {
+	public void saveRecord(boolean asynchronous) {
 		if (entityChangeSet != null) {
 			transaction = Transaction.create();
-			save(transaction, tableIndex, false);
+			saveRecord(transaction, false);
 			transaction.execute(asynchronous);
 			if (id == 0) {
 				id = transaction.getResolvedRecordIdByCorrelationId(correlationId);
@@ -712,16 +712,28 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return tableIndex.getFQN();
 	}
 
-	public void delete(Transaction transaction, TableIndex tableIndex) {
-		TransactionRecord transactionRecord = new TransactionRecord(tableIndex, id, 0, transaction.getUserId(), true);
+	public void deleteRecord(Transaction transaction) {
+		TransactionRecord transactionRecord = TransactionRecord.deleteRecord(tableIndex, id, transaction.getUserId());
 		transaction.addTransactionRecord(transactionRecord);
 		clearChanges();
 	}
 
-	public void delete(TableIndex tableIndex) {
+	public void deleteRecord() {
 		Transaction transaction = Transaction.create();
-		delete(transaction, tableIndex);
+		deleteRecord(transaction);
 		transaction.execute();
+	}
+
+	public void restoreDeletedRecord() {
+		Transaction transaction = Transaction.create();
+		TransactionRecord transactionRecord = TransactionRecord.restoreRecord(tableIndex, id, transaction.getUserId());
+		transaction.addTransactionRecord(transactionRecord);
+		clearChanges();
+		transaction.execute();
+	}
+
+	public boolean isRestorable() {
+		return tableIndex.getTableConfig().keepDeleted();
 	}
 
 	@Override

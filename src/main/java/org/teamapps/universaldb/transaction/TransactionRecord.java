@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,14 +21,14 @@ package org.teamapps.universaldb.transaction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.TableConfig;
+import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.text.FullTextIndexValue;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.schema.Table;
-import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.ColumnIndex;
-import org.teamapps.universaldb.index.text.FullTextIndexValue;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -46,39 +46,51 @@ public class TransactionRecord {
 	private int recordId;
 	private final boolean update;
 	private final boolean deleteRecord;
+	private final boolean restoreRecord;
 	private final int correlationId;
 	private final long recordTransactionId;
 	private List<TransactionRecordValue> recordValues;
 
 	private boolean transactionProcessingStarted = false;
 
-	public TransactionRecord(TableIndex tableIndex, int recordId, int correlationId, int userId) {
-		this(tableIndex, recordId, correlationId, userId, recordId > 0, false, false);
+
+	public static TransactionRecord createOrUpdateRecord(TableIndex tableIndex, int recordId, int correlationId, int userId, boolean update, boolean strictChangeVerification) {
+		return new TransactionRecord(tableIndex, recordId, correlationId, userId, update, false, strictChangeVerification, false);
 	}
 
-	public TransactionRecord(TableIndex tableIndex, int recordId, int correlationId, int userId, boolean deleteRecord) {
-		this(tableIndex, recordId, correlationId, userId, deleteRecord, recordId > 0, false);
+	public static TransactionRecord deleteRecord(TableIndex tableIndex, int recordId, int userId) {
+		return new TransactionRecord(tableIndex, recordId, 0, userId, false, true, false, false);
 	}
 
-	public TransactionRecord(TableIndex tableIndex, int recordId, int correlationId, int userId, boolean update, boolean deleteRecord, boolean strictChangeVerification) {
+	public static TransactionRecord restoreRecord(TableIndex tableIndex, int recordId, int userId) {
+		return new TransactionRecord(tableIndex, recordId, 0, userId, false, false, false, true);
+	}
+
+	private TransactionRecord(TableIndex tableIndex, int recordId, int correlationId, int userId, boolean update, boolean deleteRecord, boolean strictChangeVerification, boolean restoreRecord) {
 		this.tableIndex = tableIndex;
 		this.recordId = recordId;
 		this.correlationId = correlationId;
 		this.update = update;
 		this.deleteRecord = deleteRecord;
+		this.restoreRecord = restoreRecord;
 		this.recordTransactionId = strictChangeVerification ? tableIndex.getTransactionId(recordId) : 0;
 		recordValues = new ArrayList<>();
 		if (deleteRecord) {
 			if (recordId <= 0) {
 				throw new RuntimeException("Cannot delete record with no record id");
 			}
-			setDeletionData(tableIndex, userId);
+			setDeletionData(userId);
+		} else if (restoreRecord) {
+			if (recordId <= 0) {
+				throw new RuntimeException("Cannot restore record with no record id");
+			}
+			setRestoreData(userId);
 		} else {
 			setModificationData(tableIndex, update, userId);
 		}
 	}
 
-	public void setModificationData(TableIndex tableIndex, boolean update, int userId) {
+	private void setModificationData(TableIndex tableIndex, boolean update, int userId) {
 		TableConfig config = tableIndex.getTableConfig();
 		int changeDate = (int) (System.currentTimeMillis() / 1000);
 		if (!update) {
@@ -98,7 +110,7 @@ public class TransactionRecord {
 		}
 	}
 
-	public void setDeletionData(TableIndex tableIndex, int userId) {
+	private void setDeletionData(int userId) {
 		TableConfig config = tableIndex.getTableConfig();
 		if (config.keepDeleted()) {
 			addRecordValue(tableIndex.getColumnIndex(Table.FIELD_DELETION_DATE), (int) (System.currentTimeMillis() / 1000));
@@ -106,17 +118,26 @@ public class TransactionRecord {
 		}
 	}
 
-	public TransactionRecord(DataInputStream dataInputStream, DataBaseMapper dataBaseMapper) throws IOException {
-		this.tableIndex = dataBaseMapper.getCollectionIndexById(dataInputStream.readInt());
-		this.recordId = dataInputStream.readInt();
-		this.correlationId = dataInputStream.readInt();
-		this.update = dataInputStream.readBoolean();
-		this.deleteRecord = dataInputStream.readBoolean();
-		this.recordTransactionId = dataInputStream.readLong();
+	private void setRestoreData(int userId) {
+		TableConfig config = tableIndex.getTableConfig();
+		if (config.keepDeleted()) {
+			addRecordValue(tableIndex.getColumnIndex(Table.FIELD_RESTORE_DATE), (int) (System.currentTimeMillis() / 1000));
+			addRecordValue(tableIndex.getColumnIndex(Table.FIELD_RESTORED_BY), userId);
+		}
+	}
+
+	public TransactionRecord(DataInputStream dis, DataBaseMapper dataBaseMapper) throws IOException {
+		this.tableIndex = dataBaseMapper.getCollectionIndexById(dis.readInt());
+		this.recordId = dis.readInt();
+		this.correlationId = dis.readInt();
+		this.update = dis.readBoolean();
+		this.deleteRecord = dis.readBoolean();
+		this.restoreRecord = dis.readBoolean();
+		this.recordTransactionId = dis.readLong();
 		recordValues = new ArrayList<>();
-		int valueCount = dataInputStream.readInt();
+		int valueCount = dis.readInt();
 		for (int i = 0; i < valueCount; i++) {
-			recordValues.add(new TransactionRecordValue(dataInputStream, dataBaseMapper));
+			recordValues.add(new TransactionRecordValue(dis, dataBaseMapper));
 		}
 	}
 
@@ -152,20 +173,21 @@ public class TransactionRecord {
 		return recordTransactionId;
 	}
 
-	public void writeTransactionValue(DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(tableIndex.getMappingId());
-		dataOutputStream.writeInt(recordId);
-		dataOutputStream.writeInt(correlationId);
-		dataOutputStream.writeBoolean(update);
-		dataOutputStream.writeBoolean(deleteRecord);
-		dataOutputStream.writeLong(recordTransactionId);
-		dataOutputStream.writeInt(recordValues.size());
+	public void writeTransactionValue(DataOutputStream dos) throws IOException {
+		dos.writeInt(tableIndex.getMappingId());
+		dos.writeInt(recordId);
+		dos.writeInt(correlationId);
+		dos.writeBoolean(update);
+		dos.writeBoolean(deleteRecord);
+		dos.writeBoolean(restoreRecord);
+		dos.writeLong(recordTransactionId);
+		dos.writeInt(recordValues.size());
 		for (TransactionRecordValue recordValue : recordValues) {
-			recordValue.writeTransactionValue(dataOutputStream);
+			recordValue.writeTransactionValue(dos);
 		}
 	}
 
-	public boolean checkUnchangedRecordTransactionId(){
+	public boolean checkUnchangedRecordTransactionId() {
 		if (recordTransactionId == 0 || recordId == 0) {
 			return true;
 		} else {
@@ -174,7 +196,7 @@ public class TransactionRecord {
 	}
 
 	public void createIfNotExists(Map<Integer, Integer> recordIdByCorrelationId) {
-		if (!deleteRecord) {
+		if (!deleteRecord && !restoreRecord) {
 			boolean updateMap = recordId == 0;
 			recordId = tableIndex.createRecord(recordId, correlationId, update);
 			if (updateMap) {
@@ -192,8 +214,12 @@ public class TransactionRecord {
 		transactionProcessingStarted = true;
 		boolean processChanges = true;
 		if (deleteRecord) {
-			processChanges = tableIndex.deleteRecord(recordId);
-		} else if (recordId == 0){
+			tableIndex.deleteRecord(recordId);
+			processChanges = false;
+		} else if (restoreRecord) {
+			tableIndex.restoreRecord(recordId);
+			processChanges = false;
+		} else if (recordId == 0) {
 			log.error("ERROR!: could not save record - record id == 0:" + tableIndex.getFQN());
 			return;
 		}
@@ -205,7 +231,11 @@ public class TransactionRecord {
 	public void persistResolvedChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
 		boolean processChanges = true;
 		if (deleteRecord) {
-			processChanges = tableIndex.deleteRecord(recordId);
+			tableIndex.deleteRecord(recordId);
+			processChanges = false;
+		} else if (restoreRecord) {
+			tableIndex.restoreRecord(recordId);
+			processChanges = false;
 		} else {
 			if (recordId == 0) {
 				recordId = recordIdByCorrelationId.get(correlationId);
@@ -226,7 +256,7 @@ public class TransactionRecord {
 		for (TransactionRecordValue recordValue : recordValues) {
 			recordValue.persistChange(recordId, recordIdByCorrelationId);
 		}
-		if (!deleteRecord) {
+		if (!deleteRecord && !restoreRecord) {
 			List<FullTextIndexValue> fullTextIndexValues = recordValues.stream()
 					.filter(value -> value.getColumn().getType() == IndexType.TEXT || value.getColumn().getType() == IndexType.TRANSLATABLE_TEXT)
 					.map(value -> {

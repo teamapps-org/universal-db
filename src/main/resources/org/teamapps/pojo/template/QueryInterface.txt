@@ -36,6 +36,8 @@ public interface {query} extends Query<{type}> {
 
     List<{type}> execute();
 
+    List<{type}> executeOnDeletedRecords();
+
     {type} executeExpectSingleton();
 
     BitSet executeToBitSet();

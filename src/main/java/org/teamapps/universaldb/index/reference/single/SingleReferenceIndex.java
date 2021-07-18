@@ -120,6 +120,13 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 		setIndexValue(id, value);
 	}
 
+	public void setValue(int id, int value, boolean cyclic) {
+		if (cyclicReferences && !cyclic) {
+			setCyclicReferences(id, value);
+		}
+		setIndexValue(id, value);
+	}
+
 	private void setCyclicReferences(int id, int value) {
 		int previousValue = getValue(id);
 		if (previousValue != value) {
