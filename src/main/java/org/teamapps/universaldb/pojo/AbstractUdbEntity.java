@@ -738,16 +738,12 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	@Override
 	public boolean isStored() {
-		if (id > 0 && tableIndex.isStored(id)) {
-			return true;
-		} else {
-			return false;
-		}
+		return getId() > 0 && tableIndex.isStored(id);
 	}
 
 	@Override
 	public boolean isDeleted() {
-		return tableIndex.isDeleted(id);
+		return getId() > 0 && tableIndex.isDeleted(id);
 	}
 
 	@Override

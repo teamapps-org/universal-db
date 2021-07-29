@@ -77,6 +77,11 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 	}
 
 	@Override
+	public boolean isMultiReference() {
+		return false;
+	}
+
+	@Override
 	public ColumnIndex getReferencedColumn() {
 		if (reverseSingleIndex != null) {
 			return reverseSingleIndex;

@@ -212,30 +212,22 @@ public class TransactionRecord {
 			return;
 		}
 		transactionProcessingStarted = true;
-		boolean processChanges = true;
 		if (deleteRecord) {
 			tableIndex.deleteRecord(recordId);
-			processChanges = false;
 		} else if (restoreRecord) {
 			tableIndex.restoreRecord(recordId);
-			processChanges = false;
 		} else if (recordId == 0) {
 			log.error("ERROR!: could not save record - record id == 0:" + tableIndex.getFQN());
 			return;
 		}
-		if (processChanges) {
-			processColumnChanges(transactionId, recordIdByCorrelationId);
-		}
+		processColumnChanges(transactionId, recordIdByCorrelationId);
 	}
 
 	public void persistResolvedChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
-		boolean processChanges = true;
 		if (deleteRecord) {
 			tableIndex.deleteRecord(recordId);
-			processChanges = false;
 		} else if (restoreRecord) {
 			tableIndex.restoreRecord(recordId);
-			processChanges = false;
 		} else {
 			if (recordId == 0) {
 				recordId = recordIdByCorrelationId.get(correlationId);
@@ -246,9 +238,7 @@ public class TransactionRecord {
 			}
 			recordId = tableIndex.createRecord(recordId, correlationId, update);
 		}
-		if (processChanges) {
-			processColumnChanges(transactionId, recordIdByCorrelationId);
-		}
+		processColumnChanges(transactionId, recordIdByCorrelationId);
 	}
 
 	public void processColumnChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {

@@ -117,12 +117,29 @@ public class Model implements SchemaInfoProvider {
 
 		Table cascadeTest1 = database.addTable("cascadeTest1", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
 		Table cascadeTest2 = database.addTable("cascadeTest2", TableOption.CHECKPOINTS, TableOption.HIERARCHY, TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION, TableOption.KEEP_DELETED);
+		Table cascadeTest3 = database.addTable("cascadeTest3NoKeep", TableOption.TRACK_CREATION, TableOption.TRACK_MODIFICATION);
+		Table cascadeTest4 = database.addTable("cascadeTest4NoKeep");
+		Table cascadeTest5 = database.addTable("cascadeTest5NoKeep");
 
 		cascadeTest1.addText("name");
 		cascadeTest1.addReference("ref2s", cascadeTest2, true, "ref1", true);
+		cascadeTest1.addReference("otherRef2s", cascadeTest2, true, "otherRef1", false);
+		cascadeTest1.addReference("ref3NoKeep", cascadeTest3, false, "ref1", true);
+		cascadeTest1.addReference("ref4NoKeep", cascadeTest4, false, "ref1", true);
+		cascadeTest1.addReference("ref5NoKeep", cascadeTest5, false, "ref1", false);
 
 		cascadeTest2.addText("name");
 		cascadeTest2.addReference("ref1", cascadeTest1, false, "ref2s", false);
+		cascadeTest2.addReference("otherRef1", cascadeTest1, false, "otherRef2s", false);
+
+		cascadeTest3.addText("name");
+		cascadeTest3.addReference("ref1", cascadeTest1, false, "ref3NoKeep", false);
+
+		cascadeTest4.addText("name");
+		cascadeTest4.addReference("ref1", cascadeTest1, false, "ref4NoKeep", false);
+
+		cascadeTest5.addText("name");
+		cascadeTest5.addReference("ref1", cascadeTest1, false, "ref5NoKeep", true);
 
 
 		Table entityA = database.addTable("entityA");

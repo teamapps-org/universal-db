@@ -80,6 +80,11 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	}
 
 	@Override
+	public boolean isMultiReference() {
+		return true;
+	}
+
+	@Override
 	public ColumnIndex getReferencedColumn() {
 		if (reverseSingleIndex != null) {
 			return reverseSingleIndex;
@@ -107,7 +112,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public void removeValue(int id) {
-		referenceStore.removeAllEntries(id);
+		removeAllReferences(id);
 	}
 
 	public boolean isEmpty(int id) {
@@ -192,6 +197,14 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		referenceStore.removeEntries(id, references);
 		if (cyclicReferences && !cyclic) {
 			removeCyclicReferences(id, references);
+		}
+	}
+
+	public void removeAllReferences(int id, boolean cyclic) {
+		if (cyclic) {
+			referenceStore.removeAllEntries(id);
+		} else {
+			removeAllReferences(id);
 		}
 	}
 

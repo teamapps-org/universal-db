@@ -26,4 +26,6 @@ public interface ReferenceIndex {
 	TableIndex getReferencedTable();
 
 	boolean isCascadeDeleteReferences();
+
+	boolean isMultiReference();
 }

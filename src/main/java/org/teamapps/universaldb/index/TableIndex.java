@@ -26,6 +26,7 @@ import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
@@ -348,47 +349,88 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
+	private List<Integer> getReferencedRecords(int id, ColumnIndex<?, ?> referenceColumn) {
+		if (referenceColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
+			MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) referenceColumn;
+			return multiReferenceIndex.getReferencesAsList(id);
+		} else {
+			SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) referenceColumn;
+			int reference = singleReferenceIndex.getValue(id);
+			return reference > 0 ? Collections.singletonList(reference) : Collections.emptyList();
+		}
+	}
+
 	public void deleteRecord(int id) {
+		deleteRecord(id, null);
+	}
+
+	private void deleteRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
 		records.setValue(id, false);
 		if (keepDeletedRecords) {
 			if (deletedRecords.getValue(id)) {
 				return;
 			}
 			deletedRecords.setValue(id, true);
-			for (ColumnIndex columnIndex : columnIndices) {
-				if (columnIndex.getColumnType().isReference()) {
-					if (columnIndex.getColumnType() == ColumnType.MULTI_REFERENCE) {
-						MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) columnIndex;
-						if (multiReferenceIndex.isCascadeDeleteReferences()) {
-							cascadeDeleteMultiReferences(id, multiReferenceIndex);
-						} else {
-							deleteMultiIndexBackReferences(id, multiReferenceIndex);
-						}
+		}
+
+		for (ColumnIndex<?, ?> referenceColumn : getReferenceColumns()) {
+			if (referenceColumn == cascadeOriginIndex) {
+				continue;
+			}
+			ReferenceIndex referenceIndex = (ReferenceIndex) referenceColumn;
+			boolean isCascadeDelete = referenceIndex.isCascadeDeleteReferences();
+			TableIndex referencedTable = referenceIndex.getReferencedTable();
+			boolean isReferenceKeepDeletedRecords = referencedTable.isKeepDeletedRecords();
+			boolean isMultiReference = referenceIndex.isMultiReference();
+			ColumnIndex<?, ?> backReferenceColumn = referenceColumn.getReferencedColumn();
+			boolean isWithBackReferenceColumn = backReferenceColumn != null;
+			boolean isMultiBackReference = backReferenceColumn != null && backReferenceColumn.getColumnType() == ColumnType.MULTI_REFERENCE;
+
+			List<Integer> referencedRecords = getReferencedRecords(id, referenceColumn);
+			if (referencedRecords.isEmpty()) {
+				continue;
+			}
+
+			if (keepDeletedRecords) {
+				if (isReferenceKeepDeletedRecords) {
+					if (isCascadeDelete) {
+						//remove no reference!
+						//cascade delete
+						referencedRecords.forEach(refId -> referencedTable.deleteRecord(refId, backReferenceColumn));
 					} else {
-						SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) columnIndex;
-						if (singleReferenceIndex.isCascadeDeleteReferences()) {
-							cascadeDeleteSingleReference(id, singleReferenceIndex);
-						} else {
-							deleteSingleIndexBackReference(id, singleReferenceIndex);
+						//remove back references
+						if (isWithBackReferenceColumn) {
+							removeBackReferences(id, backReferenceColumn, isMultiBackReference, referencedRecords);
 						}
 					}
+				} else {
+					if (isCascadeDelete) {
+						//remove references
+						if (isMultiReference) {
+							MultiReferenceIndex multiReferenceColumn = (MultiReferenceIndex) referenceColumn;
+							multiReferenceColumn.removeAllReferences(id, false);
+						} else {
+							SingleReferenceIndex singleReferenceColumn = (SingleReferenceIndex) referenceColumn;
+							singleReferenceColumn.setValue(id, 0, false);
+						}
+						//cascade delete
+						referencedRecords.forEach(referencedTable::deleteRecord);
+					} else {
+						//remove back references
+						if (isWithBackReferenceColumn) {
+							removeBackReferences(id, backReferenceColumn, isMultiBackReference, referencedRecords);
+						}
+					}
+				}
+			} else {
+				if (isCascadeDelete) {
+					referencedRecords.forEach(referencedTable::deleteRecord);
 				}
 			}
-		} else {
-			for (ColumnIndex columnIndex : columnIndices) {
-				if (columnIndex.getColumnType().isReference()) {
-					if (columnIndex.getColumnType() == ColumnType.MULTI_REFERENCE) {
-						MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) columnIndex;
-						if (multiReferenceIndex.isCascadeDeleteReferences()) {
-							cascadeDeleteMultiReferences(id, multiReferenceIndex);
-						}
-					} else {
-						SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) columnIndex;
-						if (singleReferenceIndex.isCascadeDeleteReferences()) {
-							cascadeDeleteSingleReference(id, singleReferenceIndex);
-						}
-					}
-				}
+		}
+
+		if (!keepDeletedRecords) {
+			for (ColumnIndex<?, ?> columnIndex : columnIndices) {
 				columnIndex.removeValue(id);
 			}
 			if (collectionTextSearchIndex != null) {
@@ -397,150 +439,114 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
+	private void removeBackReferences(int id, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+		if (isMultiBackReference) {
+			MultiReferenceIndex multiBackReferenceColumn = (MultiReferenceIndex) backReferenceColumn;
+			referencedRecords.forEach(refId -> multiBackReferenceColumn.removeReferences(refId, Collections.singletonList(id), true));
+		} else {
+			SingleReferenceIndex singleBackReferenceColumn = (SingleReferenceIndex) backReferenceColumn;
+			referencedRecords.forEach(refId -> {
+				int value = singleBackReferenceColumn.getValue(refId);
+				if (id == value) {
+					singleBackReferenceColumn.setValue(refId, 0, true);
+				}
+			});
+		}
+	}
+
 	public void restoreRecord(int id) {
+		restoreRecord(id, null);
+	}
+
+	public void restoreRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
 		if (!keepDeletedRecords || !deletedRecords.getValue(id)) {
 			return;
 		}
 		deletedRecords.setValue(id, false);
-		for (ColumnIndex columnIndex : columnIndices) {
-			if (columnIndex.getColumnType().isReference()) {
-				if (columnIndex.getColumnType() == ColumnType.MULTI_REFERENCE) {
-					MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) columnIndex;
-					if (multiReferenceIndex.isCascadeDeleteReferences()) {
-						cascadeRestoreMultiReferences(id, multiReferenceIndex);
-					} else {
-						restoreMultiIndexBackReferences(id, multiReferenceIndex);
-					}
+
+		for (ColumnIndex<?, ?> referenceColumn : getReferenceColumns()) {
+			if (referenceColumn == cascadeOriginIndex) {
+				continue;
+			}
+			ReferenceIndex referenceIndex = (ReferenceIndex) referenceColumn;
+			boolean isCascadeDelete = referenceIndex.isCascadeDeleteReferences();
+			TableIndex referencedTable = referenceIndex.getReferencedTable();
+			boolean isReferenceKeepDeletedRecords = referencedTable.isKeepDeletedRecords();
+			boolean isMultiReference = referenceIndex.isMultiReference();
+			ColumnIndex<?, ?> backReferenceColumn = referenceColumn.getReferencedColumn();
+			boolean isWithBackReferenceColumn = backReferenceColumn != null;
+			boolean isMultiBackReference = backReferenceColumn != null && backReferenceColumn.getColumnType() == ColumnType.MULTI_REFERENCE;
+
+			List<Integer> referencedRecords = getReferencedRecords(id, referenceColumn);
+			if (referencedRecords.isEmpty()) {
+				continue;
+			}
+
+			if (isReferenceKeepDeletedRecords) {
+				if (isCascadeDelete) {
+					//references are in place
+					//cascade restore
+					referencedRecords.forEach(refId -> referencedTable.restoreRecord(refId, backReferenceColumn));
 				} else {
-					SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) columnIndex;
-					if (singleReferenceIndex.isCascadeDeleteReferences()) {
-						cascadeRestoreSingleReference(id, singleReferenceIndex);
-					} else {
-						restoreSingleIndexBackReference(id, singleReferenceIndex);
+					//restore back references
+					if (isWithBackReferenceColumn) {
+						restoreBackReferences(id, referenceColumn, referencedTable, isMultiReference, backReferenceColumn, isMultiBackReference, referencedRecords);
+					}
+				}
+			} else {
+				if (isCascadeDelete) {
+					//cascade deleted records are gone - nothing to do
+				} else {
+					if (isWithBackReferenceColumn) {
+						//restore back references
+						restoreBackReferences(id, referenceColumn, referencedTable, isMultiReference, backReferenceColumn, isMultiBackReference, referencedRecords);
 					}
 				}
 			}
 		}
+
 		records.setValue(id, true);
 	}
 
-	public void cascadeDeleteSingleReference(int id, SingleReferenceIndex singleReferenceIndex) {
-		TableIndex referencedTable = singleReferenceIndex.getReferencedTable();
-		int reference = singleReferenceIndex.getValue(id);
-		referencedTable.deleteRecord(reference);
-	}
-
-	public void cascadeDeleteMultiReferences(int id, MultiReferenceIndex multiReferenceIndex) {
-		TableIndex referencedTable = multiReferenceIndex.getReferencedTable();
-		List<Integer> references = multiReferenceIndex.getReferencesAsList(id);
-		for (Integer reference : references) {
-			referencedTable.deleteRecord(reference);
-		}
-	}
-
-	public void cascadeRestoreSingleReference(int id, SingleReferenceIndex singleReferenceIndex) {
-		TableIndex referencedTable = singleReferenceIndex.getReferencedTable();
-		int reference = singleReferenceIndex.getValue(id);
-		referencedTable.restoreRecord(reference);
-	}
-
-	public void cascadeRestoreMultiReferences(int id, MultiReferenceIndex multiReferenceIndex) {
-		TableIndex referencedTable = multiReferenceIndex.getReferencedTable();
-		List<Integer> references = multiReferenceIndex.getReferencesAsList(id);
-		for (Integer reference : references) {
-			referencedTable.restoreRecord(reference);
-		}
-	}
-
-	public void deleteMultiIndexBackReferences(int id, MultiReferenceIndex multiReferenceIndex) {
-		ColumnIndex referencedColumn = multiReferenceIndex.getReferencedColumn();
-		if (referencedColumn != null) {
-			List<Integer> references = multiReferenceIndex.getReferencesAsList(id);
-			if (references.isEmpty()) {
-				return;
-			}
-			if (referencedColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
-				MultiReferenceIndex referencedMultiIndex = (MultiReferenceIndex) referencedColumn;
-				List<Integer> thisRecord = Collections.singletonList(id);
-				for (Integer reference : references) {
-					referencedMultiIndex.removeReferences(reference, thisRecord, true);
-				}
-			} else {
-				SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;
-				for (Integer reference : references) {
-					int backReferenceId = referencedSingleIndex.getValue(reference);
-					if (backReferenceId == id) {
-						referencedSingleIndex.setValue(reference, 0, true);
+	private void restoreBackReferences(int id, ColumnIndex<?, ?> referenceColumn, TableIndex referencedTable, boolean isMultiReference, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+		if (isMultiBackReference) {
+			MultiReferenceIndex multiBackReferenceColumn = (MultiReferenceIndex) backReferenceColumn;
+			referencedRecords.forEach(refId -> {
+				if (referencedTable.isStored(refId)) {
+					multiBackReferenceColumn.addReferences(refId, Collections.singletonList(id), true);
+				} else {
+					//remove local refs
+					if (isMultiReference) {
+						MultiReferenceIndex multiReferenceColumn = (MultiReferenceIndex) referenceColumn;
+						multiReferenceColumn.removeAllReferences(id, true);
+					} else {
+						SingleReferenceIndex singleReferenceColumn = (SingleReferenceIndex) referenceColumn;
+						singleReferenceColumn.setValue(id, 0,true);
 					}
 				}
-			}
-		}
-	}
-
-	public void deleteSingleIndexBackReference(int id, SingleReferenceIndex singleReferenceIndex) {
-		ColumnIndex referencedColumn = singleReferenceIndex.getReferencedColumn();
-		if (referencedColumn != null) {
-			int reference = singleReferenceIndex.getValue(id);
-			if (reference <= 0) {
-				return;
-			}
-			if (referencedColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
-				MultiReferenceIndex referencedMultiIndex = (MultiReferenceIndex) referencedColumn;
-				referencedMultiIndex.removeReferences(reference, Collections.singletonList(id), true);
-			} else {
-				SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;
-				int backReference = referencedSingleIndex.getValue(reference);
-				if (backReference == id) {
-					referencedSingleIndex.setValue(reference, 0, true);
-				}
-			}
-		}
-	}
-
-	public void restoreMultiIndexBackReferences(int id, MultiReferenceIndex multiReferenceIndex) {
-		ColumnIndex referencedColumn = multiReferenceIndex.getReferencedColumn();
-		if (referencedColumn != null) {
-			List<Integer> references = multiReferenceIndex.getReferencesAsList(id);
-			if (references.isEmpty()) {
-				return;
-			}
-			if (referencedColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
-				MultiReferenceIndex referencedMultiIndex = (MultiReferenceIndex) referencedColumn;
-				List<Integer> thisRecord = Collections.singletonList(id);
-				for (Integer reference : references) {
-					referencedMultiIndex.addReferences(reference, thisRecord, true);
-				}
-			} else {
-				SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;
-				for (Integer reference : references) {
-					int backReferenceId = referencedSingleIndex.getValue(reference);
-					if (backReferenceId == 0) {
-						referencedSingleIndex.setValue(reference, id, true);
+			});
+		} else {
+			SingleReferenceIndex singleBackReferenceColumn = (SingleReferenceIndex) backReferenceColumn;
+			referencedRecords.forEach(refId -> {
+				if (referencedTable.isStored(refId)) {
+					int value = singleBackReferenceColumn.getValue(refId);
+					if (value == 0) {
+						singleBackReferenceColumn.setValue(refId, id, true);
+					} else {
+						//remove local refs
+						if (isMultiReference) {
+							MultiReferenceIndex multiReferenceColumn = (MultiReferenceIndex) referenceColumn;
+							multiReferenceColumn.removeAllReferences(id, true);
+						} else {
+							SingleReferenceIndex singleReferenceColumn = (SingleReferenceIndex) referenceColumn;
+							singleReferenceColumn.setValue(id, 0,true);
+						}
 					}
 				}
-			}
+			});
 		}
 	}
 
-	public void restoreSingleIndexBackReference(int id, SingleReferenceIndex singleReferenceIndex) {
-		ColumnIndex referencedColumn = singleReferenceIndex.getReferencedColumn();
-		if (referencedColumn != null) {
-			int reference = singleReferenceIndex.getValue(id);
-			if (reference <= 0) {
-				return;
-			}
-			if (referencedColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
-				MultiReferenceIndex referencedMultiIndex = (MultiReferenceIndex) referencedColumn;
-				referencedMultiIndex.addReferences(reference, Collections.singletonList(id), true);
-			} else {
-				SingleReferenceIndex referencedSingleIndex = (SingleReferenceIndex) referencedColumn;
-				int value = referencedSingleIndex.getValue(reference);
-				if (value == 0) {
-					referencedSingleIndex.setValue(reference, id, true);
-				}
-			}
-		}
-	}
 
 	public void setTransactionId(int id, long transactionId) {
 		if (!tableConfig.isCheckpoints()) {
@@ -614,8 +620,18 @@ public class TableIndex implements MappedObject {
 		return columnIndices;
 	}
 
+	public List<ColumnIndex> getReferenceColumns() {
+		return columnIndices.stream()
+				.filter(column -> column.getColumnType().isReference())
+				.collect(Collectors.toList());
+	}
+
 	public ColumnIndex getColumnIndex(String name) {
 		return columnIndexByName.get(name);
+	}
+
+	public boolean isKeepDeletedRecords() {
+		return keepDeletedRecords;
 	}
 
 	public int getMappingId() {
