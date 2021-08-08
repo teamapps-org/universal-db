@@ -165,6 +165,10 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 		return new EntityBitSetList<>(entityBuilder, result);
 	}
 
+	public List<ENTITY> execute(boolean deletedRecords) {
+		return deletedRecords ? executeOnDeletedRecords() : execute();
+	}
+
 	public List<ENTITY> executeOnDeletedRecords() {
 		if (!tableIndex.getTableConfig().keepDeleted()) {
 			throw new RuntimeException("Query error: this table has no 'keep deleted' option set.");
@@ -190,6 +194,19 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 	public List<ENTITY> execute(String sortFieldName, boolean ascending, String ... path) {
 		BitSet result = filter(tableIndex.getRecordBitSet());
 		return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, path);
+	}
+
+	public List<ENTITY> execute(boolean deletedRecords, String sortFieldName, boolean ascending, String ... path) {
+		if (deletedRecords && !tableIndex.getTableConfig().keepDeleted()) {
+			throw new RuntimeException("Query error: this table has no 'keep deleted' option set.");
+		}
+		BitSet recordBitSet = deletedRecords ? tableIndex.getDeletedRecordsBitSet() : tableIndex.getRecordBitSet();
+		BitSet result = filter(recordBitSet);
+		if (sortFieldName == null || sortFieldName.isBlank()) {
+			return new EntityBitSetList<>(entityBuilder, result);
+		} else {
+			return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, path);
+		}
 	}
 
 	public List<ENTITY> execute(int startIndex, int length, Sorting sorting) {
