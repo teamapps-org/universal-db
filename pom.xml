@@ -85,6 +85,10 @@
                     <artifactId>guava</artifactId>
                     <groupId>com.google.guava</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>log4j</artifactId>
+                    <groupId>log4j</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -177,16 +181,35 @@
             <version>${apache-commons-io}</version>
         </dependency>
 
+        <!-- [CVE-2021-36090] on 1.20 from tika -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.21</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>${tika-version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-io</artifactId>
+                    <groupId>commons-io</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parsers</artifactId>
             <version>${tika-version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-io</artifactId>
+                    <groupId>commons-io</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
