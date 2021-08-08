@@ -104,26 +104,6 @@ public class CharIntPersistedMap {
 		return null;
 	}
 
-	public static void main(String[] args) {
-		long time = System.currentTimeMillis();
-		File path = new File("/Users/mb/dev/test/map/");
-		CharIntPersistedMap map = new CharIntPersistedMap(path, "cmap");
-		int size = 10_000;
-		for (int i = 0; i < size; i++) {
-			map.put("" + i, i);
-		}
-		System.out.println("TIME:" + (System.currentTimeMillis() - time));
-		time = System.currentTimeMillis();
-		for (int i = 0; i < size; i++) {
-			Integer value = map.get("" + i);
-			if (value == null || value != i) {
-				System.out.println("Error:" + i + ", val:" + value);
-			}
-		}
-		System.out.println("TIME:" + (System.currentTimeMillis() - time));
-		map.close();
-	}
-
 	private File getStoreFile(int index) {
 		return new File(getPath(), getName() + "-" + index + ".idm");
 	}
