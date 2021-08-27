@@ -14,6 +14,7 @@ import org.teamapps.universaldb.pojo.*;
 import org.teamapps.universaldb.pojo.template.*;
 import org.teamapps.universaldb.transaction.*;
 import org.teamapps.universaldb.record.*;
+import org.teamapps.universaldb.context.*;
 
 import java.util.*;
 import java.time.*;
@@ -38,12 +39,12 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
         return new EntityBitSetList<>({type}.getBuilder(), table.getDeletedRecordsBitSet());
     }
 
-    public static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, String ... path) {
-    	return sort(table, list, sortFieldName, ascending, path);
+    public static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
+    	return sort(table, list, sortFieldName, ascending, userContext, path);
     }
 
-    public static List<{type}> sort(BitSet recordIds, String sortFieldName, boolean ascending, String ... path) {
-        return sort(table, {type}.getBuilder(), recordIds, sortFieldName, ascending, path);
+    public static List<{type}> sort(BitSet recordIds, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
+        return sort(table, {type}.getBuilder(), recordIds, sortFieldName, ascending, userContext, path);
     }
 
     public static int getCount() {

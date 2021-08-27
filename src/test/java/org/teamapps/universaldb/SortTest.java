@@ -23,8 +23,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.teamapps.datamodel.testdb1.FieldTest;
+import org.teamapps.universaldb.context.UserContext;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,13 +62,13 @@ public class SortTest {
 		}
 		List<FieldTest> values;
 
-		values = FieldTest.filter().execute(FieldTest.FIELD_INT_FIELD, false);
+		values = FieldTest.filter().execute(FieldTest.FIELD_INT_FIELD, false, UserContext.create(Locale.ENGLISH));
 		assertEquals(1000, values.get(0).getIntField());
 
-		values = FieldTest.filter().execute(FieldTest.FIELD_INT_FIELD, true);
+		values = FieldTest.filter().execute(FieldTest.FIELD_INT_FIELD, true, UserContext.create(Locale.ENGLISH));
 		assertEquals(1, values.get(0).getIntField());
 
-		values = FieldTest.filter().execute(FieldTest.FIELD_SHORT_FIELD, false);
+		values = FieldTest.filter().execute(FieldTest.FIELD_SHORT_FIELD, false, UserContext.create(Locale.ENGLISH));
 		assertEquals(1, values.get(0).getIntField());
 	}
 }

@@ -16,6 +16,7 @@ import org.teamapps.universaldb.pojo.template.*;
 import org.teamapps.universaldb.transaction.*;
 import org.teamapps.universaldb.record.*;
 import org.teamapps.universaldb.query.*;
+import org.teamapps.universaldb.context.*;
 
 import java.util.*;
 import java.util.function.Function;

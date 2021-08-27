@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.context;
 
+import java.text.Collator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -37,15 +38,18 @@ public interface UserContext {
 		return new UserContextImpl(rankedLanguages);
 	}
 
-	static UserContext create() {
-		return new UserContextImpl();
+	default String getLanguage() {
+		return getRankedLanguages().get(0);
 	}
-
-	String getLanguage();
 
 	Locale getLocale();
 
-	Comparator<String> getComparator(boolean ascending);
+	default Comparator<String> getComparator(boolean ascending) {
+		Collator collator = Collator.getInstance(getLocale());
+		collator.setDecomposition(Collator.CANONICAL_DECOMPOSITION);
+		collator.setStrength(Collator.PRIMARY);
+		return ascending ? Comparator.nullsFirst(collator) : Comparator.nullsLast(collator.reversed());
+	}
 
 	List<String> getRankedLanguages();
 

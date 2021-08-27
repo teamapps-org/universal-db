@@ -293,7 +293,7 @@ public class TableIndex implements MappedObject {
 		return filter;
 	}
 
-	public List<SortEntry> sortRecords(String columnName, BitSet records, boolean ascending, SingleReferenceIndex... path) {
+	public List<SortEntry> sortRecords(String columnName, BitSet records, boolean ascending, UserContext userContext, SingleReferenceIndex... path) {
 		ColumnIndex column = null;
 		if (path != null && path.length > 0) {
 			column = path[path.length - 1].getReferencedTable().getColumnIndex(columnName);
@@ -305,7 +305,7 @@ public class TableIndex implements MappedObject {
 		}
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(records, path);
 
-		return column.sortRecords(sortEntries, ascending, UserContext.create());
+		return column.sortRecords(sortEntries, ascending, userContext);
 	}
 
 	public int createRecord(int recordId, int correlationId, boolean update) {

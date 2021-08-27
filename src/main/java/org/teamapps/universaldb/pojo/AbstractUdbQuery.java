@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.pojo;
 
+import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
@@ -191,12 +192,12 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 		return filter(tableIndex.getRecordBitSet());
 	}
 
-	public List<ENTITY> execute(String sortFieldName, boolean ascending, String ... path) {
+	public List<ENTITY> execute(String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		BitSet result = filter(tableIndex.getRecordBitSet());
-		return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, path);
+		return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, userContext, path);
 	}
 
-	public List<ENTITY> execute(boolean deletedRecords, String sortFieldName, boolean ascending, String ... path) {
+	public List<ENTITY> execute(boolean deletedRecords, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		if (deletedRecords && !tableIndex.getTableConfig().keepDeleted()) {
 			throw new RuntimeException("Query error: this table has no 'keep deleted' option set.");
 		}
@@ -205,18 +206,18 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 		if (sortFieldName == null || sortFieldName.isBlank()) {
 			return new EntityBitSetList<>(entityBuilder, result);
 		} else {
-			return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, path);
+			return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, userContext, path);
 		}
 	}
 
-	public List<ENTITY> execute(int startIndex, int length, Sorting sorting) {
+	public List<ENTITY> execute(int startIndex, int length, Sorting sorting, UserContext userContext) {
 		if (sorting == null) {
 			return execute().stream()
 					.skip(startIndex)
 					.limit(length)
 					.collect(Collectors.toList());
 		} else {
-			return execute(sorting.getSortFieldName(), sorting.getSortDirection().isAscending(), sorting.getSortFieldPath()).stream()
+			return execute(sorting.getSortFieldName(), sorting.getSortDirection().isAscending(), userContext, sorting.getSortFieldPath()).stream()
 					.skip(startIndex)
 					.limit(length)
 					.collect(Collectors.toList());

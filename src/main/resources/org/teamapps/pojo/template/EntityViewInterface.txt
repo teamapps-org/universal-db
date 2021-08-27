@@ -1,5 +1,6 @@
 package {package};
 
+import org.teamapps.universaldb.context.*;
 import org.teamapps.universaldb.pojo.*;
 import org.teamapps.universaldb.record.*;
 import org.teamapps.universaldb.index.file.FileValue;
@@ -27,8 +28,8 @@ public interface {type} extends Entity<{type}> {
         return {udbType}.getAll();
     }
 
-    static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, String ... path) {
-        return {udbType}.sort(list, sortFieldName, ascending, path);
+    static List<{type}> sort(List<{type}> list, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
+        return {udbType}.sort(list, sortFieldName, ascending, userContext, path);
     }
 
     static int getCount() {

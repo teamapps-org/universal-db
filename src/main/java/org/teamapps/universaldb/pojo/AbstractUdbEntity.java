@@ -68,30 +68,37 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return list;
 	}
 
-	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, String ... path) {
-		return sort(table, list, sortFieldName, ascending, UserContext.create(), path);
-	}
 
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
 		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
+		if (column == null) {
+			return list;
+		}
 		List<SortEntry<ENTITY>> sortEntries = SortEntry.createSortEntries(list, referencePath);
 		sortEntries = column.sortRecords(sortEntries, ascending, userContext);
 		return sortEntries.stream().map(SortEntry::getEntity).collect(Collectors.toList());
 	}
 
-	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, String ... path) {
-		return sort(table, builder, recordIds, sortFieldName, ascending, null, path);
-	}
-
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
 		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
+		if (column == null) {
+			return createUnsortedList(recordIds, builder);
+		}
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(recordIds, referencePath);
 		sortEntries = column.sortRecords(sortEntries, ascending, userContext);
 		List<ENTITY> list = new ArrayList<>();
 		for (SortEntry entry : sortEntries) {
 			list.add(builder.build(entry.getId()));
+		}
+		return list;
+	}
+
+	private static <ENTITY extends Entity> List<ENTITY> createUnsortedList(BitSet records, EntityBuilder<ENTITY> builder) {
+		List<ENTITY> list = new ArrayList<>();
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			list.add(builder.build(id));
 		}
 		return list;
 	}
