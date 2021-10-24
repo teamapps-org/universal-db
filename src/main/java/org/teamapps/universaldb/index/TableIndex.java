@@ -44,11 +44,12 @@ import org.teamapps.universaldb.schema.Table;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class TableIndex implements MappedObject {
-	private static final Logger log = LoggerFactory.getLogger(TableIndex.class);
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final DatabaseIndex databaseIndex;
 	private final Table table;
@@ -113,15 +114,15 @@ public class TableIndex implements MappedObject {
 						getCount() > 0 && collectionTextSearchIndex.getMaxDoc() == 0
 		) {
 			long time = System.currentTimeMillis();
-			log.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
+			logger.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
 			recreateFullTextIndex();
-			log.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
+			logger.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
 		}
 		records.setValue(0, false);
 	}
 
 	public void forceFullTextIndexRecreation() {
-		log.warn("FORCED RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
+		logger.warn("FORCED RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
 		recreateFullTextIndex();
 
 	}
@@ -191,6 +192,10 @@ public class TableIndex implements MappedObject {
 			return null;
 		}
 		return deletedRecords.getBitSet();
+	}
+
+	public int getDeletedRecordsCount() {
+		return keepDeletedRecords ? deletedRecords.getCount() : 0;
 	}
 
 	public boolean isDeleted(int id) {
@@ -670,7 +675,7 @@ public class TableIndex implements MappedObject {
 
 	public void close() {
 		try {
-			log.info("Shutdown on collection:" + name);
+			logger.info("Shutdown on collection:" + name);
 			if (collectionTextSearchIndex != null) {
 				collectionTextSearchIndex.commit(true);
 			}

@@ -19,6 +19,8 @@
  */
 package org.teamapps.universaldb.index;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
@@ -28,12 +30,14 @@ import org.teamapps.universaldb.schema.Schema;
 import org.teamapps.universaldb.schema.Table;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SchemaIndex {
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final Schema schema;
 	private final File dataPath;
@@ -103,7 +107,10 @@ public class SchemaIndex {
 				for (Column column : table.getColumns()) {
 					if (column.getReferencedTable() != null) {
 						ColumnIndex columnIndex = getColumn(column);
-						TableIndex referencedTable = getTable(column.getReferencedTable());
+						TableIndex referencedTable = getReferencedTable(column.getReferencedTable());
+						if (referencedTable == null) {
+							logger.warn("Missing referenced table:" + column.getReferencedTable().getFQN() + ", " + column.getReferencedTable().getReferencedTablePath());
+						}
 						ColumnIndex backReference = null;
 						if (column.getBackReference() != null) {
 							backReference = referencedTable.getColumnIndex(column.getBackReference());
@@ -140,6 +147,14 @@ public class SchemaIndex {
 		Database database = table.getDatabase();
 		DatabaseIndex databaseIndex = getDatabase(database.getName());
 		return databaseIndex.getTable(table.getName());
+	}
+
+	public TableIndex getReferencedTable(Table table) {
+		if (table.getReferencedTablePath() != null) {
+			return getTableByPath(table.getReferencedTablePath());
+		} else {
+			return getTable(table);
+		}
 	}
 
 	public TableIndex getTableByPath(String path) {

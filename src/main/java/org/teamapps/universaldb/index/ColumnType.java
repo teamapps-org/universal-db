@@ -60,6 +60,10 @@ public enum ColumnType {
 		return this == SINGLE_REFERENCE || this == MULTI_REFERENCE;
 	}
 
+	public boolean isDateBased() {
+		return this == DATE || this == DATE_TIME || this == TIMESTAMP || this == LOCAL_DATE;
+	}
+
 	public IndexType getIndexType() {
 		switch (this) {
 			case BOOLEAN:
