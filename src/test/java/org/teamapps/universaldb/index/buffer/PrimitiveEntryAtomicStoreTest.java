@@ -46,19 +46,19 @@ public class PrimitiveEntryAtomicStoreTest {
 	@Test
 	public void getBoolean() {
 		store.setBoolean(1, true);
-		assertEquals(true, store.getBoolean(1));
+		assertTrue(store.getBoolean(1));
 	}
 
 	@Test
 	public void setBoolean() {
 		store.setBoolean(1, true);
-		assertEquals(true, store.getBoolean(1));
+		assertTrue(store.getBoolean(1));
 		store.setBoolean(1, false);
-		assertEquals(false, store.getBoolean(1));
-		for (int id = 1; id < 100_000; id++) {
+		assertFalse(store.getBoolean(1));
+		for (int id = 1; id < 1_000_000; id++) {
 			store.setBoolean(id, id % 3 == 0);
 		}
-		for (int id = 1; id < 100_000; id++) {
+		for (int id = 1; id < 1_000_000; id++) {
 			assertEquals(id % 3 == 0, store.getBoolean(id));
 		}
 	}

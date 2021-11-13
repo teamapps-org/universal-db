@@ -19,7 +19,6 @@
  */
 package org.teamapps.universaldb;
 
-import com.google.common.io.Files;
 import org.apache.commons.io.IOUtils;
 import org.teamapps.datamodel.TestBaseSchema;
 import org.teamapps.datamodel.testdb1.FieldTest;
@@ -29,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -47,8 +47,9 @@ public class TestBase {
 	}
 
 	private static void startDb() throws Exception {
-		File tempDir = Files.createTempDir();
-		UniversalDB universalDB = UniversalDB.createStandalone(tempDir, new TestBaseSchema(), true);
+		File tempDir = Files.createTempDirectory("temp").toFile();
+		tempDir.deleteOnExit();
+		UniversalDB.createStandalone(tempDir, new TestBaseSchema(), true);
 	}
 
 	public static File createResourceFile() throws IOException {
