@@ -150,7 +150,7 @@ public class FileUtil {
 			return null;
 		}
 		if (languageDetector == null) {
-			languageDetector = LanguageDetectorBuilder.fromAllBuiltInLanguages().build();
+			languageDetector = LanguageDetectorBuilder.fromAllLanguages().build();
 		}
 		Language language = languageDetector.detectLanguageOf(content);
 		if (language == null) {

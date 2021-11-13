@@ -48,11 +48,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <slf4j-version>1.7.25</slf4j-version>
-        <guava-version>30.1.1-jre</guava-version>
+        <guava-version>31.0.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
-        <junit.version>4.13.1</junit.version>
+        <junit.version>4.13.2</junit.version>
         <tika-version>1.27</tika-version>
-        <lucene-version>8.9.0</lucene-version>
+        <lucene-version>8.10.1</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -88,6 +88,10 @@
                 <exclusion>
                     <artifactId>log4j</artifactId>
                     <groupId>log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -134,7 +138,7 @@
         <dependency>
             <groupId>com.github.pemistahl</groupId>
             <artifactId>lingua</artifactId>
-            <version>0.6.1</version>
+            <version>1.1.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>annotations</artifactId>
@@ -147,7 +151,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.10.0</version>
+            <version>1.11.0</version>
         </dependency>
 
         <dependency>
@@ -209,6 +213,18 @@
                     <artifactId>commons-io</artifactId>
                     <groupId>commons-io</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>commons-compress</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>guava</artifactId>
+                    <groupId>com.google.guava</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -251,7 +267,7 @@
         <dependency>
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-map</artifactId>
-            <version>3.20.80</version>
+            <version>3.22ea5</version>
             <exclusions>
                 <exclusion>
                     <artifactId>xstream</artifactId>
@@ -291,6 +307,21 @@
                         <modelClass>S3Model</modelClass>
                         <modelClass>MyAppModel</modelClass>
                     </modelClasses>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M5</version>
+                <configuration>
+                    <argLine>
+                        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-opens=java.base/java.io=ALL-UNNAMED
+                        --add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
         </plugins>
