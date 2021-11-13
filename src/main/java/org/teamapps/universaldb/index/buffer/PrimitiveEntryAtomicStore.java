@@ -47,7 +47,7 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 	}
 
 	public boolean getBoolean(int id) {
-		if (id > getTotalCapacity() * 8) {
+		if (id > getTotalCapacity() * 8 - 1) {
 			return false;
 		}
 		AtomicBuffer buffer = getBuffer(0);
