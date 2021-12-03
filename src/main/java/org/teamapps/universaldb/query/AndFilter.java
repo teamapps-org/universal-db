@@ -25,6 +25,7 @@ import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -83,6 +84,9 @@ public class AndFilter implements Filter {
                     ColumnIndex columnIndex = filter.getColumnIndex();
                     if (columnIndex instanceof TextIndex) {
                         TextIndex textIndex = (TextIndex) columnIndex;
+                        localRecords = textIndex.filter(localRecords, (TextFilter) filter.getFilter(), false);
+                    } else if (columnIndex instanceof TranslatableTextIndex) {
+                        TranslatableTextIndex textIndex = (TranslatableTextIndex) columnIndex;
                         localRecords = textIndex.filter(localRecords, (TextFilter) filter.getFilter(), false);
                     } else if (columnIndex instanceof FileIndex) {
                         FileIndex fileIndex = (FileIndex) columnIndex;

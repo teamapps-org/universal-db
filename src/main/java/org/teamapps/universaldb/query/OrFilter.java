@@ -25,6 +25,7 @@ import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -96,6 +97,14 @@ public class OrFilter implements Filter {
                             ColumnIndex columnIndex = filter.getColumnIndex();
                             if (columnIndex instanceof TextIndex) {
                                 TextIndex textIndex = (TextIndex) columnIndex;
+                                BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
+                                if (fullTextResult == null) {
+                                    fullTextResult = fullTextReduced;
+                                } else {
+                                    fullTextResult.or(fullTextReduced);
+                                }
+                            } else if (columnIndex instanceof TranslatableTextIndex) {
+                                TranslatableTextIndex textIndex = (TranslatableTextIndex) columnIndex;
                                 BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
                                 if (fullTextResult == null) {
                                     fullTextResult = fullTextReduced;
