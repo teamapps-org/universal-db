@@ -276,6 +276,9 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 			TranslatableText translatableText = getValue(id);
+			if (translatableText == null) {
+				continue;
+			}
 			Map<String, String> translationMap = translatableText.getTranslationMap();
 			for (String language : rankedLanguages) {
 				if (Objects.equals(value, translationMap.get(language))) {
@@ -291,6 +294,9 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 		BitSet result = new BitSet();
 		for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 			TranslatableText translatableText = getValue(id);
+			if (translatableText == null) {
+				continue;
+			}
 			Map<String, String> translationMap = translatableText.getTranslationMap();
 			boolean containsValue = false;
 			for (String language : rankedLanguages) {
