@@ -172,23 +172,9 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
-		int order = ascending ? 1 : -1;
 		String language = userContext.getLanguage();
-
-		sortEntries.sort((o1, o2) -> {
-			String value1 = getTranslatedValue(o1.getLeafId(), language);
-			String value2 = getTranslatedValue(o2.getLeafId(), language);
-			if (value1 == null || value2 == null) {
-				if (value1 == null && value2 == null) {
-					return 0;
-				} else if (value1 == null) {
-					return -1 * order;
-				} else {
-					return order;
-				}
-			}
-			return value1.compareToIgnoreCase(value2) * order;
-		});
+		Comparator<String> comparator = UserContext.getOrCreateComparator(userContext, ascending);
+		sortEntries.sort((o1, o2) -> comparator.compare(getTranslatedValue(o1.getLeafId(), language), getTranslatedValue(o2.getLeafId(), language)));
 		return sortEntries;
 	}
 

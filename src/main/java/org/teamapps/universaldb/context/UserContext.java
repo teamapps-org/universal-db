@@ -26,6 +26,17 @@ import java.util.Locale;
 
 public interface UserContext {
 
+	static Comparator<String> createDefaultComparator(boolean ascending) {
+		Collator collator = Collator.getInstance();
+		collator.setDecomposition(Collator.CANONICAL_DECOMPOSITION);
+		collator.setStrength(Collator.PRIMARY);
+		return ascending ? Comparator.nullsFirst(collator) : Comparator.nullsLast(collator.reversed());
+	}
+
+	static Comparator<String> getOrCreateComparator(UserContext userContext, boolean ascending) {
+		return userContext != null ? userContext.getComparator(ascending) : createDefaultComparator(ascending);
+	}
+
 	static UserContext create(Locale locale) {
 		return new UserContextImpl(locale);
 	}

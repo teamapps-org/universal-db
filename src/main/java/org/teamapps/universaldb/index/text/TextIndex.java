@@ -158,21 +158,8 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
-		int order = ascending ? 1 : -1;
-		sortEntries.sort((o1, o2) -> {
-			String value1 = getValue(o1.getLeafId());
-			String value2 = getValue(o2.getLeafId());
-			if (value1 == null || value2 == null) {
-				if (value1 == null && value2 == null) {
-					return 0;
-				} else if (value1 == null) {
-					return -1 * order;
-				} else {
-					return order;
-				}
-			}
-			return value1.compareToIgnoreCase(value2) * order;
-		});
+		Comparator<String> comparator = UserContext.getOrCreateComparator(userContext, ascending);
+		sortEntries.sort((o1, o2) -> comparator.compare(getValue(o1.getLeafId()), getValue(o2.getLeafId())));
 		return sortEntries;
 	}
 
