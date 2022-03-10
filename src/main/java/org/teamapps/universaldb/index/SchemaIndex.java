@@ -31,9 +31,7 @@ import org.teamapps.universaldb.schema.Table;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SchemaIndex {
@@ -127,6 +125,41 @@ public class SchemaIndex {
 			}
 		}
 		this.schema.merge(schema);
+	}
+
+	public boolean checkModel() {
+		Set<Integer> mappingIds = new HashSet<>();
+		for (DatabaseIndex database : databases) {
+			if (database.getMappingId() == 0) {
+				logger.error("Missing mapping id:" + database.getFQN());
+				return false;
+			} else if (mappingIds.contains(database.getMappingId())) {
+				logger.error("Duplicate mapping id:" + database.getFQN());
+				return false;
+			}
+			mappingIds.add(database.getMappingId());
+			for (TableIndex table : database.getTables()) {
+				if (table.getMappingId() == 0) {
+					logger.error("Missing mapping id:" + table.getFQN());
+					return false;
+				} else if (mappingIds.contains(table.getMappingId())) {
+					logger.error("Duplicate mapping id:" + table.getFQN());
+					return false;
+				}
+				mappingIds.add(table.getMappingId());
+				for (ColumnIndex columnIndex : table.getColumnIndices()) {
+					if (columnIndex.getMappingId() == 0) {
+						logger.error("Missing mapping id:" + columnIndex.getFQN());
+						return false;
+					} else if (mappingIds.contains(columnIndex.getMappingId())) {
+						logger.error("Duplicate mapping id:" + columnIndex.getFQN());
+						return false;
+					}
+					mappingIds.add(columnIndex.getMappingId());
+				}
+			}
+		}
+		return true;
 	}
 
 	public Column getColumn(ColumnIndex index) {

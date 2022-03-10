@@ -262,6 +262,7 @@ public class Table implements MappedObject {
 		} else {
 			sb.append("TABLE ").append(tableConfig.writeConfig());
 		}
+		sb.append(database.createMappingDefinition(mappingId));
 		sb.append("\n");
 		columns.forEach(column -> sb.append(column.createDefinition()));
 		return sb.toString();

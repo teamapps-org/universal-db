@@ -76,11 +76,23 @@ public class Database implements MappedObject {
 	}
 
 	public List<Table> getTables() {
-		return tables.stream().filter(table -> !table.isView()).collect(Collectors.toList());
+		return tables.stream()
+				.filter(table -> !table.isView())
+				.collect(Collectors.toList());
+	}
+
+	public Table getTable(String name) {
+		return tables.stream()
+				.filter(table -> !table.isView())
+				.filter(table -> table.getName().equals(name))
+				.findFirst()
+				.orElse(null);
 	}
 
 	public List<Table> getViewTables() {
-		return tables.stream().filter(Table::isView).collect(Collectors.toList());
+		return tables.stream()
+				.filter(Table::isView)
+				.collect(Collectors.toList());
 	}
 
 	@Override
@@ -98,9 +110,17 @@ public class Database implements MappedObject {
 
 	public String createDefinition() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(name).append(" as DATABASE").append("\n");
+		sb.append(name).append(" as DATABASE").append(createMappingDefinition(mappingId)).append("\n");
 		tables.forEach(table -> sb.append(table.createDefinition()));
 		return sb.toString();
+	}
+
+	protected String createMappingDefinition(int mappingId) {
+		if (mappingId == 0) {
+			return "";
+		} else {
+			return " [" + mappingId + "]";
+		}
 	}
 
 	public boolean isCompatibleWith(Database database) {

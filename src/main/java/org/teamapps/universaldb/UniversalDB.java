@@ -38,6 +38,7 @@ import java.lang.reflect.Method;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
@@ -101,10 +102,10 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, clusterConfig);
 	}
 
-
 	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, boolean writeTransactionLog) throws Exception {
 		this.storagePath = storagePath;
 		this.transactionStore = new TransactionStore(storagePath, writeTransactionLog);
+		logger.info("SCHEMA MODEL UPDATES: " + transactionStore.getSchemaLogs().size());
 		Transaction.setDataBase(this);
 
 		Schema schema = schemaInfo.getSchema();
@@ -160,12 +161,19 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws IOException {
 		Schema schema = schemaInfo.getSchema();
 		Schema localSchema = transactionStore.getSchema();
+		String originalSchema = localSchema != null ? localSchema.getSchemaDefinition() : null;
 		if (!localSchema.isCompatibleWith(schema)) {
 			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
 		}
+		checkSchemaUpdate(localSchema, schema);
 		localSchema.merge(schema);
 		localSchema.mapSchema();
-		transactionStore.saveSchema(localSchema);
+		String updatedSchema = localSchema.getSchemaDefinition();
+		boolean isSchemaUpdate = !Objects.equals(originalSchema, updatedSchema);
+		if (isSchemaUpdate) {
+			logger.info("SCHEMA UPDATE:\n" + originalSchema + "\nNew schema is:\n" + updatedSchema);
+		}
+		transactionStore.saveSchema(localSchema, isSchemaUpdate);
 		schemaIndex.merge(localSchema, false);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
@@ -225,16 +233,23 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 
 	private void mapSchema(Schema schema) throws IOException {
 		Schema localSchema = transactionStore.getSchema();
+		String originalSchema = localSchema != null ? localSchema.getSchemaDefinition() : null;
 		if (localSchema != null) {
 			if (!localSchema.isCompatibleWith(schema)) {
-				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
+				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + localSchema + "\nNew schema is:\n" + schema);
 			}
+			checkSchemaUpdate(localSchema, schema);
 			localSchema.merge(schema);
 		} else {
 			localSchema = schema;
 		}
 		localSchema.mapSchema();
-		transactionStore.saveSchema(localSchema);
+		String updatedSchema = localSchema.getSchemaDefinition();
+		boolean isSchemaUpdate = !Objects.equals(originalSchema, updatedSchema);
+		if (isSchemaUpdate) {
+			logger.info("SCHEMA UPDATE:\n" + originalSchema + "\nNew schema is:\n" + updatedSchema);
+		}
+		transactionStore.saveSchema(localSchema, isSchemaUpdate);
 		schemaIndex.merge(localSchema, true);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
@@ -245,6 +260,18 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 					columnById.put(columnIndex.getMappingId(), columnIndex);
 				}
 			}
+		}
+	}
+
+	private void checkSchemaUpdate(Schema localSchema, Schema schemaUpdate) {
+		Schema schemaCopy = Schema.parse(localSchema.getSchemaDefinition());
+		if (!schemaCopy.isCompatibleWith(schemaUpdate)) {
+			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + localSchema + "\nNew schema is:\n" + schemaUpdate);
+		}
+		schemaCopy.merge(schemaUpdate);
+		schemaCopy.mapSchema();
+		if (!schemaCopy.checkModel()) {
+			throw new RuntimeException("Schema merging leads to corrupted model:\n" + schemaCopy + "\nNew schema is:\n" + schemaUpdate);
 		}
 	}
 
@@ -293,7 +320,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 		Schema localSchema = schemaStats.getSchema();
 		if (localSchema != null) {
 			if (!localSchema.isCompatibleWith(schema)) {
-				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
+				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + localSchema + "\nNew schema is:\n" + schema);
 			}
 			localSchema.merge(schema);
 			schemaStats.saveSchema(localSchema);

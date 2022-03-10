@@ -132,6 +132,7 @@ public class Column implements MappedObject {
 				sb.append(enumValues.stream().collect(Collectors.joining(", "))).append(")");
 				break;
 		}
+		sb.append(table.getDatabase().createMappingDefinition(mappingId));
 		sb.append("\n");
 		return sb.toString();
 	}

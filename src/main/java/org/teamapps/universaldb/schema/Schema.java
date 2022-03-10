@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,8 @@
  */
 package org.teamapps.universaldb.schema;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.TableConfig;
 import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.util.DataStreamUtil;
@@ -27,11 +29,13 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Schema {
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final int schemaVersion = 1;
 	private String pojoNamespace = "org.teamapps.datamodel";
@@ -70,7 +74,7 @@ public class Schema {
 		String[] parts = line.split(" ");
 		return Arrays.asList(parts);
 	}
-	
+
 	public Schema() {
 	}
 
@@ -82,8 +86,16 @@ public class Schema {
 		Set<String> columnTypes = ColumnType.getNames();
 		Map<Column, String> unresolvedReferenceTableMap = new HashMap<>();
 		for (String line : lines) {
+			int mappingId = 0;
+			line = line.trim();
 			if (line.startsWith("/") || line.startsWith("#")) {
 				continue;
+			}
+			if (line.endsWith("]")) {
+				int start = line.lastIndexOf('[');
+				int end = line.lastIndexOf(']');
+				mappingId = Integer.parseInt(line.substring(start + 1, end));
+				line = line.substring(0, start);
 			}
 			List<String> tokens = getTokens(line);
 			if (tokens.size() < 3 || !tokens.get(1).equalsIgnoreCase("as")) {
@@ -106,14 +118,17 @@ public class Schema {
 			}
 			if (type.equalsIgnoreCase("DATABASE")) {
 				db = addDatabase(name);
+				db.setMappingId(mappingId);
 			}
 			if (type.equalsIgnoreCase("TABLE")) {
 				TableConfig tableConfig = TableConfig.parse(line);
 				table = db.addTable(name, tableConfig.getTableOptions());
+				table.setMappingId(mappingId);
 			}
 			if (type.equalsIgnoreCase("VIEW")) {
 				String referencedTablePath = tokens.get(4);
 				table = db.addView(name, referencedTablePath);
+				table.setMappingId(mappingId);
 			}
 			if (type.equalsIgnoreCase("ENUM")) {
 				//enable separate enum definition...
@@ -122,6 +137,7 @@ public class Schema {
 				ColumnType columnType = ColumnType.valueOf(type);
 				if (table != null) {
 					Column column = table.addColumn(name, columnType);
+					column.setMappingId(mappingId);
 					if (columnType.isReference()) {
 						unresolvedReferenceTableMap.put(column, tokens.get(3));
 						String backReference = tokens.get(5);
@@ -134,6 +150,11 @@ public class Schema {
 						String[] values = line.substring(line.indexOf("VALUES (") + 8).replace(")", "").split(", ");
 						column.setEnumValues(Arrays.asList(values));
 					}
+				}
+			} else if (columnTypes.contains(type.toUpperCase()) && Table.isReservedMetaName(name)) {
+				if (table != null) {
+					Column column = table.getColumn(name);
+					column.setMappingId(mappingId);
 				}
 			}
 		}
@@ -178,13 +199,20 @@ public class Schema {
 		return databases;
 	}
 
+	public Database getDatabase(String name) {
+		return databases.stream()
+				.filter(db -> db.getName().equals(name))
+				.findFirst()
+				.orElse(null);
+	}
+
 	public Database addDatabase(String name) {
 		checkName(name);
 		return addDatabase(new Database(this, name));
 	}
 
 	private Database addDatabase(Database dataBase) {
-		databases.add(dataBase );
+		databases.add(dataBase);
 		return dataBase;
 	}
 
@@ -256,6 +284,41 @@ public class Schema {
 		}
 	}
 
+	public boolean checkModel() {
+		Set<Integer> mappingIds = new HashSet<>();
+		for (Database database : databases) {
+			if (database.getMappingId() == 0) {
+				logger.error("Missing mapping id:" + database.getFQN());
+				return false;
+			} else if (mappingIds.contains(database.getMappingId())) {
+				logger.error("Duplicate mapping id:" + database.getFQN());
+				return false;
+			}
+			mappingIds.add(database.getMappingId());
+			for (Table table : database.getTables()) {
+				if (table.getMappingId() == 0) {
+					logger.error("Missing mapping id:" + table.getFQN());
+					return false;
+				} else if (mappingIds.contains(table.getMappingId())) {
+					logger.error("Duplicate mapping id:" + table.getFQN());
+					return false;
+				}
+				mappingIds.add(table.getMappingId());
+				for (Column columnIndex : table.getColumns()) {
+					if (columnIndex.getMappingId() == 0) {
+						logger.error("Missing mapping id:" + columnIndex.getFQN());
+						return false;
+					} else if (mappingIds.contains(columnIndex.getMappingId())) {
+						logger.error("Duplicate mapping id:" + columnIndex.getFQN());
+						return false;
+					}
+					mappingIds.add(columnIndex.getMappingId());
+				}
+			}
+		}
+		return true;
+	}
+
 	public void mapSchema() {
 		for (Database database : databases) {
 			if (database.getMappingId() == 0) {
@@ -307,7 +370,6 @@ public class Schema {
 		}
 		return sb.toString();
 	}
-
 
 
 	public String getSchemaDefinition() {
