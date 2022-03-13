@@ -68,6 +68,12 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == null;
+	}
+
+
+	@Override
 	public void setGenericValue(int id, FileValue value) {
 		setValue(id, value);
 	}

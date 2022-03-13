@@ -22,6 +22,9 @@ package org.teamapps.universaldb.transaction;
 import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
+import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
+import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
 
@@ -73,36 +76,25 @@ public class TransactionRecordValue {
 		}
 	}
 
-	public void persistChange(int id, Map<Integer, Integer> recordIdByCorrelationId) {
+	public List<CyclicReferenceUpdate> persistChange(int id, Map<Integer, Integer> recordIdByCorrelationId) {
 		if (column.getType() == IndexType.MULTI_REFERENCE) {
+			MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) column;
 			MultiReferenceEditValue editValue = (MultiReferenceEditValue) value;
-			updateReferences(recordIdByCorrelationId, editValue.getAddReferences());
-			updateReferences(recordIdByCorrelationId, editValue.getRemoveReferences());
-			updateReferences(recordIdByCorrelationId, editValue.getSetReferences());
-			column.setGenericValue(id, editValue);
+			editValue.updateReferences(recordIdByCorrelationId);
+			return multiReferenceIndex.setReferenceEditValue(id, editValue);
 		} else if (column.getType() == IndexType.REFERENCE) {
+			SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) column;
 			if (value != null) {
 				RecordReference recordReference = (RecordReference) value;
-				if (recordReference.getRecordId() == 0) {
-					int recordId = recordIdByCorrelationId.get(recordReference.getCorrelationId());
-					recordReference.setRecordId(recordId);
-				}
-				column.setGenericValue(id, recordReference);
+				recordReference.updateReference(recordIdByCorrelationId);
+				return singleReferenceIndex.setReferenceValue(id, recordReference);
 			} else {
-				column.setGenericValue(id, null);
+				return singleReferenceIndex.setReferenceValue(id, null);
 			}
 		} else {
 			column.setGenericValue(id, value);
 		}
-	}
-
-	public void updateReferences(Map<Integer, Integer> recordIdByCorrelationId, List<RecordReference> references) {
-		references.forEach(reference -> {
-			if (reference.getRecordId() == 0) {
-				int recordId = recordIdByCorrelationId.get(reference.getCorrelationId());
-				reference.setRecordId(recordId);
-			}
-		});
+		return null;
 	}
 
 }

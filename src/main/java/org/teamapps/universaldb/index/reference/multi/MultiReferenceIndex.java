@@ -22,6 +22,7 @@ package org.teamapps.universaldb.index.reference.multi;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.BlockChainAtomicStore;
+import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
@@ -112,9 +113,10 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public void removeValue(int id) {
-		removeAllReferences(id);
+		removeAllReferences(id, false);
 	}
 
+	@Override
 	public boolean isEmpty(int id) {
 		return referenceStore.isEmpty(id);
 	}
@@ -144,82 +146,86 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		return bitSet;
 	}
 
-	public void setReferenceEditValue(int id, MultiReferenceEditValue editValue) {
+	public List<CyclicReferenceUpdate> setReferenceEditValue(int id, MultiReferenceEditValue editValue) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (!editValue.getSetReferences().isEmpty()) {
 			List<Integer> references = RecordReference.createRecordIdsList(editValue.getSetReferences());
-			setReferences(id, references, false);
+			cyclicReferenceUpdates.addAll(setReferences(id, references, false));
 		} else if (editValue.isRemoveAll()) {
-			removeAllReferences(id);
+			cyclicReferenceUpdates.addAll(removeAllReferences(id, false));
 			if (!editValue.getAddReferences().isEmpty()) {
 				List<Integer> references = RecordReference.createRecordIdsList(editValue.getAddReferences());
-				addReferences(id, references, false);
+				cyclicReferenceUpdates.addAll(addReferences(id, references, false));
 			}
 		} else {
 			if (!editValue.getRemoveReferences().isEmpty()) {
 				List<Integer> references = RecordReference.createRecordIdsList(editValue.getRemoveReferences());
-				removeReferences(id, references, false);
+				cyclicReferenceUpdates.addAll(removeReferences(id, references, false));
 			}
 			if (!editValue.getAddReferences().isEmpty()) {
 				List<Integer> references = RecordReference.createRecordIdsList(editValue.getAddReferences());
-				addReferences(id, references, false);
+				cyclicReferenceUpdates.addAll(addReferences(id, references, false));
 			}
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	public void setReferences(int id, List<Integer> references, boolean cyclic) {
+	public List<CyclicReferenceUpdate> setReferences(int id, List<Integer> references, boolean cyclic) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (cyclicReferences && !cyclic) {
 			List<Integer> previousEntries = referenceStore.getEntries(id);
 			if (!previousEntries.isEmpty()) {
-				removeCyclicReferences(id, previousEntries);
+				removeCyclicReferences(id, previousEntries, cyclicReferenceUpdates);
 			}
 		}
 		referenceStore.setEntries(id, references);
 		if (cyclicReferences && !cyclic) {
-			addCyclicReferences(id, references);
+			addCyclicReferences(id, references, cyclicReferenceUpdates);
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	public void addReferences(int id, List<Integer> references, boolean cyclic) {
+	public List<CyclicReferenceUpdate> addReferences(int id, List<Integer> references, boolean cyclic) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (ensureNoDuplicates && !referenceStore.isEmpty(id)) {
 			Set<Integer> existingSet = new HashSet<>(referenceStore.getEntries(id));
 			references = references.stream().filter(value -> !existingSet.contains(value)).collect(Collectors.toList());
 		}
 		referenceStore.addEntries(id, references);
 		if (cyclicReferences && !cyclic) {
-			addCyclicReferences(id, references);
+			addCyclicReferences(id, references, cyclicReferenceUpdates);
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	public void removeReferences(int id, List<Integer> references, boolean cyclic) {
+	public List<CyclicReferenceUpdate> removeReferences(int id, List<Integer> references, boolean cyclic) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (referenceStore.isEmpty(id)) {
-			return;
+			return cyclicReferenceUpdates;
 		}
 		referenceStore.removeEntries(id, references);
 		if (cyclicReferences && !cyclic) {
-			removeCyclicReferences(id, references);
+			removeCyclicReferences(id, references, cyclicReferenceUpdates);
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	public void removeAllReferences(int id, boolean cyclic) {
-		if (cyclic) {
+	public List<CyclicReferenceUpdate> removeAllReferences(int id, boolean cyclic) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
+		if (referenceStore.isEmpty(id)) {
+			return cyclicReferenceUpdates;
+		}
+		if (cyclic || !cyclicReferences) {
 			referenceStore.removeAllEntries(id);
 		} else {
-			removeAllReferences(id);
+			List<Integer> removeEntries = referenceStore.getEntries(id);
+			referenceStore.removeAllEntries(id);
+			removeCyclicReferences(id, removeEntries, cyclicReferenceUpdates);
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	public void removeAllReferences(int id) {
-		if (referenceStore.isEmpty(id)) {
-			return;
-		}
-		List<Integer> removeEntries = referenceStore.getEntries(id);
-		referenceStore.removeAllEntries(id);
-		if (cyclicReferences) {
-			removeCyclicReferences(id, removeEntries);
-		}
-	}
-
-	private void addCyclicReferences(int id, List<Integer> references) {
+	private void addCyclicReferences(int id, List<Integer> references, List<CyclicReferenceUpdate> cyclicReferenceUpdates) {
 		if (reverseSingleIndex != null) {
 			for (Integer reference : references) {
 				int previousValue = reverseSingleIndex.getValue(reference);
@@ -227,25 +233,29 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 					removeReferences(previousValue, Collections.singletonList(reference), true);
 				}
 				reverseSingleIndex.setIndexValue(reference, id);
+				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, false, reference, id));
 			}
 		} else {
 			for (Integer reference : references) {
 				reverseMultiIndex.addReferences(reference, Collections.singletonList(id), true);
+				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, false, reference, id));
 			}
 		}
 	}
 
-	private void removeCyclicReferences(int id, List<Integer> references) {
+	private void removeCyclicReferences(int id, List<Integer> references, List<CyclicReferenceUpdate> cyclicReferenceUpdates) {
 		if (reverseSingleIndex != null) {
 			for (Integer reference : references) {
 				int previousValue = reverseSingleIndex.getValue(reference);
 				if (id == previousValue) {
 					reverseSingleIndex.setIndexValue(reference, 0);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, reference, 0));
 				}
 			}
 		} else {
 			for (Integer reference : references) {
 				reverseMultiIndex.removeReferences(reference, Collections.singletonList(id), true);
+				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, true, reference, 0));
 			}
 		}
 	}

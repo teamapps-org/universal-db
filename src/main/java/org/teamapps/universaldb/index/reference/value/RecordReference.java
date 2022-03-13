@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.reference.value;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class RecordReference {
 
@@ -55,6 +56,12 @@ public class RecordReference {
 			return;
 		}
 		this.recordId = recordId;
+	}
+
+	public void updateReference(Map<Integer, Integer> recordIdByCorrelationId) {
+		if (recordId == 0) {
+			recordId = recordIdByCorrelationId.get(correlationId);
+		}
 	}
 
 	@Override

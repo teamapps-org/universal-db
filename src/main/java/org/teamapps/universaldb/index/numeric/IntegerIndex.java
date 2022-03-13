@@ -47,6 +47,11 @@ public class IntegerIndex extends AbstractIndex<Integer, NumericFilter> implemen
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == 0;
+	}
+
+	@Override
 	public void setGenericValue(int id, Integer value) {
 		setValue(id, value);
 	}

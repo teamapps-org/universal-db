@@ -35,6 +35,7 @@ import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
+import org.teamapps.universaldb.index.versioning.RecordVersioningIndex;
 import org.teamapps.universaldb.query.AndFilter;
 import org.teamapps.universaldb.query.Filter;
 import org.teamapps.universaldb.query.IndexFilter;
@@ -70,6 +71,8 @@ public class TableIndex implements MappedObject {
 	private List<TextIndex> textFields;
 	private List<TranslatableTextIndex> translatedTextFields;
 	private int mappingId;
+	private IndexMetaData indexMetaData;
+	private RecordVersioningIndex recordVersioningIndex;
 
 	public TableIndex(DatabaseIndex database, Table table, TableConfig tableConfig) {
 		this(database, database.getFQN(), table, tableConfig);
@@ -94,6 +97,9 @@ public class TableIndex implements MappedObject {
 			keepDeletedRecords = true;
 			deletedRecords = new BooleanIndex("coll-del-recs", this, ColumnType.BOOLEAN);
 		}
+		this.indexMetaData = new IndexMetaData(dataPath, name, getFQN(), 0);
+		this.mappingId = indexMetaData.getMappingId();
+		this.recordVersioningIndex = new RecordVersioningIndex(this);
 		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
 
@@ -161,6 +167,10 @@ public class TableIndex implements MappedObject {
 
 	public FileStore getFileStore() {
 		return databaseIndex.getSchemaIndex().getFileStore();
+	}
+
+	public RecordVersioningIndex getRecordVersioningIndex() {
+		return recordVersioningIndex;
 	}
 
 	public File getDataPath() {
@@ -643,11 +653,16 @@ public class TableIndex implements MappedObject {
 		return mappingId;
 	}
 
+	@Override
 	public void setMappingId(int id) {
+		if (mappingId > 0 && mappingId != id) {
+			throw new RuntimeException("Error mapping index with different id:" + mappingId + " -> " + id);
+		}
 		if (mappingId > 0) {
-			throw new RuntimeException("Cannot set new mapping id for index:" + name + " as it is already mapped");
+			return;
 		}
 		this.mappingId = id;
+		this.indexMetaData.setMappingId(id);
 	}
 
 	public void merge(Table table) {

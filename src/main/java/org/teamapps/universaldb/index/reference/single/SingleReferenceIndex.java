@@ -23,6 +23,7 @@ import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
+import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
@@ -101,12 +102,22 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == 0;
+	}
+
+	@Override
 	public void setGenericValue(int id, RecordReference value) {
 		if (value == null) {
 			setValue(id, 0);
 		} else {
  			setValue(id, value.getRecordId());
 		}
+	}
+
+	public List<CyclicReferenceUpdate> setReferenceValue(int id, RecordReference value) {
+		int referencedId = value != null ? value.getRecordId() : 0;
+		return setValue(id, referencedId);
 	}
 
 	@Override
@@ -118,21 +129,25 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 		return atomicStore.getInt(id);
 	}
 
-	public void setValue(int id, int value) {
+	public List<CyclicReferenceUpdate> setValue(int id, int value) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (cyclicReferences) {
-			setCyclicReferences(id, value);
+			setCyclicReferences(id, value, cyclicReferenceUpdates);
 		}
 		setIndexValue(id, value);
+		return cyclicReferenceUpdates;
 	}
 
-	public void setValue(int id, int value, boolean cyclic) {
+	public List<CyclicReferenceUpdate> setValue(int id, int value, boolean cyclic) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (cyclicReferences && !cyclic) {
-			setCyclicReferences(id, value);
+			setCyclicReferences(id, value, cyclicReferenceUpdates);
 		}
 		setIndexValue(id, value);
+		return cyclicReferenceUpdates;
 	}
 
-	private void setCyclicReferences(int id, int value) {
+	private void setCyclicReferences(int id, int value, List<CyclicReferenceUpdate> cyclicReferenceUpdates) {
 		int previousValue = getValue(id);
 		if (previousValue != value) {
 			if (reverseSingleIndex != null) {
@@ -141,16 +156,20 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 					assert orphanedReference > 0;
 					setIndexValue(orphanedReference, 0);
 					reverseSingleIndex.setIndexValue(previousValue, 0);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, 0));
 				}
 				if (value > 0) {
 					reverseSingleIndex.setIndexValue(value, id);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, false, value, id));
 				}
 			} else {
 				if (previousValue > 0) {
 					reverseMultiIndex.removeReferences(previousValue, Collections.singletonList(id), true);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, true, previousValue, id));
 				}
 				if (value > 0) {
 					reverseMultiIndex.addReferences(value, Collections.singletonList(id), true);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, false, value, id));
 				}
 			}
 		}

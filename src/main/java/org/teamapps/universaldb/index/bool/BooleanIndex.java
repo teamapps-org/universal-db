@@ -79,6 +79,11 @@ public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return !getValue(id);
+	}
+
+	@Override
 	public void setGenericValue(int id, Boolean value) {
 		setValue(id, value);
 	}

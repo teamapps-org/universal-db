@@ -82,6 +82,11 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == null;
+	}
+
+	@Override
 	public void setGenericValue(int id, TranslatableText value) {
 		setValue(id, value);
 	}

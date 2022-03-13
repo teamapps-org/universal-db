@@ -54,6 +54,11 @@ public class LongIndex extends AbstractIndex<Long, NumericFilter> implements Num
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == 0;
+	}
+
+	@Override
 	public void setGenericValue(int id, Long value) {
 		setValue(id, value);
 	}

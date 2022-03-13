@@ -19,8 +19,10 @@
  */
 package org.teamapps.universaldb.pojo;
 
+import org.teamapps.universaldb.index.versioning.RecordUpdate;
 import org.teamapps.universaldb.transaction.Transaction;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface Entity<ENTITY> extends Identifiable{
@@ -60,5 +62,7 @@ public interface Entity<ENTITY> extends Identifiable{
 	Object getEntityValue(String fieldName);
 
 	void setEntityValue(String fieldName, Object value);
+
+	List<RecordUpdate> getRecordUpdates();
 
 }

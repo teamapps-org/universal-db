@@ -79,6 +79,11 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == null;
+	}
+
+	@Override
 	public void setGenericValue(int id, String value) {
 		setValue(id, value);
 	}

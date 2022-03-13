@@ -31,6 +31,7 @@ public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, F
 	private final ColumnType columnType;
 	private final FullTextIndexingOptions fullTextIndexingOptions;
 	private int mappingId;
+	private final IndexMetaData indexMetaData;
 
 
 	public AbstractIndex(String name, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions) {
@@ -40,6 +41,8 @@ public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, F
 		this.table = table;
 		this.columnType = columnType;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
+		this.indexMetaData = new IndexMetaData(dataPath, name, getFQN(), columnType.ordinal() + 1);
+		this.mappingId = indexMetaData.getMappingId();
 	}
 
 	public File getDataPath() {
@@ -82,10 +85,14 @@ public abstract class AbstractIndex<TYPE, FILTER> implements ColumnIndex<TYPE, F
 
 	@Override
 	public void setMappingId(int id) {
+		if (mappingId > 0 && mappingId != id) {
+			throw new RuntimeException("Error mapping index with different id:" + mappingId + " -> " + id);
+		}
 		if (mappingId > 0) {
-			throw new RuntimeException("Cannot set new mapping id for index:" + name + " as it is already mapped");
+			return;
 		}
 		this.mappingId = id;
+		this.indexMetaData.setMappingId(id);
 	}
 
 	@Override

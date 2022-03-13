@@ -29,6 +29,7 @@ import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.ReferenceIteratorValue;
 import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.IndexPath;
@@ -37,8 +38,6 @@ import org.teamapps.universaldb.util.DataStreamUtil;
 import java.io.*;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.PrimitiveIterator;
 import java.util.stream.Collectors;
 
 public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
@@ -93,6 +92,9 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 			return "NULL";
 		} else {
 			switch (getType()) {
+				case TRANSLATABLE_TEXT:
+					TranslatableText translatableText = (TranslatableText) value;
+					return translatableText.getText();
 				case MULTI_REFERENCE:
 					ReferenceIteratorValue referenceIteratorValue = (ReferenceIteratorValue) value;
 					return "(" + referenceIteratorValue.getAsList().stream().limit(100).map(v -> "" + v).collect(Collectors.joining(", ")) + ")";
@@ -128,6 +130,8 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 	void setMappingId(int id);
 
 	TYPE getGenericValue(int id);
+
+	boolean isEmpty(int id);
 
 	void setGenericValue(int id, TYPE value);
 

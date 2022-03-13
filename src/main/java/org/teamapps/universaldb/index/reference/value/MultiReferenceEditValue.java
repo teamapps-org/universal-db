@@ -22,10 +22,7 @@ package org.teamapps.universaldb.index.reference.value;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MultiReferenceEditValue implements MultiReferenceValue {
@@ -34,6 +31,27 @@ public class MultiReferenceEditValue implements MultiReferenceValue {
 	private final List<RecordReference> addReferences = new ArrayList<>();
 	private final List<RecordReference> removeReferences = new ArrayList<>();
 	private final List<RecordReference> setReferences = new ArrayList<>();
+
+	public void updateReferences(Map<Integer, Integer> recordIdByCorrelationId) {
+		addReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
+		removeReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
+		setReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
+	}
+
+	public List<MultiReferenceUpdateEntry> getResolvedUpdateEntries() {
+		List<MultiReferenceUpdateEntry> entries = new ArrayList<>();
+		if (removeAll) {
+			entries.add(MultiReferenceUpdateEntry.createRemoveAllEntry());
+			return entries;
+		}
+		if (!setReferences.isEmpty()) {
+			entries.addAll(setReferences.stream().map(ref -> MultiReferenceUpdateEntry.createSetEntry(ref.getRecordId())).collect(Collectors.toList()));
+		} else {
+			entries.addAll(removeReferences.stream().map(ref -> MultiReferenceUpdateEntry.createRemoveEntry(ref.getRecordId())).collect(Collectors.toList()));
+			entries.addAll(addReferences.stream().map(ref -> MultiReferenceUpdateEntry.createAddEntry(ref.getRecordId())).collect(Collectors.toList()));
+		}
+		return entries;
+	}
 
 	public void setRemoveAll() {
 		this.removeAll = true;

@@ -26,8 +26,10 @@ import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.DataBaseMapper;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.text.FullTextIndexValue;
 import org.teamapps.universaldb.index.translation.TranslatableText;
+import org.teamapps.universaldb.index.versioning.RecordUpdateType;
 import org.teamapps.universaldb.schema.Table;
 
 import java.io.DataInputStream;
@@ -88,6 +90,12 @@ public class TransactionRecord {
 		} else {
 			setModificationData(tableIndex, update, userId);
 		}
+	}
+
+	public RecordUpdateType getRecordUpdateType() {
+		if (deleteRecord) return RecordUpdateType.DELETE;
+		if (restoreRecord) return RecordUpdateType.RESTORE;
+		return update ? RecordUpdateType.UPDATE : RecordUpdateType.CREATE;
 	}
 
 	private void setModificationData(TableIndex tableIndex, boolean update, int userId) {
@@ -169,6 +177,10 @@ public class TransactionRecord {
 		return deleteRecord;
 	}
 
+	public boolean isRestoreRecord() {
+		return restoreRecord;
+	}
+
 	public long getRecordTransactionId() {
 		return recordTransactionId;
 	}
@@ -206,7 +218,7 @@ public class TransactionRecord {
 
 	}
 
-	public void persistChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
+	public void persistChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId, int userId, long timestamp) {
 		if (transactionProcessingStarted) {
 			//make sure that a record that has been processed because of a reference ist not processed again
 			return;
@@ -220,10 +232,10 @@ public class TransactionRecord {
 			log.error("ERROR!: could not save record - record id == 0:" + tableIndex.getFQN());
 			return;
 		}
-		processColumnChanges(transactionId, recordIdByCorrelationId);
+		processColumnChanges(transactionId, recordIdByCorrelationId, userId, timestamp);
 	}
 
-	public void persistResolvedChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
+	public void persistResolvedChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId, int userId, long timestamp) {
 		if (deleteRecord) {
 			tableIndex.deleteRecord(recordId);
 		} else if (restoreRecord) {
@@ -238,13 +250,18 @@ public class TransactionRecord {
 			}
 			recordId = tableIndex.createRecord(recordId, correlationId, update);
 		}
-		processColumnChanges(transactionId, recordIdByCorrelationId);
+		processColumnChanges(transactionId, recordIdByCorrelationId, userId, timestamp);
 	}
 
-	public void processColumnChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
+	private void processColumnChanges(long transactionId, Map<Integer, Integer> recordIdByCorrelationId, int userId, long timestamp) {
 		tableIndex.setTransactionId(recordId, transactionId);
 		for (TransactionRecordValue recordValue : recordValues) {
-			recordValue.persistChange(recordId, recordIdByCorrelationId);
+			List<CyclicReferenceUpdate> cyclicReferenceUpdates = recordValue.persistChange(recordId, recordIdByCorrelationId);
+			if (cyclicReferenceUpdates != null) {
+				for (CyclicReferenceUpdate cyclicReferenceUpdate : cyclicReferenceUpdates) {
+					cyclicReferenceUpdate.getReferenceIndex().getTable().getRecordVersioningIndex().writeCyclicReference(cyclicReferenceUpdate, userId, timestamp, transactionId);
+				}
+			}
 		}
 		if (!deleteRecord && !restoreRecord) {
 			List<FullTextIndexValue> fullTextIndexValues = recordValues.stream()
@@ -261,5 +278,9 @@ public class TransactionRecord {
 				tableIndex.updateFullTextIndex(recordId, fullTextIndexValues, update);
 			}
 		}
+	}
+
+	public void processVersioningIndexUpdates(long timestamp, int unserId, long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
+		tableIndex.getRecordVersioningIndex().writeUpdate(this, recordId, timestamp, unserId, transactionId, recordIdByCorrelationId);
 	}
 }

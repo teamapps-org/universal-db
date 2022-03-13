@@ -53,6 +53,11 @@ public class DoubleIndex extends AbstractIndex<Double, NumericFilter> implements
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == 0;
+	}
+
+	@Override
 	public void setGenericValue(int id, Double value) {
 		setValue(id, value);
 	}

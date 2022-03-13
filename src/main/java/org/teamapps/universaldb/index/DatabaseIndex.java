@@ -74,6 +74,7 @@ public class DatabaseIndex implements MappedObject {
 		}
 		if (checkFullTextIndex) {
 			for (TableIndex table : tables) {
+				table.getRecordVersioningIndex().checkVersionIndex();
 				table.checkFullTextIndex();
 			}
 		}

@@ -33,12 +33,14 @@ import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
+import org.teamapps.universaldb.index.versioning.RecordUpdate;
 import org.teamapps.universaldb.record.EntityBuilder;
 import org.teamapps.universaldb.schema.Table;
 import org.teamapps.universaldb.transaction.Transaction;
 import org.teamapps.universaldb.transaction.TransactionRecord;
 import org.teamapps.universaldb.transaction.TransactionRecordValue;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -157,6 +159,15 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			id = transaction.getResolvedRecordIdByCorrelationId(correlationId);
 		}
 		return id;
+	}
+
+	public List<RecordUpdate> getRecordUpdates() {
+		try {
+			return tableIndex.getRecordVersioningIndex().readRecordUpdates(id);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	protected int getCorrelationId() {

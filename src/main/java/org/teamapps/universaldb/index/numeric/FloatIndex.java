@@ -55,6 +55,11 @@ public class FloatIndex extends AbstractIndex<Float, NumericFilter> implements N
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == 0;
+	}
+
+	@Override
 	public void removeValue(int id) {
 		setValue(id, 0);
 	}

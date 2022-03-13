@@ -184,7 +184,11 @@ public class ClusterTransaction {
 		}
 
 		for (TransactionRecord transactionRecord : transactionRecords) {
-			transactionRecord.persistChanges(transactionId, recordIdByCorrelationId);
+			transactionRecord.persistChanges(transactionId, recordIdByCorrelationId, userId, timestamp);
+		}
+
+		for (TransactionRecord transactionRecord : transactionRecords) {
+			transactionRecord.processVersioningIndexUpdates(timestamp, userId, transactionId, recordIdByCorrelationId);
 		}
 
 		if (packet == null) {
@@ -200,8 +204,13 @@ public class ClusterTransaction {
 
 	public void executeResolvedTransaction(TransactionIdHandler transactionIdHandler) {
 		for (TransactionRecord transactionRecord : transactionRecords) {
-			transactionRecord.persistResolvedChanges(transactionId, recordIdByCorrelationId);
+			transactionRecord.persistResolvedChanges(transactionId, recordIdByCorrelationId, userId, timestamp);
 		}
+
+		for (TransactionRecord transactionRecord : transactionRecords) {
+			transactionRecord.processVersioningIndexUpdates(timestamp, userId, transactionId, recordIdByCorrelationId);
+		}
+
 		transactionIdHandler.commitTransactionId(transactionId);
 	}
 

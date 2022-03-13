@@ -50,6 +50,11 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 	}
 
 	@Override
+	public boolean isEmpty(int id) {
+		return getValue(id) == null;
+	}
+
+	@Override
 	public void setGenericValue(int id, byte[] value) {
 		setValue(id, value);
 	}
