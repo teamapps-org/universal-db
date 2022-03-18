@@ -19,15 +19,11 @@
  */
 package org.teamapps.universaldb.index;
 
-import org.teamapps.universaldb.index.DatabaseIndex;
-import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.ColumnIndex;
-
 public interface DataBaseMapper {
 
     DatabaseIndex getDatabaseById(int mappingId);
 
-    TableIndex getCollectionIndexById(int mappingId);
+    TableIndex getTableIndexById(int mappingId);
 
     ColumnIndex getColumnById(int mappingId);
 

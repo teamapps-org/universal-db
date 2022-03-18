@@ -48,9 +48,6 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	private static final ThreadLocal<Transaction> THREAD_LOCAL_TRANSACTION = new ThreadLocal<>();
 
 	private final File storagePath;
-	private final Map<Integer, DatabaseIndex> databaseById = new HashMap<>();
-	private final Map<Integer, TableIndex> tableById = new HashMap<>();
-	private final Map<Integer, ColumnIndex> columnById = new HashMap<>();
 	private final SchemaIndex schemaIndex;
 
 	private TransactionStore transactionStore;
@@ -58,6 +55,12 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	private TransactionWriter transactionWriter;
 	private TransactionReader transactionReader;
 	private TransactionMaster transactionMaster;
+
+
+
+	private final Map<Integer, DatabaseIndex> databaseById = new HashMap<>();
+	private final Map<Integer, TableIndex> tableById = new HashMap<>();
+	private final Map<Integer, ColumnIndex> columnById = new HashMap<>();
 	private final Map<TableIndex, Class> entityClassByTableIndex = new HashMap<>();
 	private final Map<TableIndex, Class> queryClassByTableIndex = new HashMap<>();
 	private final Map<String, TableIndex> tableIndexByPath = new HashMap<>();
@@ -384,7 +387,7 @@ public class UniversalDB implements DataBaseMapper, TransactionIdHandler {
 	}
 
 	@Override
-	public TableIndex getCollectionIndexById(int mappingId) {
+	public TableIndex getTableIndexById(int mappingId) {
 		return tableById.get(mappingId);
 	}
 

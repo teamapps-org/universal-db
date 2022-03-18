@@ -135,7 +135,7 @@ public class TransactionRecord {
 	}
 
 	public TransactionRecord(DataInputStream dis, DataBaseMapper dataBaseMapper) throws IOException {
-		this.tableIndex = dataBaseMapper.getCollectionIndexById(dis.readInt());
+		this.tableIndex = dataBaseMapper.getTableIndexById(dis.readInt());
 		this.recordId = dis.readInt();
 		this.correlationId = dis.readInt();
 		this.update = dis.readBoolean();
