@@ -312,7 +312,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	protected void setMultiReferenceValue(List<? extends Entity> entities, MultiReferenceIndex multiReferenceIndex) {
 		if (entities == null || entities.isEmpty()) {
-			removeAllMultiReferenceValue(multiReferenceIndex);
+			if (getChangeValue(multiReferenceIndex) != null || !multiReferenceIndex.isEmpty(getId())) {
+				removeAllMultiReferenceValue(multiReferenceIndex);
+			}
 		} else {
 			MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex);
 			List<RecordReference> references = createRecordReferences(entities);
