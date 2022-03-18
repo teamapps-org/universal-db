@@ -85,9 +85,9 @@ public class TransactionStore implements TransactionIdHandler {
 		this.writeTransactionLog = writeTransactionLog;
 		File file = new File(this.path, "database.stat");
 		buffer = MappedStoreUtil.createAtomicBuffer(file, storeSize);
-		schemaLogIndex = new BlockEntryAtomicStore(this.path, "schema-log.idx");
-		schemaLogTimestampIndex = new PrimitiveEntryAtomicStore(this.path, "schema-log-ts.idx");
-		schemaLogTransactionIdIndex = new PrimitiveEntryAtomicStore(this.path, "schema-log-transaction-id.idx");
+		schemaLogIndex = new BlockEntryAtomicStore(this.path, "schema-log");
+		schemaLogTimestampIndex = new PrimitiveEntryAtomicStore(this.path, "schema-log-ts");
+		schemaLogTransactionIdIndex = new PrimitiveEntryAtomicStore(this.path, "schema-log-transaction-id");
 		init();
 	}
 

@@ -1,6 +1,6 @@
 package org.teamapps.universaldb.index;
 
-import org.teamapps.universaldb.index.nonmap.RandomAccessStore;
+import org.teamapps.universaldb.index.log.RandomAccessStore;
 
 import java.io.File;
 import java.io.IOException;

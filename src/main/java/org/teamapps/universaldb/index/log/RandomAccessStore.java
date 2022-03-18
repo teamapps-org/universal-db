@@ -1,4 +1,4 @@
-package org.teamapps.universaldb.index.nonmap;
+package org.teamapps.universaldb.index.log;
 
 
 import java.io.File;
@@ -58,7 +58,7 @@ public class RandomAccessStore {
 		if (length == 0) {
 			return null;
 		} else {
-			byte[] bytes = read(pos + 1, length);
+			byte[] bytes = read(pos + 4, length);
 			return new String(bytes, StandardCharsets.UTF_8);
 		}
 	}

@@ -699,6 +699,7 @@ public class TableIndex implements MappedObject {
 			for (ColumnIndex column : columnIndices) {
 				column.close();
 			}
+			recordVersioningIndex.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
