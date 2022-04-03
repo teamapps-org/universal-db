@@ -6,10 +6,8 @@ import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.log.DefaultLogIndex;
 import org.teamapps.universaldb.index.log.LogIndex;
-import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransaction;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRecord;
-import org.teamapps.universaldb.transaction.TransactionRecord;
 
 import java.io.File;
 import java.io.IOException;

@@ -54,6 +54,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private static final Logger log = LoggerFactory.getLogger(AbstractUdbEntity.class);
 	private static final AtomicInteger correlationIdGenerator = new AtomicInteger();
 	private static final int MAX_CORRELATION_ID = 2_000_000_000;
+	private static UniversalDB database;
 
 	private final TableIndex tableIndex;
 	private int id;
@@ -61,6 +62,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private int correlationId;
 	private EntityChangeSet entityChangeSet;
 	private TransactionRequest2 transactionRequest;
+
+	public static void setDatabase(UniversalDB database) {
+		AbstractUdbEntity.database = database;
+	}
 
 	public static <ENTITY> List<ENTITY> createEntityList(EntityBuilder<ENTITY> entityBuilder, List<Integer> recordIds){
 		List<ENTITY> list = new ArrayList<>();
@@ -663,14 +668,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return entityChangeSet != null && entityChangeSet.isChanged(index);
 	}
 
-	protected int getEntityId(Entity entity) {
-		if (entity == null) {
-			return 0;
-		} else {
-			return entity.getId();
-		}
-	}
-
 	@Override
 	public void clearChanges() {
 		entityChangeSet = null;
@@ -690,10 +687,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public void saveRecord() {
 		if (entityChangeSet != null) {
-			UniversalDB universalDB = UniversalDB.TEST_INSTANCE;
-			this.transactionRequest = universalDB.createTransactionRequest();
+			this.transactionRequest = database.createTransactionRequest();
 			saveRecord(transactionRequest);
-			universalDB.executeTransaction(transactionRequest);
+			database.executeTransaction(transactionRequest);
 			if (id == 0) {
 				id = transactionRequest.getResolvedRecordIdByCorrelationId(correlationId);
 			}
@@ -721,18 +717,16 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void deleteRecord() {
-		UniversalDB universalDB = UniversalDB.TEST_INSTANCE;
-		TransactionRequest2 transactionRequest = universalDB.createTransactionRequest();
+		TransactionRequest2 transactionRequest = database.createTransactionRequest();
 		transactionRequest.addRecord(TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id));
 		clearChanges();
-		universalDB.executeTransaction(transactionRequest);
+		database.executeTransaction(transactionRequest);
 	}
 
 	public void restoreDeletedRecord() {
-		UniversalDB universalDB = UniversalDB.TEST_INSTANCE;
-		TransactionRequest2 transactionRequest = universalDB.createTransactionRequest();
+		TransactionRequest2 transactionRequest = database.createTransactionRequest();
 		transactionRequest.addRecord(TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id));
-		universalDB.executeTransaction(transactionRequest);
+		database.executeTransaction(transactionRequest);
 	}
 
 	public boolean isRestorable() {

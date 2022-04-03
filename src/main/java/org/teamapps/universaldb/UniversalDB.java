@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,8 +22,6 @@ package org.teamapps.universaldb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teamapps.universaldb.distribute.TransactionReader;
-import org.teamapps.universaldb.distribute.*;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.LocalFileStore;
@@ -44,8 +42,11 @@ import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRe
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRecordType;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRecordValue;
 import org.teamapps.universaldb.index.translation.TranslatableText;
-import org.teamapps.universaldb.schema.*;
-import org.teamapps.universaldb.transaction.*;
+import org.teamapps.universaldb.pojo.AbstractUdbEntity;
+import org.teamapps.universaldb.schema.Database;
+import org.teamapps.universaldb.schema.Schema;
+import org.teamapps.universaldb.schema.SchemaInfoProvider;
+import org.teamapps.universaldb.schema.Table;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,24 +56,13 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
+public class UniversalDB implements DataBaseMapper {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
 	private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
-//	private static final ThreadLocal<Transaction> THREAD_LOCAL_TRANSACTION = new ThreadLocal<>();
 
 	private final File storagePath;
 	private final SchemaIndex schemaIndex;
-
-//	private TransactionStore transactionStore;
-//	private SchemaStats schemaStats;
-//	private TransactionWriter transactionWriter;
-//	private TransactionReader transactionReader;
-//	private TransactionMaster transactionMaster;
-
-
-	public static UniversalDB TEST_INSTANCE;
 	private TransactionIndex transactionIndex;
 
 	private final Map<Integer, DatabaseIndex> databaseById = new HashMap<>();
@@ -90,20 +80,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 		THREAD_LOCAL_USER_ID.set(userId);
 	}
 
-//	public static void startThreadLocalTransaction() {
-//		THREAD_LOCAL_TRANSACTION.set(Transaction.create());
-//	}
-
-//	public static Transaction getThreadLocalTransaction() {
-//		return THREAD_LOCAL_TRANSACTION.get();
-//	}
-
-//	public static void executeThreadLocalTransaction() {
-//		Transaction transaction = THREAD_LOCAL_TRANSACTION.get();
-//		transaction.execute();
-//		THREAD_LOCAL_TRANSACTION.set(null);
-//	}
-
 	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider) throws Exception {
 		return createStandalone(storagePath, schemaInfoProvider, true);
 	}
@@ -117,18 +93,10 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, writeTransactionLog);
 	}
 
-//	public static UniversalDB createClusterNode(File storagePath, SchemaInfoProvider schemaInfoProvider, ClusterSetConfig clusterConfig) throws Exception {
-//		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
-//		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, clusterConfig);
-//	}
-
 	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, boolean writeTransactionLog) throws Exception {
-		TEST_INSTANCE = this;
+		AbstractUdbEntity.setDatabase(this);
 		this.storagePath = storagePath;
 		this.transactionIndex = new TransactionIndex(storagePath);
-//		this.transactionStore = new TransactionStore(storagePath, writeTransactionLog);
-//		logger.info("SCHEMA MODEL UPDATES: " + transactionStore.getSchemaLogs().size());
-//		Transaction.setDataBase(this);
 
 		Schema schema = schemaInfo.getSchema();
 		String pojoPath = schema.getPojoNamespace();
@@ -183,7 +151,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws IOException {
 		Schema schema = schemaInfo.getSchema();
 		Schema localSchema = transactionIndex.getCurrentSchema();
-//		Schema localSchema = transactionStore.getSchema();
 		String originalSchema = localSchema != null ? localSchema.getSchemaDefinition() : null;
 		if (!localSchema.isCompatibleWith(schema)) {
 			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
@@ -197,7 +164,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 			logger.info("SCHEMA UPDATE:\n" + originalSchema + "\nNew schema is:\n" + updatedSchema);
 		}
 		transactionIndex.updateSchema(localSchema);
-//		transactionStore.saveSchema(localSchema, isSchemaUpdate);
 		schemaIndex.merge(localSchema, false);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
@@ -257,7 +223,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 
 	private void mapSchema(Schema schema) throws IOException {
 		Schema localSchema = transactionIndex.getCurrentSchema();
-//		Schema localSchema = transactionStore.getSchema();
 		String originalSchema = localSchema != null ? localSchema.getSchemaDefinition() : null;
 		if (localSchema != null) {
 			if (!localSchema.isCompatibleWith(schema)) {
@@ -275,7 +240,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 			logger.info("SCHEMA UPDATE:\n" + originalSchema + "\nNew schema is:\n" + updatedSchema);
 		}
 		transactionIndex.updateSchema(localSchema);
-//		transactionStore.saveSchema(localSchema, isSchemaUpdate);
 		schemaIndex.merge(localSchema, true);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
@@ -305,7 +269,7 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 		return new TransactionRequest2(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), getUserId());
 	}
 
-	public synchronized int executeTransaction(TransactionRequest2 transaction)  {
+	public synchronized int executeTransaction(TransactionRequest2 transaction) {
 
 		//if not leader -> send to leader
 		try {
@@ -328,8 +292,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 		long transactionId = transactionIndex.getLastTransactionId() + 1;
 		ResolvedTransaction resolvedTransaction = ResolvedTransaction.createFromRequest(transactionId, transaction);
 
-//		Map<Integer, Integer> recordIdByCorrelationId = new HashMap<>();
-
 		for (TransactionRequestRecord record : transaction.getRecords()) {
 			if (record.getRecordType() == TransactionRequestRecordType.CREATE || record.getRecordType() == TransactionRequestRecordType.CREATE_WITH_ID) {
 				TableIndex tableIndex = getTableIndexById(record.getTableId());
@@ -337,7 +299,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 				transaction.putResolvedRecordIdForCorrelationId(record.getCorrelationId(), recordId);
 			}
 		}
-
 
 		for (TransactionRequestRecord record : transaction.getRecords()) {
 			TableIndex tableIndex = getTableIndexById(record.getTableId());
@@ -370,7 +331,7 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 							.filter(value -> value.getIndexType() == IndexType.TEXT || value.getIndexType() == IndexType.TRANSLATABLE_TEXT)
 							.map(value -> {
 								String columnName = getColumnById(value.getColumnId()).getName();
-								return value.getIndexType() == IndexType.TEXT ? new FullTextIndexValue(columnName, (String) value.getValue()) :  new FullTextIndexValue(columnName, (TranslatableText) value.getValue());
+								return value.getIndexType() == IndexType.TEXT ? new FullTextIndexValue(columnName, (String) value.getValue()) : new FullTextIndexValue(columnName, (TranslatableText) value.getValue());
 							})
 							.collect(Collectors.toList());
 					if (!fullTextIndexValues.isEmpty()) {
@@ -403,9 +364,9 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 
 	private synchronized void handleTransaction(ResolvedTransaction transaction) throws Exception {
 		//only if peer:
-			//write RT to index
-			//write transaction log (RT)
-			//write table log (RT)
+		//write RT to index
+		//write transaction log (RT)
+		//write table log (RT)
 
 		for (ResolvedTransactionRecord record : transaction.getTransactionRecords()) {
 			TableIndex tableIndex = getTableIndexById(record.getTableId());
@@ -424,7 +385,7 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 							.filter(value -> value.getIndexType() == IndexType.TEXT || value.getIndexType() == IndexType.TRANSLATABLE_TEXT)
 							.map(value -> {
 								String columnName = getColumnById(value.getColumnId()).getName();
-								return value.getIndexType() == IndexType.TEXT ? new FullTextIndexValue(columnName, (String) value.getValue()) :  new FullTextIndexValue(columnName, (TranslatableText) value.getValue());
+								return value.getIndexType() == IndexType.TEXT ? new FullTextIndexValue(columnName, (String) value.getValue()) : new FullTextIndexValue(columnName, (TranslatableText) value.getValue());
 							})
 							.collect(Collectors.toList());
 					if (!fullTextIndexValues.isEmpty()) {
@@ -507,93 +468,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 		}
 	}
 
-//	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, ClusterSetConfig clusterConfig) throws Exception {
-//		this.storagePath = storagePath;
-//		this.schemaStats = new SchemaStats(storagePath);
-//		Transaction.setDataBase(this);
-//
-//		Schema schema = schemaInfo.getSchema();
-//		String pojoPath = schema.getPojoNamespace();
-//		this.schemaIndex = new SchemaIndex(Schema.parse(schema.getPojoNamespace()), storagePath);
-//
-//		schemaIndex.setFileStore(fileStore);
-//
-//		mapSchemaForCluster(schema);
-//
-//		for (DatabaseIndex database : schemaIndex.getDatabases()) {
-//			String path = pojoPath + "." + database.getName().toLowerCase();
-//			for (TableIndex table : database.getTables()) {
-//				String tableName = table.getName();
-//				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
-//				Class<?> schemaClass = Class.forName(className);
-//				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
-//				method.setAccessible(true);
-//				method.invoke(null, table);
-//			}
-//		}
-//
-//		transactionWriter = new TransactionWriter(clusterConfig, schemaStats);
-//
-//		transactionReader = new TransactionReader(clusterConfig,
-//				schemaStats,
-//				this,
-//				transactionWriter.getTransactionMap(),
-//				this);
-//
-//		transactionMaster = new TransactionMaster(clusterConfig,
-//				schemaStats,
-//				this,
-//				this);
-//
-//	}
-
-//	//todo this should be merged with standalone db merging
-//	private void mapSchemaForCluster(Schema schema) throws IOException {
-//		Schema localSchema = schemaStats.getSchema();
-//		if (localSchema != null) {
-//			if (!localSchema.isCompatibleWith(schema)) {
-//				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + localSchema + "\nNew schema is:\n" + schema);
-//			}
-//			localSchema.merge(schema);
-//			schemaStats.saveSchema(localSchema);
-//		} else {
-//			localSchema = schema;
-//			schemaStats.saveSchema(localSchema);
-//		}
-//		localSchema.mapSchema();
-//		schemaIndex.merge(localSchema, true);
-//
-//		for (DatabaseIndex database : schemaIndex.getDatabases()) {
-//			databaseById.put(database.getMappingId(), database);
-//			for (TableIndex table : database.getTables()) {
-//				tableById.put(table.getMappingId(), table);
-//				for (ColumnIndex columnIndex : table.getColumnIndices()) {
-//					columnById.put(columnIndex.getMappingId(), columnIndex);
-//				}
-//			}
-//		}
-//	}
-//
-//	public void executeTransaction(ClusterTransaction transaction, boolean asynchronous) throws IOException {
-//		if (transactionWriter != null) {
-//			executeClusterTransaction(transaction, asynchronous);
-//		} else {
-//			executeStandaloneTransaction(transaction);
-//		}
-//	}
-//
-//	private synchronized void executeStandaloneTransaction(ClusterTransaction transaction) throws IOException {
-//		TransactionRequest request = transaction.createRequest();
-//		transactionStore.executeTransaction(request);
-//	}
-//
-//	private void executeClusterTransaction(ClusterTransaction transaction, boolean asynchronous) throws IOException {
-//		TransactionExecutionResult transactionExecutionResult = transactionWriter.writeTransaction(transaction);
-//		if (!asynchronous) {
-//			transactionExecutionResult.waitForExecution();
-//		}
-//	}
-
 	public void createDatabaseDump(File dumpFolder) throws IOException {
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			File dbFolder = new File(dumpFolder, database.getName());
@@ -624,35 +498,6 @@ public class UniversalDB implements DataBaseMapper  { //TransactionIdHandler
 	public ColumnIndex getColumnById(int mappingId) {
 		return columnById.get(mappingId);
 	}
-
-//	@Override
-//	public long getAndCommitNextTransactionId() {
-//		if (schemaStats != null) {
-//			return schemaStats.getAndCommitNextTransactionId();
-//		} else {
-//			return transactionStore.getAndCommitNextTransactionId();
-//		}
-//	}
-//
-//	@Override
-//	public long getLastCommittedTransactionId() {
-//		if (schemaStats != null) {
-//			return schemaStats.getLastCommittedTransactionId();
-//		} else {
-//			return transactionStore.getLastCommittedTransactionId();
-//		}
-//	}
-//
-//	@Override
-//	public void commitTransactionId(long id) {
-//		if (schemaStats != null) {
-//			schemaStats.commitTransactionId(id);
-//		}
-//	}
-//
-//	public SchemaStats getClusterSchemaStats() {
-//		return schemaStats;
-//	}
 
 	public SchemaIndex getSchemaIndex() {
 		return schemaIndex;

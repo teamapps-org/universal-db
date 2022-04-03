@@ -11,8 +11,6 @@ import org.teamapps.universaldb.index.reference.value.RecordReference;
 import org.teamapps.universaldb.index.reference.value.ReferenceIteratorValue;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.schema.Table;
-import org.teamapps.universaldb.transaction.TransactionRecord;
-import org.teamapps.universaldb.transaction.TransactionRecordValue;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
@@ -249,93 +247,93 @@ public class RecordUpdate {
 		return bos.toByteArray();
 	}
 
-	public static byte[] createUpdate(long previousPosition, TransactionRecord transactionRecord, int recordId, int userId, long timestamp, long transactionId, Map<Integer, Integer> recordIdByCorrelationId) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(bos);
-		RecordUpdateType recordUpdateType = transactionRecord.getRecordUpdateType();
-		dos.writeLong(previousPosition);
-		dos.writeByte(recordUpdateType.getId());
-		dos.writeInt(recordId);
-		dos.writeInt(userId);
-		dos.writeInt((int) (timestamp / 1000));
-		dos.writeLong(transactionId);
-		List<TransactionRecordValue> recordValues = transactionRecord.getRecordValues();
-		dos.writeInt(recordValues.size());
-		for (TransactionRecordValue recordValue : recordValues) {
-			ColumnIndex column = recordValue.getColumn();
-			Object value = recordValue.getValue();
-			dos.writeInt(column.getMappingId());
-			if (value == null) {
-				dos.writeByte(0);
-			} else {
-				dos.writeByte(column.getType().getId());
-				switch (column.getType()) {
-					case BOOLEAN:
-						boolean booleanValue = (boolean) value;
-						dos.writeBoolean(booleanValue);
-						break;
-					case SHORT:
-						short shortValue = (short) value;
-						dos.writeShort(shortValue);
-						break;
-					case INT:
-						int intValue = (int) value;
-						dos.writeInt(intValue);
-						break;
-					case LONG:
-						long longValue = (long) value;
-						dos.writeLong(longValue);
-						break;
-					case FLOAT:
-						float floatValue = (float) value;
-						dos.writeFloat(floatValue);
-						break;
-					case DOUBLE:
-						double doubleValue = (double) value;
-						dos.writeDouble(doubleValue);
-						break;
-					case TEXT:
-						String textValue = (String) value;
-						DataStreamUtil.writeStringWithLengthHeader(dos, textValue);
-						break;
-					case TRANSLATABLE_TEXT:
-						TranslatableText translatableTextValue = (TranslatableText) value;
-						translatableTextValue.writeValues(dos);
-						break;
-					case REFERENCE:
-						RecordReference referenceValue = (RecordReference) value;
-						referenceValue.updateReference(recordIdByCorrelationId);
-						int referencedId = referenceValue.getRecordId();
-						if (referencedId == 0) {
-							throw new RuntimeException("Error missing record id for correlation id");
-						}
-						dos.writeInt(referencedId);
-						break;
-					case MULTI_REFERENCE:
-						MultiReferenceEditValue multiRefValue = (MultiReferenceEditValue) value;
-						multiRefValue.updateReferences(recordIdByCorrelationId);
-						List<MultiReferenceUpdateEntry> updateEntries = multiRefValue.getResolvedUpdateEntries();
-						dos.writeInt(updateEntries.size());
-						for (MultiReferenceUpdateEntry updateEntry : updateEntries) {
-							updateEntry.writeEntry(dos);
-						}
-						break;
-					case FILE:
-						FileValue fileValue = (FileValue) value;
-						fileValue.writeValues(dos);
-						break;
-					case BINARY:
-						byte[] bytesValue = (byte[]) value;
-						DataStreamUtil.writeByteArrayWithLengthHeader(dos, bytesValue);
-						break;
-					case FILE_NG:
-						//todo
-						break;
-				}
-			}
-		}
-		return bos.toByteArray();
-	}
+//	public static byte[] createUpdate(long previousPosition, TransactionRecord transactionRecord, int recordId, int userId, long timestamp, long transactionId, Map<Integer, Integer> recordIdByCorrelationId) throws IOException {
+//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//		DataOutputStream dos = new DataOutputStream(bos);
+//		RecordUpdateType recordUpdateType = transactionRecord.getRecordUpdateType();
+//		dos.writeLong(previousPosition);
+//		dos.writeByte(recordUpdateType.getId());
+//		dos.writeInt(recordId);
+//		dos.writeInt(userId);
+//		dos.writeInt((int) (timestamp / 1000));
+//		dos.writeLong(transactionId);
+//		List<TransactionRecordValue> recordValues = transactionRecord.getRecordValues();
+//		dos.writeInt(recordValues.size());
+//		for (TransactionRecordValue recordValue : recordValues) {
+//			ColumnIndex column = recordValue.getColumn();
+//			Object value = recordValue.getValue();
+//			dos.writeInt(column.getMappingId());
+//			if (value == null) {
+//				dos.writeByte(0);
+//			} else {
+//				dos.writeByte(column.getType().getId());
+//				switch (column.getType()) {
+//					case BOOLEAN:
+//						boolean booleanValue = (boolean) value;
+//						dos.writeBoolean(booleanValue);
+//						break;
+//					case SHORT:
+//						short shortValue = (short) value;
+//						dos.writeShort(shortValue);
+//						break;
+//					case INT:
+//						int intValue = (int) value;
+//						dos.writeInt(intValue);
+//						break;
+//					case LONG:
+//						long longValue = (long) value;
+//						dos.writeLong(longValue);
+//						break;
+//					case FLOAT:
+//						float floatValue = (float) value;
+//						dos.writeFloat(floatValue);
+//						break;
+//					case DOUBLE:
+//						double doubleValue = (double) value;
+//						dos.writeDouble(doubleValue);
+//						break;
+//					case TEXT:
+//						String textValue = (String) value;
+//						DataStreamUtil.writeStringWithLengthHeader(dos, textValue);
+//						break;
+//					case TRANSLATABLE_TEXT:
+//						TranslatableText translatableTextValue = (TranslatableText) value;
+//						translatableTextValue.writeValues(dos);
+//						break;
+//					case REFERENCE:
+//						RecordReference referenceValue = (RecordReference) value;
+//						referenceValue.updateReference(recordIdByCorrelationId);
+//						int referencedId = referenceValue.getRecordId();
+//						if (referencedId == 0) {
+//							throw new RuntimeException("Error missing record id for correlation id");
+//						}
+//						dos.writeInt(referencedId);
+//						break;
+//					case MULTI_REFERENCE:
+//						MultiReferenceEditValue multiRefValue = (MultiReferenceEditValue) value;
+//						multiRefValue.updateReferences(recordIdByCorrelationId);
+//						List<MultiReferenceUpdateEntry> updateEntries = multiRefValue.getResolvedUpdateEntries();
+//						dos.writeInt(updateEntries.size());
+//						for (MultiReferenceUpdateEntry updateEntry : updateEntries) {
+//							updateEntry.writeEntry(dos);
+//						}
+//						break;
+//					case FILE:
+//						FileValue fileValue = (FileValue) value;
+//						fileValue.writeValues(dos);
+//						break;
+//					case BINARY:
+//						byte[] bytesValue = (byte[]) value;
+//						DataStreamUtil.writeByteArrayWithLengthHeader(dos, bytesValue);
+//						break;
+//					case FILE_NG:
+//						//todo
+//						break;
+//				}
+//			}
+//		}
+//		return bos.toByteArray();
+//	}
 
 	public RecordUpdateValue getValue(int columnId) {
 		return updateValues.stream()
