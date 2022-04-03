@@ -41,10 +41,10 @@ public class DefaultLogIndexTest {
 	}
 
 	@Test
-	public void writeLog() {
+	public void writeLogUncommitted() {
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
-			long pos = logIndex.writeLog(TEST_DATA);
+			long pos = logIndex.writeLog(TEST_DATA, false);
 			positionMap.put(i, pos);
 		}
 		logIndex.flush();
@@ -56,10 +56,10 @@ public class DefaultLogIndexTest {
 	}
 
 	@Test
-	public void writeLogCommitted() {
+	public void writeLog() {
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
-			long pos = logIndex.writeLogCommitted(TEST_DATA);
+			long pos = logIndex.writeLog(TEST_DATA);
 			positionMap.put(i, pos);
 			byte[] bytes = logIndex.readLog(positionMap.get(i));
 			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
@@ -71,7 +71,7 @@ public class DefaultLogIndexTest {
 
 		positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
-			long pos = logIndex.writeLogCommitted(TEST_DATA);
+			long pos = logIndex.writeLog(TEST_DATA);
 			positionMap.put(i, pos);
 			byte[] bytes = logIndex.readLog(positionMap.get(i));
 			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
@@ -88,7 +88,7 @@ public class DefaultLogIndexTest {
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 1; i <= 1_000; i++) {
 			byte[] testValue = createTestValue(i);
-			long pos = logIndex.writeLogCommitted(testValue);
+			long pos = logIndex.writeLog(testValue);
 			positionMap.put(i, pos);
 			byte[] bytes = logIndex.readLog(positionMap.get(i));
 			assertArrayEquals(testValue, bytes);
@@ -99,7 +99,92 @@ public class DefaultLogIndexTest {
 	public void getPosition() {
 		DefaultLogIndex logIndex = new DefaultLogIndex(tempDir, "index-log-pos");
 		assertEquals(4, logIndex.getPosition());
-		logIndex.writeLogCommitted(TEST_DATA);
+		logIndex.writeLog(TEST_DATA);
 		assertEquals(4 + TEST_DATA.length + 4, logIndex.getPosition());
 	}
+
+	@Test
+	public void isEmpty() {
+		DefaultLogIndex logIndex = new DefaultLogIndex(tempDir, "index-log-empty");
+		assertTrue(logIndex.isEmpty());
+		logIndex.writeLog(new byte[1]);
+		assertFalse(logIndex.isEmpty());
+		logIndex.flush();
+		assertFalse(logIndex.isEmpty());
+		logIndex.close();
+		logIndex = new DefaultLogIndex(tempDir, "index-log-empty");
+		assertFalse(logIndex.isEmpty());
+		logIndex = new DefaultLogIndex(tempDir, "index-log-empty2");
+		logIndex.close();
+		logIndex = new DefaultLogIndex(tempDir, "index-log-empty2");
+		assertTrue(logIndex.isEmpty());
+		logIndex.writeLog(new byte[1]);
+		assertFalse(logIndex.isEmpty());
+	}
+
+	@Test
+	public void readLogs() throws Exception {
+		DefaultLogIndex logIndex = new DefaultLogIndex(tempDir, "index-rl");
+		Map<Integer, Long> positionMap = new HashMap<>();
+		for (int i = 0; i < 1_000; i++) {
+			long pos = logIndex.writeLog(TEST_DATA);
+			positionMap.put(i, pos);
+			byte[] bytes = logIndex.readLog(positionMap.get(i));
+			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
+		}
+		LogIterator logIterator = logIndex.readLogs();
+		for (int i = 0; i < 1_000; i++) {
+			assertTrue(logIterator.hasNext());
+			byte[] bytes = logIterator.next();
+			assertArrayEquals(TEST_DATA, bytes);
+			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
+		}
+		assertFalse(logIterator.hasNext());
+		logIterator.close();
+		for (int n = 1; n < 1_000; n++) {
+			Long position = positionMap.get(n);
+			logIterator = logIndex.readLogs(position);
+			for (int i = n; i < 1_000; i++) {
+				assertTrue(logIterator.hasNext());
+				byte[] bytes = logIterator.next();
+				assertArrayEquals(TEST_DATA, bytes);
+			}
+		}
+		logIndex.close();
+		logIndex.drop();
+	}
+
+	@Test
+	public void readLogs2() throws Exception {
+		DefaultLogIndex logIndex = new DefaultLogIndex(tempDir, "index-rl2");
+		Map<Integer, Long> positionMap = new HashMap<>();
+		for (int i = 0; i < 1_000; i++) {
+			byte[] testValue = createTestValue(i);
+			long pos = logIndex.writeLog(testValue);
+			positionMap.put(i, pos);
+			byte[] bytes = logIndex.readLog(positionMap.get(i));
+			assertArrayEquals(testValue, bytes);
+		}
+		LogIterator logIterator = logIndex.readLogs();
+		for (int i = 0; i < 1_000; i++) {
+			assertTrue(logIterator.hasNext());
+			byte[] bytes = logIterator.next();
+			byte[] testValue = createTestValue(i);
+			assertArrayEquals(testValue, bytes);
+		}
+		logIterator.close();
+		for (int n = 1; n < 1_000; n+= 100) {
+			Long position = positionMap.get(n);
+			logIterator = logIndex.readLogs(position);
+			for (int i = n; i < 1_000; i++) {
+				assertTrue(logIterator.hasNext());
+				byte[] bytes = logIterator.next();
+				byte[] testValue = createTestValue(i);
+				assertArrayEquals(testValue, bytes);
+			}
+		}
+		logIndex.close();
+		logIndex.drop();
+	}
+
 }

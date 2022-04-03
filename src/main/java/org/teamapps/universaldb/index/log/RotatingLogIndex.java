@@ -1,6 +1,8 @@
 package org.teamapps.universaldb.index.log;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RotatingLogIndex implements LogIndex {
 
@@ -65,24 +67,16 @@ public class RotatingLogIndex implements LogIndex {
 	}
 
 	@Override
-	public synchronized long writeLog(byte[] bytes) {
+	public synchronized long writeLog(byte[] bytes, boolean committed) {
 		try {
 			checkWritePosition(bytes.length);
 			dos.writeInt(bytes.length);
 			dos.write(bytes);
 			long storePos = getPosition();
 			currentFilePosition += bytes.length + 4;
-			return storePos;
-		} catch (IOException e) {
-			throw new RuntimeException("Error writing log to file:" + getLogFile(currentFileIndex).getAbsolutePath(), e);
-		}
-	}
-
-	@Override
-	public synchronized long writeLogCommitted(byte[] bytes) {
-		try {
-			long storePos = writeLog(bytes);
-			dos.flush();
+			if (committed) {
+				dos.flush();
+			}
 			return storePos;
 		} catch (IOException e) {
 			throw new RuntimeException("Error writing log to file:" + getLogFile(currentFileIndex).getAbsolutePath(), e);
@@ -115,8 +109,33 @@ public class RotatingLogIndex implements LogIndex {
 	}
 
 	@Override
+	public LogIterator readLogs() {
+		List<File> storeFiles = getStoreFiles();
+		return new LogIterator(storeFiles, 0, true);
+	}
+
+	@Override
+	public LogIterator readLogs(long pos) {
+		List<File> storeFiles = getStoreFiles();
+		return new LogIterator(storeFiles, pos, true);
+	}
+
+	private List<File> getStoreFiles() {
+		List<File> storeFiles = new ArrayList<>();
+		for (int i = 0; i <= currentFileIndex; i++) {
+			storeFiles.add(getLogFile(i));
+		}
+		return storeFiles;
+	}
+
+	@Override
 	public long getPosition() {
 		return calculatePosition(currentFileIndex, currentFilePosition);
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return currentFileIndex == 0 && currentFilePosition == 0;
 	}
 
 	@Override
@@ -140,10 +159,9 @@ public class RotatingLogIndex implements LogIndex {
 	@Override
 	public void drop() {
 		close();
-		for (int i = 0; i <= currentFileIndex; i++) {
-			File logFile = getLogFile(i);
-			if (logFile.exists()) {
-				logFile.delete();
+		for (File storeFile : getStoreFiles()) {
+			if (storeFile.exists()) {
+				storeFile.delete();
 			}
 		}
 	}

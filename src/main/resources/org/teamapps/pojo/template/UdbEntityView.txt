@@ -15,6 +15,8 @@ import org.teamapps.universaldb.pojo.template.*;
 import org.teamapps.universaldb.transaction.*;
 import org.teamapps.universaldb.record.*;
 import org.teamapps.universaldb.context.*;
+import org.teamapps.universaldb.index.transaction.request.*;
+
 
 import java.util.*;
 import java.time.*;
@@ -66,23 +68,9 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
     }
 
 {methods}
-    @Override
-    public {udbType} save(Transaction transaction, boolean strictChangeVerification) {
-    	throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public {udbType} saveTransactional(boolean strictChangeVerification) {
-    	throw new UnsupportedOperationException();
-    }
 
     @Override
     public {udbType} save() {
-    	throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void delete(Transaction transaction) {
     	throw new UnsupportedOperationException();
     }
 
@@ -103,7 +91,7 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 		for (ColumnIndex column : table.getColumnIndices()) {
 			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
 			if (isChanged(column)) {
-				TransactionRecordValue changeValue = getChangeValue(column);
+			    TransactionRequestRecordValue changeValue = getChangeValue(column);
 				sb.append(" -> ").append(changeValue.getValue());
 			}
 			sb.append("\n");

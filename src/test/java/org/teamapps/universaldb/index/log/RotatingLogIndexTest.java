@@ -41,10 +41,10 @@ public class RotatingLogIndexTest {
 	}
 
 	@Test
-	public void writeLog() {
+	public void writeLogUncommitted() {
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
-			long pos = rotatingLogIndex.writeLog(TEST_DATA);
+			long pos = rotatingLogIndex.writeLog(TEST_DATA, false);
 			positionMap.put(i, pos);
 		}
 		rotatingLogIndex.flush();
@@ -56,10 +56,10 @@ public class RotatingLogIndexTest {
 	}
 
 	@Test
-	public void writeLogCommitted() {
+	public void writeLog() {
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
-			long pos = rotatingLogIndex.writeLogCommitted(TEST_DATA);
+			long pos = rotatingLogIndex.writeLog(TEST_DATA);
 			positionMap.put(i, pos);
 			byte[] bytes = rotatingLogIndex.readLog(positionMap.get(i));
 			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
@@ -75,7 +75,7 @@ public class RotatingLogIndexTest {
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 1; i <= 1_000; i++) {
 			byte[] testValue = createTestValue(i);
-			long pos = rotatingLogIndex.writeLogCommitted(testValue);
+			long pos = rotatingLogIndex.writeLog(testValue);
 			positionMap.put(i, pos);
 			byte[] bytes = rotatingLogIndex.readLog(positionMap.get(i));
 			assertArrayEquals(testValue, bytes);
@@ -87,7 +87,7 @@ public class RotatingLogIndexTest {
 		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log", 10_000, 100);
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
-			long pos = logIndex.writeLogCommitted(TEST_DATA);
+			long pos = logIndex.writeLog(TEST_DATA);
 			positionMap.put(i, pos);
 			byte[] bytes = logIndex.readLog(positionMap.get(i));
 			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
@@ -102,19 +102,103 @@ public class RotatingLogIndexTest {
 	}
 
 	@Test
+	public void readLogs() throws Exception {
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-rl", 50_000, 100);
+		Map<Integer, Long> positionMap = new HashMap<>();
+		for (int i = 0; i < 1_000; i++) {
+			long pos = logIndex.writeLog(TEST_DATA);
+			positionMap.put(i, pos);
+			byte[] bytes = logIndex.readLog(positionMap.get(i));
+			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
+		}
+		LogIterator logIterator = logIndex.readLogs();
+		for (int i = 0; i < 1_000; i++) {
+			assertTrue(logIterator.hasNext());
+			byte[] bytes = logIterator.next();
+			assertArrayEquals(TEST_DATA, bytes);
+			assertEquals(TEST_STRING, new String(bytes, StandardCharsets.UTF_8));
+		}
+		assertFalse(logIterator.hasNext());
+		logIterator.close();
+		for (int n = 1; n < 1_000; n++) {
+			Long position = positionMap.get(n);
+			logIterator = logIndex.readLogs(position);
+			for (int i = n; i < 1_000; i++) {
+				assertTrue(logIterator.hasNext());
+				byte[] bytes = logIterator.next();
+				assertArrayEquals(TEST_DATA, bytes);
+			}
+		}
+		logIndex.close();
+		logIndex.drop();
+	}
+
+	@Test
+	public void readLogs2() throws Exception {
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-rl2", 50_000, 100);
+		Map<Integer, Long> positionMap = new HashMap<>();
+		for (int i = 0; i < 1_000; i++) {
+			byte[] testValue = createTestValue(i);
+			long pos = logIndex.writeLog(testValue);
+			positionMap.put(i, pos);
+			byte[] bytes = logIndex.readLog(positionMap.get(i));
+			assertArrayEquals(testValue, bytes);
+		}
+		LogIterator logIterator = logIndex.readLogs();
+		for (int i = 0; i < 1_000; i++) {
+			assertTrue(logIterator.hasNext());
+			byte[] bytes = logIterator.next();
+			byte[] testValue = createTestValue(i);
+			assertArrayEquals(testValue, bytes);
+		}
+		logIterator.close();
+		for (int n = 1; n < 1_000; n+= 100) {
+			Long position = positionMap.get(n);
+			logIterator = logIndex.readLogs(position);
+			for (int i = n; i < 1_000; i++) {
+				assertTrue(logIterator.hasNext());
+				byte[] bytes = logIterator.next();
+				byte[] testValue = createTestValue(i);
+				assertArrayEquals(testValue, bytes);
+			}
+		}
+		logIndex.close();
+		logIndex.drop();
+	}
+
+	@Test
 	public void getPosition() {
 		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log2", 10_000, 100);
 		assertEquals(0, logIndex.getPosition());
-		logIndex.writeLogCommitted(TEST_DATA);
+		logIndex.writeLog(TEST_DATA);
 		assertEquals(TEST_DATA.length + 4, logIndex.getPosition());
+	}
+
+	@Test
+	public void isEmpty() {
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "index-log-empty");
+		assertTrue(logIndex.isEmpty());
+		logIndex.writeLog(new byte[1]);
+		assertFalse(logIndex.isEmpty());
+		logIndex.flush();
+		assertFalse(logIndex.isEmpty());
+		logIndex.close();
+		logIndex = new RotatingLogIndex(tempDir, "index-log-empty");
+		assertFalse(logIndex.isEmpty());
+		logIndex = new RotatingLogIndex(tempDir, "index-log-empty2");
+		logIndex.close();
+		logIndex = new RotatingLogIndex(tempDir, "index-log-empty2");
+		assertTrue(logIndex.isEmpty());
+		logIndex.writeLog(new byte[1]);
+		assertFalse(logIndex.isEmpty());
 	}
 
 	@Test(expected = RuntimeException.class)
 	public void close() {
 		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log3", 10_000, 100);
-		logIndex.writeLogCommitted(TEST_DATA);
+		logIndex.writeLog(TEST_DATA);
 		logIndex.close();
-		logIndex.writeLogCommitted(TEST_DATA);
+		logIndex.writeLog(TEST_DATA);
 	}
 
 	@Test

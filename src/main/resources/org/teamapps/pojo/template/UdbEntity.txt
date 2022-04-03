@@ -70,27 +70,11 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
     }
 
 {methods}
-    @Override
-    public {udbType} save(Transaction transaction, boolean strictChangeVerification) {
-        saveRecord(transaction, strictChangeVerification);
-        return this;
-    }
-
-    @Override
-    public {udbType} saveTransactional(boolean strictChangeVerification) {
-        saveRecord(UniversalDB.getThreadLocalTransaction(), strictChangeVerification);
-        return this;
-    }
 
     @Override
     public {udbType} save() {
         saveRecord();
         return this;
-    }
-
-    @Override
-    public void delete(Transaction transaction) {
-        deleteRecord(transaction);
     }
 
     @Override

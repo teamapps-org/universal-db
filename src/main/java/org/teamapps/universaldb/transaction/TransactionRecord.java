@@ -210,7 +210,7 @@ public class TransactionRecord {
 	public void createIfNotExists(Map<Integer, Integer> recordIdByCorrelationId) {
 		if (!deleteRecord && !restoreRecord) {
 			boolean updateMap = recordId == 0;
-			recordId = tableIndex.createRecord(recordId, correlationId, update);
+			recordId = tableIndex.createRecord(recordId);
 			if (updateMap) {
 				recordIdByCorrelationId.put(correlationId, recordId);
 			}
@@ -248,7 +248,7 @@ public class TransactionRecord {
 					return;
 				}
 			}
-			recordId = tableIndex.createRecord(recordId, correlationId, update);
+			recordId = tableIndex.createRecord(recordId);
 		}
 		processColumnChanges(transactionId, recordIdByCorrelationId, userId, timestamp);
 	}
@@ -259,7 +259,7 @@ public class TransactionRecord {
 			List<CyclicReferenceUpdate> cyclicReferenceUpdates = recordValue.persistChange(recordId, recordIdByCorrelationId);
 			if (cyclicReferenceUpdates != null) {
 				for (CyclicReferenceUpdate cyclicReferenceUpdate : cyclicReferenceUpdates) {
-					cyclicReferenceUpdate.getReferenceIndex().getTable().getRecordVersioningIndex().writeCyclicReference(cyclicReferenceUpdate, userId, timestamp, transactionId);
+					//cyclicReferenceUpdate.getReferenceIndex().getTable().getRecordVersioningIndex().writeCyclicReference(cyclicReferenceUpdate, userId, timestamp, transactionId);
 				}
 			}
 		}
@@ -281,6 +281,6 @@ public class TransactionRecord {
 	}
 
 	public void processVersioningIndexUpdates(long timestamp, int unserId, long transactionId, Map<Integer, Integer> recordIdByCorrelationId) {
-		tableIndex.getRecordVersioningIndex().writeUpdate(this, recordId, timestamp, unserId, transactionId, recordIdByCorrelationId);
+		//tableIndex.getRecordVersioningIndex().writeUpdate(this, recordId, timestamp, unserId, transactionId, recordIdByCorrelationId);
 	}
 }

@@ -1,7 +1,9 @@
 package org.teamapps.universaldb.index.log;
 
 
+
 import java.io.*;
+import java.util.Collections;
 
 public class DefaultLogIndex implements LogIndex {
 	private final File storeFile;
@@ -18,7 +20,7 @@ public class DefaultLogIndex implements LogIndex {
 		try {
 			DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(storeFile, true), 16_000));
 			if (position == 0) {
-				dataOutputStream.writeInt(1);
+				dataOutputStream.writeInt((int) (System.currentTimeMillis() / 1000));
 				position = 4;
 			}
 			return dataOutputStream;
@@ -28,23 +30,19 @@ public class DefaultLogIndex implements LogIndex {
 	}
 
 	@Override
-	public synchronized long writeLog(byte[] bytes) {
+	public synchronized long writeLog(byte[] bytes, boolean committed) {
 		try {
 			dos.writeInt(bytes.length);
 			dos.write(bytes);
 			long storePos = position;
 			position += bytes.length + 4;
+			if (committed) {
+				dos.flush();
+			}
 			return storePos;
 		} catch (IOException e) {
 			throw new RuntimeException("Error writing log to file", e);
 		}
-	}
-
-	@Override
-	public synchronized long writeLogCommitted(byte[] bytes) {
-		long storePos = writeLog(bytes);
-		flush();
-		return storePos;
 	}
 
 	@Override
@@ -66,8 +64,23 @@ public class DefaultLogIndex implements LogIndex {
 	}
 
 	@Override
+	public LogIterator readLogs() {
+		return new LogIterator(Collections.singletonList(storeFile), 0, false);
+	}
+
+	@Override
+	public LogIterator readLogs(long pos) {
+		return new LogIterator(Collections.singletonList(storeFile), pos, false);
+	}
+
+	@Override
 	public long getPosition() {
 		return position;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return position <= 4;
 	}
 
 	@Override

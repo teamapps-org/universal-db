@@ -32,12 +32,31 @@ public class MultiReferenceEditValue implements MultiReferenceValue {
 	private final List<RecordReference> removeReferences = new ArrayList<>();
 	private final List<RecordReference> setReferences = new ArrayList<>();
 
+	public MultiReferenceEditValue() {
+	}
+
+	public MultiReferenceEditValue(DataInputStream dis) throws IOException {
+		removeAll = dis.readBoolean();
+		addReferences.addAll(readReferences(dis));
+		removeReferences.addAll(readReferences(dis));
+		setReferences.addAll(readReferences(dis));
+	}
+
+	public void write(DataOutputStream dos) throws IOException {
+		dos.writeBoolean(removeAll);
+		writeReferences(this.addReferences, dos);
+		writeReferences(this.removeReferences, dos);
+		writeReferences(this.setReferences, dos);
+	}
+
 	public void updateReferences(Map<Integer, Integer> recordIdByCorrelationId) {
 		addReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
 		removeReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
 		setReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
 	}
 
+	//todo remove
+	@Deprecated
 	public List<MultiReferenceUpdateEntry> getResolvedUpdateEntries() {
 		List<MultiReferenceUpdateEntry> entries = new ArrayList<>();
 		if (removeAll) {
@@ -51,6 +70,18 @@ public class MultiReferenceEditValue implements MultiReferenceValue {
 			entries.addAll(addReferences.stream().map(ref -> MultiReferenceUpdateEntry.createAddEntry(ref.getRecordId())).collect(Collectors.toList()));
 		}
 		return entries;
+	}
+
+	public ResolvedMultiReferenceUpdate getResolvedUpdateValue() {
+		if (removeAll) {
+			return ResolvedMultiReferenceUpdate.createRemoveAllReferences();
+		} else if (!setReferences.isEmpty()) {
+			return ResolvedMultiReferenceUpdate.createSetReferences(setReferences.stream().map(RecordReference::getRecordId).filter(id -> id != 0).collect(Collectors.toList()));
+		} else {
+			List<Integer> addRecords = addReferences.stream().map(RecordReference::getRecordId).filter(id -> id != 0).collect(Collectors.toList());
+			List<Integer> removeRecords = removeReferences.stream().map(RecordReference::getRecordId).filter(id -> id != 0).collect(Collectors.toList());
+			return ResolvedMultiReferenceUpdate.createAddRemoveReferences(addRecords, removeRecords);
+		}
 	}
 
 	public void setRemoveAll() {
@@ -192,5 +223,10 @@ public class MultiReferenceEditValue implements MultiReferenceValue {
 			sb.append("SET (").append(setReferences.stream().map(val -> "" + val).collect(Collectors.joining(", "))).append(")");
 		}
 		return sb.toString();
+	}
+
+	@Override
+	public boolean isEditValue() {
+		return false;
 	}
 }

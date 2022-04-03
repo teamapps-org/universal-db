@@ -19,24 +19,25 @@
  */
 package org.teamapps.universaldb.index.buffer;
 
-import com.google.common.io.Files;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class BlockChainAtomicStoreTest {
 
 	private static BlockChainAtomicStore store;
 
 	@BeforeClass
-	public static void setup() {
-		File tempDir = Files.createTempDir();
+	public static void setup() throws IOException {
+		File tempDir = Files.createTempDirectory("temp").toFile();
+		tempDir.deleteOnExit();
 		store = new BlockChainAtomicStore(tempDir, "blockChainAtomicStoreTest");
 	}
 

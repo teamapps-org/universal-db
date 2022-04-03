@@ -53,11 +53,11 @@ public class Transaction {
 	}
 
 	public void execute(boolean asynchronous) {
-		try {
-			dataBase.executeTransaction(clusterTransaction, asynchronous);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			dataBase.executeTransaction(clusterTransaction, asynchronous);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	public int getResolvedRecordIdByCorrelationId(int correlationId) {

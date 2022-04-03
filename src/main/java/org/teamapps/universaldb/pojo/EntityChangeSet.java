@@ -21,12 +21,11 @@ package org.teamapps.universaldb.pojo;
 
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.IndexType;
-import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
-import org.teamapps.universaldb.transaction.Transaction;
-import org.teamapps.universaldb.transaction.TransactionRecord;
-import org.teamapps.universaldb.transaction.TransactionRecordValue;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequest2;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +34,7 @@ import java.util.Map;
 
 public class EntityChangeSet {
 
-	private final Map<Integer, TransactionRecordValue> changeMap;
+	private final Map<Integer, TransactionRequestRecordValue> changeMap;
 	private final Map<Integer, AbstractUdbEntity> changedReferenceMap;
 	private final Map<RecordReference, Entity> entityByReference;
 
@@ -46,8 +45,8 @@ public class EntityChangeSet {
 	}
 
 	public void addChangeValue(ColumnIndex column, Object value) {
-		TransactionRecordValue recordValue = new TransactionRecordValue(column, value);
-		changeMap.put(recordValue.getColumnMappingId(), recordValue);
+		TransactionRequestRecordValue requestRecordValue = new TransactionRequestRecordValue(column.getMappingId(), column.getType(), value);
+		changeMap.put(requestRecordValue.getColumnId(), requestRecordValue);
 	}
 
 	public void addRecordReference(RecordReference reference, Entity entity) {
@@ -58,7 +57,7 @@ public class EntityChangeSet {
 		return entityByReference;
 	}
 
-	public TransactionRecordValue getChangeValue(ColumnIndex index) {
+	public TransactionRequestRecordValue getChangeValue2(ColumnIndex index) {
 		return changeMap.get(index.getMappingId());
 	}
 
@@ -66,15 +65,19 @@ public class EntityChangeSet {
 		return changeMap.containsKey(columnIndex.getMappingId());
 	}
 
-	public void setTransactionRecordValues(Transaction transaction, TransactionRecord transactionRecord, boolean strictChangeVerification) {
+	public TransactionRequestRecordValue getChangeValue(ColumnIndex index) {
+		return changeMap.get(index.getMappingId());
+	}
+
+	public void setTransactionRequestRecordValues(TransactionRequest2 transactionRequest, TransactionRequestRecord transactionRequestRecord) {
 		List<AbstractUdbEntity> uncommittedEntityReferences = new ArrayList<>();
-		for (TransactionRecordValue recordValue : changeMap.values()) {
-			transactionRecord.addRecordValue(recordValue);
-			ColumnIndex column = recordValue.getColumn();
+		for (TransactionRequestRecordValue recordValue : changeMap.values()) {
+			transactionRequestRecord.addRecordValue(recordValue);
+			IndexType indexType = recordValue.getIndexType();
 			if (recordValue.getValue() == null) {
 				continue;
 			}
-			if (column.getType() == IndexType.MULTI_REFERENCE) {
+			if (indexType == IndexType.MULTI_REFERENCE) {
 				MultiReferenceEditValue editValue = (MultiReferenceEditValue) recordValue.getValue();
 				for (RecordReference recordReference : editValue.getAddReferences()) {
 					Entity entity = entityByReference.get(recordReference);
@@ -92,9 +95,9 @@ public class EntityChangeSet {
 						recordReference.setRecordId(entity.getId());
 					}
 				}
-			} else if (column.getType() == IndexType.REFERENCE) {
+			} else if (indexType == IndexType.REFERENCE) {
 				RecordReference recordReference = (RecordReference) recordValue.getValue();
-				AbstractUdbEntity entity = getReferenceChange(column);
+				AbstractUdbEntity entity = getReferenceChange(recordValue.getColumnId());
 				if (entity.getId() == 0) {
 					uncommittedEntityReferences.add(entity);
 				} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
@@ -103,7 +106,7 @@ public class EntityChangeSet {
 			}
 		}
 		for (AbstractUdbEntity entity : uncommittedEntityReferences) {
-			entity.save(transaction, strictChangeVerification);
+			entity.saveRecord(transactionRequest);
 		}
 	}
 
@@ -111,8 +114,8 @@ public class EntityChangeSet {
 		changedReferenceMap.put(index.getMappingId(), reference);
 	}
 
-	public AbstractUdbEntity getReferenceChange(ColumnIndex index) {
-		return changedReferenceMap.get(index.getMappingId());
+	public AbstractUdbEntity getReferenceChange(int columnId) {
+		return changedReferenceMap.get(columnId);
 	}
 
 }

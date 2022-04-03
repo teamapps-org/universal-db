@@ -102,12 +102,8 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public void setGenericValue(int id, MultiReferenceValue value) {
-		switch (value.getType()) {
-			case REFERENCE_ITERATOR:
-				break;
-			case EDIT_VALUE:
-				setReferenceEditValue(id, (MultiReferenceEditValue) value);
-				break;
+		if (value != null && value.isEditValue()) {
+			setReferenceEditValue(id, (MultiReferenceEditValue) value);
 		}
 	}
 
@@ -150,24 +146,45 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (!editValue.getSetReferences().isEmpty()) {
 			List<Integer> references = RecordReference.createRecordIdsList(editValue.getSetReferences());
-			cyclicReferenceUpdates.addAll(setReferences(id, references, false));
+			List<CyclicReferenceUpdate> cyclicUpdates = setReferences(id, references, false);
+			cyclicReferenceUpdates.addAll(cyclicUpdates);
 		} else if (editValue.isRemoveAll()) {
-			cyclicReferenceUpdates.addAll(removeAllReferences(id, false));
+			List<CyclicReferenceUpdate> cyclicUpdates = removeAllReferences(id, false);
+			cyclicReferenceUpdates.addAll(cyclicUpdates);
+			//todo this should be empty or set-references type
 			if (!editValue.getAddReferences().isEmpty()) {
 				List<Integer> references = RecordReference.createRecordIdsList(editValue.getAddReferences());
-				cyclicReferenceUpdates.addAll(addReferences(id, references, false));
+				cyclicUpdates = addReferences(id, references, false);
+				cyclicReferenceUpdates.addAll(cyclicUpdates);
 			}
 		} else {
 			if (!editValue.getRemoveReferences().isEmpty()) {
 				List<Integer> references = RecordReference.createRecordIdsList(editValue.getRemoveReferences());
-				cyclicReferenceUpdates.addAll(removeReferences(id, references, false));
+				List<CyclicReferenceUpdate> cyclicUpdates = removeReferences(id, references, false);
+				cyclicReferenceUpdates.addAll(cyclicUpdates);
 			}
 			if (!editValue.getAddReferences().isEmpty()) {
 				List<Integer> references = RecordReference.createRecordIdsList(editValue.getAddReferences());
-				cyclicReferenceUpdates.addAll(addReferences(id, references, false));
+				List<CyclicReferenceUpdate> cyclicUpdates = addReferences(id, references, false);
+				cyclicReferenceUpdates.addAll(cyclicUpdates);
 			}
 		}
 		return cyclicReferenceUpdates;
+	}
+
+	public void setResolvedReferenceEditValue(int id, ResolvedMultiReferenceUpdate editValue) {
+		switch (editValue.getType()) {
+			case REMOVE_ALL_REFERENCES:
+				removeAllReferences(id, false);
+				break;
+			case SET_REFERENCES:
+				setReferences(id, editValue.getSetReferences(), false);
+				break;
+			case ADD_REMOVE_REFERENCES:
+				removeReferences(id, editValue.getRemoveReferences(), false);
+				addReferences(id, editValue.getAddReferences(), false);
+				break;
+		}
 	}
 
 	public List<CyclicReferenceUpdate> setReferences(int id, List<Integer> references, boolean cyclic) {

@@ -323,7 +323,7 @@ public class TableIndex implements MappedObject {
 		return column.sortRecords(sortEntries, ascending, userContext);
 	}
 
-	public int createRecord(int recordId, int correlationId, boolean update) {
+	public int createRecord(int recordId) {
 		int id = 0;
 		if (recordId == 0) {
 			if (keepDeletedRecords) {

@@ -25,6 +25,9 @@ import java.io.IOException;
 
 public interface MultiReferenceValue {
 
+	boolean isEditValue();
+
+	@Deprecated //todo remove
 	static MultiReferenceValue create(DataInputStream dataInputStream) throws IOException {
 		MultiReferenceValueType type = MultiReferenceValueType.getMultiReferenceValueTypeById(dataInputStream.readInt());
 		MultiReferenceValue value = null;
@@ -39,6 +42,7 @@ public interface MultiReferenceValue {
 		return value;
 	}
 
+	@Deprecated //todo remove
 	MultiReferenceValueType getType();
 
 	void writeValues(DataOutputStream dataOutputStream) throws IOException;

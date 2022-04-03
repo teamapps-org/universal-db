@@ -1,5 +1,6 @@
 package org.teamapps.universaldb.index.reference.value;
 
+@Deprecated
 public enum MultiReferenceUpdateType {
 
 	SET(1), ADD(2), REMOVE(3), REMOVE_ALL(4);

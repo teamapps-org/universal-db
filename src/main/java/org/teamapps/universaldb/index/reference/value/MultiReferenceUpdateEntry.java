@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+@Deprecated
 public class MultiReferenceUpdateEntry {
 
 	private final MultiReferenceUpdateType type;

@@ -21,6 +21,7 @@ package org.teamapps.universaldb.pojo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.SortEntry;
@@ -31,21 +32,20 @@ import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequest2;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
-import org.teamapps.universaldb.index.versioning.RecordUpdate;
+import org.teamapps.universaldb.index.versioning.RecordUpdate2;
 import org.teamapps.universaldb.record.EntityBuilder;
 import org.teamapps.universaldb.schema.Table;
-import org.teamapps.universaldb.transaction.Transaction;
-import org.teamapps.universaldb.transaction.TransactionRecord;
-import org.teamapps.universaldb.transaction.TransactionRecordValue;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -60,7 +60,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private boolean createEntity;
 	private int correlationId;
 	private EntityChangeSet entityChangeSet;
-	private Transaction transaction;
+	private TransactionRequest2 transactionRequest;
 
 	public static <ENTITY> List<ENTITY> createEntityList(EntityBuilder<ENTITY> entityBuilder, List<Integer> recordIds){
 		List<ENTITY> list = new ArrayList<>();
@@ -155,13 +155,13 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	@Override
 	public int getId() {
-		if (id == 0 && transaction != null) {
-			id = transaction.getResolvedRecordIdByCorrelationId(correlationId);
+		if (id == 0 && transactionRequest != null) {
+			id = transactionRequest.getResolvedRecordIdByCorrelationId(correlationId);
 		}
 		return id;
 	}
 
-	public List<RecordUpdate> getRecordUpdates() {
+	public List<RecordUpdate2> getRecordUpdates() {
 		try {
 			return tableIndex.getRecordVersioningIndex().readRecordUpdates(id);
 		} catch (IOException e) {
@@ -210,7 +210,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	protected <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> createEntityList(ColumnIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
-		TransactionRecordValue changeValue = getChangeValue(index);
+		TransactionRequestRecordValue changeValue = getChangeValue(index);
 		MultiReferenceEditValue editValue = (MultiReferenceEditValue) changeValue.getValue();
 		MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) index;
 		return createEntityList(editValue, multiReferenceIndex.getReferencesAsList(id), entityBuilder);
@@ -267,7 +267,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected TransactionRecordValue getChangeValue(ColumnIndex index) {
+	protected TransactionRequestRecordValue getChangeValue(ColumnIndex index) {
 		if (entityChangeSet == null) {
 			return null;
 		} else {
@@ -287,7 +287,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		if (entityChangeSet == null) {
 			return null;
 		} else {
-			return entityChangeSet.getReferenceChange(index);
+			return entityChangeSet.getReferenceChange(index.getMappingId());
 		}
 	}
 
@@ -340,7 +340,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	private MultiReferenceEditValue getOrCreateMultiReferenceEditValue(MultiReferenceIndex multiReferenceIndex) {
 		MultiReferenceEditValue editValue;
-		TransactionRecordValue changeValue = getChangeValue(multiReferenceIndex);
+		TransactionRequestRecordValue changeValue = getChangeValue(multiReferenceIndex);
 		if (changeValue != null) {
 			editValue = (MultiReferenceEditValue) changeValue.getValue();
 		} else {
@@ -671,10 +671,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected Transaction getTransaction() {
-		return transaction;
-	}
-
 	@Override
 	public void clearChanges() {
 		entityChangeSet = null;
@@ -692,35 +688,27 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public void saveRecord(Transaction transaction, boolean strictChangeVerification) {
+	public void saveRecord() {
 		if (entityChangeSet != null) {
-			this.transaction = transaction;
-			boolean update = !createEntity;
-			TransactionRecord transactionRecord = TransactionRecord.createOrUpdateRecord(tableIndex, id, correlationId, transaction.getUserId(), update, strictChangeVerification);
-			entityChangeSet.setTransactionRecordValues(transaction, transactionRecord, strictChangeVerification);
-			transaction.addTransactionRecord(transactionRecord);
-			clearChanges();
-			createEntity = false;
+			UniversalDB universalDB = UniversalDB.TEST_INSTANCE;
+			this.transactionRequest = universalDB.createTransactionRequest();
+			saveRecord(transactionRequest);
+			universalDB.executeTransaction(transactionRequest);
+			if (id == 0) {
+				id = transactionRequest.getResolvedRecordIdByCorrelationId(correlationId);
+			}
 		}
 	}
 
-	public void saveRecord() {
-		saveRecord( false);
-	}
-
-	public CompletableFuture<Boolean> saveAsynchronously() {
-		saveRecord(true);
-		return new CompletableFuture<>();
-	}
-
-	public void saveRecord(boolean asynchronous) {
+	public void saveRecord(TransactionRequest2 transactionRequest) {
 		if (entityChangeSet != null) {
-			transaction = Transaction.create();
-			saveRecord(transaction, false);
-			transaction.execute(asynchronous);
-			if (id == 0) {
-				id = transaction.getResolvedRecordIdByCorrelationId(correlationId);
-			}
+			this.transactionRequest = transactionRequest;
+			boolean update = !createEntity;
+			TransactionRequestRecord record = TransactionRequestRecord.createOrUpdateRecord(transactionRequest, tableIndex, id, correlationId, update);
+			entityChangeSet.setTransactionRequestRecordValues(transactionRequest, record);
+			transactionRequest.addRecord(record);
+			clearChanges();
+			createEntity = false;
 		}
 	}
 
@@ -732,24 +720,19 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return tableIndex.getFQN();
 	}
 
-	public void deleteRecord(Transaction transaction) {
-		TransactionRecord transactionRecord = TransactionRecord.deleteRecord(tableIndex, id, transaction.getUserId());
-		transaction.addTransactionRecord(transactionRecord);
-		clearChanges();
-	}
-
 	public void deleteRecord() {
-		Transaction transaction = Transaction.create();
-		deleteRecord(transaction);
-		transaction.execute();
+		UniversalDB universalDB = UniversalDB.TEST_INSTANCE;
+		TransactionRequest2 transactionRequest = universalDB.createTransactionRequest();
+		transactionRequest.addRecord(TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id));
+		clearChanges();
+		universalDB.executeTransaction(transactionRequest);
 	}
 
 	public void restoreDeletedRecord() {
-		Transaction transaction = Transaction.create();
-		TransactionRecord transactionRecord = TransactionRecord.restoreRecord(tableIndex, id, transaction.getUserId());
-		transaction.addTransactionRecord(transactionRecord);
-		clearChanges();
-		transaction.execute();
+		UniversalDB universalDB = UniversalDB.TEST_INSTANCE;
+		TransactionRequest2 transactionRequest = universalDB.createTransactionRequest();
+		transactionRequest.addRecord(TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id));
+		universalDB.executeTransaction(transactionRequest);
 	}
 
 	public boolean isRestorable() {
@@ -796,7 +779,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		for (ColumnIndex column : sortedFields) {
 			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
 			if (isChanged(column)) {
-				TransactionRecordValue changeValue = getChangeValue(column);
+				TransactionRequestRecordValue changeValue = getChangeValue(column);
 				sb.append(" -> ").append(changeValue.getValue());
 			}
 			sb.append("\n");

@@ -36,6 +36,11 @@ public class ReferenceIteratorValue implements MultiReferenceValue {
 	}
 
 	@Override
+	public boolean isEditValue() {
+		return true;
+	}
+
+	@Override //TODO REMOVE
 	public MultiReferenceValueType getType() {
 		return MultiReferenceValueType.REFERENCE_ITERATOR;
 	}

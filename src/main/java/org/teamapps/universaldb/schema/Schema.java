@@ -174,8 +174,8 @@ public class Schema {
 		this(new DataInputStream(new ByteArrayInputStream(data)));
 	}
 
-	public Schema(DataInputStream dataInputStream) throws IOException {
-		this(new String(DataStreamUtil.readByteArrayWithLengthHeader(dataInputStream), StandardCharsets.UTF_8));
+	public Schema(DataInputStream dis) throws IOException {
+		this(DataStreamUtil.readStringWithLengthHeader(dis));
 	}
 
 	public byte[] getSchemaData() {

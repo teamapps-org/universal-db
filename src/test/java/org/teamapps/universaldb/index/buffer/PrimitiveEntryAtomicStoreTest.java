@@ -19,12 +19,13 @@
  */
 package org.teamapps.universaldb.index.buffer;
 
-import com.google.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import static org.junit.Assert.*;
 
@@ -33,8 +34,9 @@ public class PrimitiveEntryAtomicStoreTest {
 	private static PrimitiveEntryAtomicStore store;
 
 	@BeforeClass
-	public static void setup() {
-		File tempDir = Files.createTempDir();
+	public static void setup() throws IOException {
+		File tempDir = Files.createTempDirectory("temp").toFile();
+		tempDir.deleteOnExit();
 		store = new PrimitiveEntryAtomicStore(tempDir, "primitiveEntryAtomicStoreTest");
 	}
 

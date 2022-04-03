@@ -149,6 +149,7 @@ public class ReferenceTest {
 		int size = 10_000;
 		for (int i = 0; i < size; i++) {
 			company.addEmployees(Person.create().setLastName("" + i)).save();
+			assertTrue(company.getId() > 0);
 		}
 		Assert.assertEquals(10_000, company.getEmployeesCount());
 		Assert.assertEquals(10_000, company.getEmployees().size());
