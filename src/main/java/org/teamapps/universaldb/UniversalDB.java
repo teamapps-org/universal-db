@@ -27,6 +27,8 @@ import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.file.LocalFileStore;
+import org.teamapps.universaldb.index.log.LogIterator;
+import org.teamapps.universaldb.index.log.RotatingLogIndex;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
@@ -54,9 +56,11 @@ import org.teamapps.universaldb.schema.Table;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class UniversalDB implements DataBaseMapper {
@@ -103,6 +107,27 @@ public class UniversalDB implements DataBaseMapper {
 		mapSchema(schema);
 
 		installTableClasses(transactionIndex.getCurrentSchema(), UniversalDB.class.getClassLoader(), false);
+	}
+
+	public UniversalDB(File storagePath, LogIterator logIterator) throws Exception {
+		AbstractUdbEntity.setDatabase(this);
+		this.storagePath = storagePath;
+		this.transactionIndex = new TransactionIndex(storagePath);
+		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+
+		Schema schema = new Schema();
+		this.schemaIndex = new SchemaIndex(schema, storagePath);
+		this.schemaIndex.setFileStore(fileStore);
+
+		long time = System.currentTimeMillis();
+		long count = 0;
+		while (logIterator.hasNext()) {
+			byte[] bytes = logIterator.next();
+			ResolvedTransaction transaction = ResolvedTransaction.createResolvedTransaction(bytes);
+			handleTransaction(transaction);
+			count++;
+		}
+		logger.info("Imported " + count + " transactions in: " + (System.currentTimeMillis() - time));
 	}
 
 	private void mapSchema(Schema schema) {
@@ -313,6 +338,7 @@ public class UniversalDB implements DataBaseMapper {
 		}
 		localSchema.mapSchema();
 		resolvedTransaction.setSchema(localSchema);
+		transactionIndex.writeTransaction(resolvedTransaction);
 
 		transactionIndex.writeSchemaUpdate(resolvedTransaction.getSchemaUpdate());
 		schemaIndex.merge(localSchema, true, this);
@@ -414,6 +440,7 @@ public class UniversalDB implements DataBaseMapper {
 			localSchema = schema;
 		}
 		localSchema.mapSchema();
+		transactionIndex.writeTransaction(transaction);
 
 		transactionIndex.writeSchemaUpdate(transaction.getSchemaUpdate());
 		schemaIndex.merge(localSchema, true, this);
