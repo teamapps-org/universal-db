@@ -17,11 +17,10 @@ public class TransactionRequestRecord {
 	private final int tableId;
 	private final int recordId;
 	private final int correlationId;
-
 	private final List<TransactionRequestRecordValue> recordValues = new ArrayList<>();
 	private boolean transactionProcessingStarted;
 
-	public static TransactionRequestRecord createOrUpdateRecord(TransactionRequest2 transactionRequest, TableIndex tableIndex, int recordId, int correlationId, boolean update) {
+	public static TransactionRequestRecord createOrUpdateRecord(TransactionRequest transactionRequest, TableIndex tableIndex, int recordId, int correlationId, boolean update) {
 		TransactionRequestRecordType type = update ? TransactionRequestRecordType.UPDATE : TransactionRequestRecordType.CREATE;
 		if (!update && recordId > 0) {
 			type = TransactionRequestRecordType.CREATE_WITH_ID;
@@ -31,7 +30,7 @@ public class TransactionRequestRecord {
 		return requestRecord;
 	}
 
-	public static TransactionRequestRecord createDeleteRecord(TransactionRequest2 transactionRequest, TableIndex tableIndex, int recordId) {
+	public static TransactionRequestRecord createDeleteRecord(TransactionRequest transactionRequest, TableIndex tableIndex, int recordId) {
 		TransactionRequestRecord requestRecord = new TransactionRequestRecord(TransactionRequestRecordType.DELETE, tableIndex.getMappingId(), recordId, 0);
 		requestRecord.createMetaData(tableIndex, transactionRequest.getUserId());
 		if (recordId <= 0) {
@@ -40,7 +39,7 @@ public class TransactionRequestRecord {
 		return requestRecord;
 	}
 
-	public static TransactionRequestRecord createRestoreRecord(TransactionRequest2 transactionRequest, TableIndex tableIndex, int recordId) {
+	public static TransactionRequestRecord createRestoreRecord(TransactionRequest transactionRequest, TableIndex tableIndex, int recordId) {
 		TransactionRequestRecord requestRecord = new TransactionRequestRecord(TransactionRequestRecordType.RESTORE, tableIndex.getMappingId(), recordId, 0);
 		requestRecord.createMetaData(tableIndex, transactionRequest.getUserId());
 		if (recordId <= 0) {

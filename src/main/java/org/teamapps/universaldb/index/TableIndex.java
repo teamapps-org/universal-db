@@ -73,6 +73,7 @@ public class TableIndex implements MappedObject {
 	private int mappingId;
 	private IndexMetaData indexMetaData;
 	private RecordVersioningIndex recordVersioningIndex;
+	private long lastFullTextIndexCheck;
 
 	public TableIndex(DatabaseIndex database, Table table, TableConfig tableConfig) {
 		this(database, database.getFQN(), table, tableConfig);
@@ -116,12 +117,13 @@ public class TableIndex implements MappedObject {
 			return;
 		}
 		if (
-				(!records.getValue(0) && getCount() > 0) ||
+				(!records.getValue(0) && getCount() > 0 && (System.currentTimeMillis() - lastFullTextIndexCheck > 300_000)) ||
 						getCount() > 0 && collectionTextSearchIndex.getMaxDoc() == 0
 		) {
 			long time = System.currentTimeMillis();
 			logger.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
 			recreateFullTextIndex();
+			lastFullTextIndexCheck = System.currentTimeMillis();
 			logger.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
 		}
 		records.setValue(0, false);

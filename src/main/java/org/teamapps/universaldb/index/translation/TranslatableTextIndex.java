@@ -26,7 +26,6 @@ import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextSearchIndex;
-import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.DataInputStream;
@@ -122,18 +121,6 @@ public class TranslatableTextIndex extends AbstractIndex<TranslatableText, TextF
 				searchIndex.removeValue(id);
 			}
 		}
-	}
-
-	@Override
-	public void writeTransactionValue(TranslatableText value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.STRING.getId());
-		value.writeValues(dataOutputStream);
-	}
-
-	@Override
-	public TranslatableText readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return new TranslatableText(dataInputStream);
 	}
 
 	@Override

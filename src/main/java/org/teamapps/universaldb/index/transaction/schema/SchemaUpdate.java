@@ -7,15 +7,12 @@ import java.io.*;
 public class SchemaUpdate {
 	private final Schema schema;
 	private final long timestamp;
-	private long transactionId;
+	private final long transactionId;
 
-	public SchemaUpdate(Schema schema) {
-		this(schema, 0);
-	}
 
-	public SchemaUpdate(Schema schema, long transactionId) {
+	public SchemaUpdate(Schema schema, long transactionId, long timestamp) {
 		this.schema = schema;
-		this.timestamp = System.currentTimeMillis();
+		this.timestamp = timestamp;
 		this.transactionId = transactionId;
 	}
 
@@ -49,9 +46,5 @@ public class SchemaUpdate {
 
 	public long getTransactionId() {
 		return transactionId;
-	}
-
-	public void setTransactionId(long transactionId) {
-		this.transactionId = transactionId;
 	}
 }

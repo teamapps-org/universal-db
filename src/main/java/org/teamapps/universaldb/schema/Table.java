@@ -254,7 +254,7 @@ public class Table implements MappedObject {
 		this.mappingId = mappingId;
 	}
 
-	public String createDefinition() {
+	public String createDefinition(boolean ignoreMapping) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("\t").append(name).append(" as ");
 		if (view) {
@@ -262,9 +262,9 @@ public class Table implements MappedObject {
 		} else {
 			sb.append("TABLE ").append(tableConfig.writeConfig());
 		}
-		sb.append(database.createMappingDefinition(mappingId));
+		sb.append(database.createMappingDefinition(mappingId, ignoreMapping));
 		sb.append("\n");
-		columns.forEach(column -> sb.append(column.createDefinition()));
+		columns.forEach(column -> sb.append(column.createDefinition(ignoreMapping)));
 		return sb.toString();
 	}
 

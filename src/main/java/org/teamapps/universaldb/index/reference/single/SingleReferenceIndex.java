@@ -27,7 +27,6 @@ import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -187,29 +186,6 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 			return Integer.compare(value1, value2) * order;
 		});
 		return sortEntries;
-	}
-
-	@Override
-	public void writeTransactionValue(RecordReference value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.INTEGER.getId());
-		if (value == null) {
-			dataOutputStream.writeInt(0);
-		} else {
-			dataOutputStream.writeInt(value.getRecordId());
-			dataOutputStream.writeInt(value.getCorrelationId());
-		}
-	}
-
-	@Override
-	public RecordReference readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		int val1 = dataInputStream.readInt();
-		if (val1 == 0) {
-			return null;
-		} else {
-			int val2 = dataInputStream.readInt();
-			return new RecordReference(val1, val2);
-		}
 	}
 
 	@Override

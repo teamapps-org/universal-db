@@ -46,7 +46,7 @@ public class PojoCodeGenerator {
 	public void createSchemaInterface(Schema schema, File baseDir) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createSchemaInterface();
 		tpl.setValue("package", schema.getPojoNamespace());
-		String[] lines = schema.createDefinition().split("\n");
+		String[] lines = schema.getSchemaDefinition().split("\n");
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];

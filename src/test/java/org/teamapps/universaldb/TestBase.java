@@ -49,7 +49,7 @@ public class TestBase {
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDirectory("temp").toFile();
 		tempDir.deleteOnExit();
-		UniversalDB.createStandalone(tempDir, new TestBaseSchema(), true);
+		UniversalDB.createStandalone(tempDir, new TestBaseSchema());
 	}
 
 	public static File createResourceFile() throws IOException {

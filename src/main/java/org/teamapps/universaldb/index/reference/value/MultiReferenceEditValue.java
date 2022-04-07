@@ -55,23 +55,6 @@ public class MultiReferenceEditValue implements MultiReferenceValue {
 		setReferences.stream().filter(ref -> ref.getRecordId() == 0).forEach(ref -> ref.setRecordId(recordIdByCorrelationId.get(ref.getCorrelationId())));
 	}
 
-	//todo remove
-	@Deprecated
-	public List<MultiReferenceUpdateEntry> getResolvedUpdateEntries() {
-		List<MultiReferenceUpdateEntry> entries = new ArrayList<>();
-		if (removeAll) {
-			entries.add(MultiReferenceUpdateEntry.createRemoveAllEntry());
-			return entries;
-		}
-		if (!setReferences.isEmpty()) {
-			entries.addAll(setReferences.stream().map(ref -> MultiReferenceUpdateEntry.createSetEntry(ref.getRecordId())).collect(Collectors.toList()));
-		} else {
-			entries.addAll(removeReferences.stream().map(ref -> MultiReferenceUpdateEntry.createRemoveEntry(ref.getRecordId())).collect(Collectors.toList()));
-			entries.addAll(addReferences.stream().map(ref -> MultiReferenceUpdateEntry.createAddEntry(ref.getRecordId())).collect(Collectors.toList()));
-		}
-		return entries;
-	}
-
 	public ResolvedMultiReferenceUpdate getResolvedUpdateValue() {
 		if (removeAll) {
 			return ResolvedMultiReferenceUpdate.createRemoveAllReferences();

@@ -137,10 +137,6 @@ public interface ColumnIndex<TYPE, FILTER> extends MappedObject {
 
 	void removeValue(int id);
 
-	void writeTransactionValue(TYPE value, DataOutputStream dataOutputStream) throws IOException;
-
-	TYPE readTransactionValue(DataInputStream dataInputStream) throws IOException;
-
 	default ColumnIndex getReferencedColumn() {
 		return null;
 	}

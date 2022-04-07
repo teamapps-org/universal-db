@@ -26,7 +26,6 @@ import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -275,19 +274,6 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, true, reference, 0));
 			}
 		}
-	}
-
-	@Override
-	public void writeTransactionValue(MultiReferenceValue value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.MULTI_REFERENCE.getId());
-		dataOutputStream.writeInt(value.getType().getId());
-		value.writeValues(dataOutputStream);
-	}
-
-	@Override
-	public MultiReferenceValue readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return MultiReferenceValue.create(dataInputStream);
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {

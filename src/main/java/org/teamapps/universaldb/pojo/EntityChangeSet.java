@@ -23,7 +23,7 @@ import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
-import org.teamapps.universaldb.index.transaction.request.TransactionRequest2;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequest;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
 
@@ -69,7 +69,7 @@ public class EntityChangeSet {
 		return changeMap.get(index.getMappingId());
 	}
 
-	public void setTransactionRequestRecordValues(TransactionRequest2 transactionRequest, TransactionRequestRecord transactionRequestRecord) {
+	public void setTransactionRequestRecordValues(TransactionRequest transactionRequest, TransactionRequestRecord transactionRequestRecord) {
 		List<AbstractUdbEntity> uncommittedEntityReferences = new ArrayList<>();
 		for (TransactionRequestRecordValue recordValue : changeMap.values()) {
 			transactionRequestRecord.addRecordValue(recordValue);

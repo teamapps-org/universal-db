@@ -23,7 +23,9 @@ package org.teamapps.universaldb;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.index.*;
+import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.file.FileStore;
+import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.file.LocalFileStore;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
@@ -33,7 +35,8 @@ import org.teamapps.universaldb.index.reference.value.RecordReference;
 import org.teamapps.universaldb.index.reference.value.ResolvedMultiReferenceUpdate;
 import org.teamapps.universaldb.index.text.FullTextIndexValue;
 import org.teamapps.universaldb.index.transaction.TransactionIndex;
-import org.teamapps.universaldb.index.transaction.request.TransactionRequest2;
+import org.teamapps.universaldb.index.transaction.TransactionType;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequest;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordType;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
@@ -81,124 +84,93 @@ public class UniversalDB implements DataBaseMapper {
 	}
 
 	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider) throws Exception {
-		return createStandalone(storagePath, schemaInfoProvider, true);
-	}
-
-	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, boolean writeTransactionLog) throws Exception {
 		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
-		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, writeTransactionLog);
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
 	}
 
-	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, FileStore fileStore, boolean writeTransactionLog) throws Exception {
-		return new UniversalDB(storagePath, schemaInfoProvider, fileStore, writeTransactionLog);
+	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, FileStore fileStore) throws Exception {
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
 	}
 
-	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore, boolean writeTransactionLog) throws Exception {
+	private UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, FileStore fileStore) throws Exception {
 		AbstractUdbEntity.setDatabase(this);
 		this.storagePath = storagePath;
 		this.transactionIndex = new TransactionIndex(storagePath);
 
 		Schema schema = schemaInfo.getSchema();
-		String pojoPath = schema.getPojoNamespace();
 		this.schemaIndex = new SchemaIndex(schema, storagePath);
-
-		schemaIndex.setFileStore(fileStore);
-
+		this.schemaIndex.setFileStore(fileStore);
 		mapSchema(schema);
 
-		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+		installTableClasses(transactionIndex.getCurrentSchema(), UniversalDB.class.getClassLoader(), false);
+	}
+
+	private void mapSchema(Schema schema) {
+		if (!transactionIndex.isValidSchema(schema)) {
+			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + transactionIndex.getCurrentSchema() + "\nNew schema is:\n" + schema);
+		}
+		if (transactionIndex.isSchemaUpdate(schema)) {
+			TransactionRequest modelUpdateTransactionRequest = createModelUpdateTransactionRequest(schema);
+			executeTransaction(modelUpdateTransactionRequest);
+		} else {
+			schemaIndex.merge(transactionIndex.getCurrentSchema(), true, this);
+			for (DatabaseIndex database : schemaIndex.getDatabases()) {
+				databaseById.put(database.getMappingId(), database);
+				for (TableIndex table : database.getTables()) {
+					tableById.put(table.getMappingId(), table);
+					for (ColumnIndex columnIndex : table.getColumnIndices()) {
+						columnById.put(columnIndex.getMappingId(), columnIndex);
+					}
+				}
+			}
+		}
+	}
+
+	private void installTableClasses(Schema schema, ClassLoader classLoader, boolean allSchemaTablesAreMandatory) throws Exception {
+		String pojoPath = schema.getPojoNamespace();
+		for (Database database : schema.getDatabases()) {
 			String path = pojoPath + "." + database.getName().toLowerCase();
-			for (TableIndex tableIndex : database.getTables()) {
+			for (Table table : database.getAllTables()) {
+				TableIndex tableIndex = table.isView() ? schemaIndex.getTableByPath(table.getReferencedTablePath()) : schemaIndex.getTable(table);
+				String tableName = table.getName();
 				try {
-					String tableName = tableIndex.getName();
 					String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
-					Class<?> schemaClass = Class.forName(className);
+					Class<?> schemaClass = Class.forName(className, true, classLoader);
 					Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
 					method.setAccessible(true);
 					method.invoke(null, tableIndex);
 
-					entityClassByTableIndex.put(tableIndex, schemaClass);
-					tableIndexByPath.put(tableIndex.getFQN(), tableIndex);
-					String queryClassName = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
-					Class<?> queryClass = Class.forName(queryClassName);
-					queryClassByTableIndex.put(tableIndex, queryClass);
-
+					if (!table.isView()) {
+						entityClassByTableIndex.put(tableIndex, schemaClass);
+						tableIndexByPath.put(tableIndex.getFQN(), tableIndex);
+						String queryClassName = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
+						Class<?> queryClass = Class.forName(queryClassName, true, classLoader);
+						queryClassByTableIndex.put(tableIndex, queryClass);
+					}
 				} catch (ClassNotFoundException e) {
-					logger.info("Could not load entity class for tableIndex:" + tableIndex.getFQN());
-				}
-			}
-		}
-		installTableViews(schemaInfo, UniversalDB.class.getClassLoader());
-	}
-
-	public void installTableViews(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-		Schema schema = schemaInfo.getSchema();
-		String pojoPath = schema.getPojoNamespace();
-		for (Database database : schema.getDatabases()) {
-			String path = pojoPath + "." + database.getName().toLowerCase();
-			for (Table table : database.getViewTables()) {
-				TableIndex tableIndex = schemaIndex.getTableByPath(table.getReferencedTablePath());
-				String tableName = table.getName();
-				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
-				Class<?> schemaClass = Class.forName(className, true, classLoader);
-				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
-				method.setAccessible(true);
-				method.invoke(null, tableIndex);
-			}
-		}
-	}
-
-	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws IOException {
-		Schema schema = schemaInfo.getSchema();
-		Schema localSchema = transactionIndex.getCurrentSchema();
-		String originalSchema = localSchema != null ? localSchema.getSchemaDefinition() : null;
-		if (!localSchema.isCompatibleWith(schema)) {
-			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + schema + "\nNew schema is:\n" + localSchema);
-		}
-		checkSchemaUpdate(localSchema, schema);
-		localSchema.merge(schema);
-		localSchema.mapSchema();
-		String updatedSchema = localSchema.getSchemaDefinition();
-		boolean isSchemaUpdate = !Objects.equals(originalSchema, updatedSchema);
-		if (isSchemaUpdate) {
-			logger.info("SCHEMA UPDATE:\n" + originalSchema + "\nNew schema is:\n" + updatedSchema);
-		}
-		transactionIndex.updateSchema(localSchema);
-		schemaIndex.merge(localSchema, false);
-
-		for (DatabaseIndex database : schemaIndex.getDatabases()) {
-			databaseById.put(database.getMappingId(), database);
-			for (TableIndex table : database.getTables()) {
-				tableById.put(table.getMappingId(), table);
-				for (ColumnIndex columnIndex : table.getColumnIndices()) {
-					columnById.put(columnIndex.getMappingId(), columnIndex);
+					if (allSchemaTablesAreMandatory) {
+						throw e;
+					} else {
+						logger.info("Could not load entity class for tableIndex:" + tableIndex.getFQN());
+					}
+				} catch (Exception e) {
+					throw e;
 				}
 			}
 		}
 	}
 
-	public void installAuxiliaryModelClassed(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+	public void addAuxiliaryModel(SchemaInfoProvider schemaInfo, ClassLoader classLoader) throws Exception {
 		Schema schema = schemaInfo.getSchema();
-		String pojoPath = schema.getPojoNamespace();
-
-		for (Database database : schema.getDatabases()) {
-			String path = pojoPath + "." + database.getName().toLowerCase();
-			for (Table table : database.getTables()) {
-				TableIndex tableIndex = schemaIndex.getTable(table);
-				String tableName = table.getName();
-				String className = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1);
-				Class<?> schemaClass = Class.forName(className, true, classLoader);
-				Method method = schemaClass.getDeclaredMethod("setTableIndex", TableIndex.class);
-				method.setAccessible(true);
-				method.invoke(null, tableIndex);
-
-				entityClassByTableIndex.put(tableIndex, schemaClass);
-				tableIndexByPath.put(tableIndex.getFQN(), tableIndex);
-				String queryClassName = path + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
-				Class<?> queryClass = Class.forName(queryClassName, true, classLoader);
-				queryClassByTableIndex.put(tableIndex, queryClass);
-			}
+		if (!transactionIndex.isValidSchema(schema)) {
+			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + transactionIndex.getCurrentSchema() + "\nNew schema is:\n" + schema);
 		}
+
+		if (transactionIndex.isSchemaUpdate(schema)) {
+			TransactionRequest modelUpdateTransactionRequest = createModelUpdateTransactionRequest(schema);
+			executeTransaction(modelUpdateTransactionRequest);
+		}
+		installTableClasses(schema, classLoader, true);
 	}
 
 	public Class getEntityClass(TableIndex tableIndex) {
@@ -213,34 +185,137 @@ public class UniversalDB implements DataBaseMapper {
 		return tableIndexByPath.get(path);
 	}
 
-	public TableIndex addTable(Table table, String database) {
-		DatabaseIndex db = schemaIndex.getDatabase(database);
-		TableIndex tableIndex = new TableIndex(db, table, table.getTableConfig());
-		tableIndex.setMappingId(table.getMappingId());
-		tableIndex.merge(table);
-		return tableIndex;
+	public synchronized TransactionRequest createTransactionRequest() {
+		return new TransactionRequest(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), getUserId());
 	}
 
-	private void mapSchema(Schema schema) throws IOException {
-		Schema localSchema = transactionIndex.getCurrentSchema();
-		String originalSchema = localSchema != null ? localSchema.getSchemaDefinition() : null;
-		if (localSchema != null) {
-			if (!localSchema.isCompatibleWith(schema)) {
-				throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + localSchema + "\nNew schema is:\n" + schema);
+	public synchronized TransactionRequest createModelUpdateTransactionRequest(Schema schema) {
+		return new TransactionRequest(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), getUserId(), schema);
+	}
+
+
+	public synchronized void createInitialTableTransactions(TableIndex tableIndex) throws Exception {
+		if (!tableIndex.getRecordVersioningIndex().isEmpty()) {
+			return;
+		}
+		BitSet records = tableIndex.getRecords();
+		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+			writeInitialTransaction(tableIndex, id, false);
+		}
+		if (tableIndex.isKeepDeletedRecords()) {
+			records = tableIndex.getDeletedRecords();
+			for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
+				writeInitialTransaction(tableIndex, id, true);
 			}
-			checkSchemaUpdate(localSchema, schema);
+		}
+	}
+
+	private void writeInitialTransaction(TableIndex tableIndex, int id, boolean deleted) throws Exception {
+		int recordId = id;
+		ResolvedTransaction transaction = createInitialTransaction(tableIndex, recordId, false);
+		ResolvedTransactionRecord record = new ResolvedTransactionRecord(ResolvedTransactionRecordType.CREATE_WITH_ID, tableIndex.getMappingId(), recordId);
+		transaction.addTransactionRecord(record);
+		List<ColumnIndex> columnIndices = tableIndex.getColumnIndices().stream().filter(col -> !col.isEmpty(recordId)).collect(Collectors.toList());
+		for (ColumnIndex column : columnIndices) {
+			ResolvedTransactionRecordValue recordValue = createInitialTransactionRecordValue(column, recordId);
+			record.addRecordValue(recordValue);
+		}
+		tableIndex.getRecordVersioningIndex().writeRecordUpdate(transaction, record);
+		transactionIndex.writeTransaction(transaction);
+		if (deleted) {
+			transaction = createInitialTransaction(tableIndex, recordId, true);
+			record = new ResolvedTransactionRecord(ResolvedTransactionRecordType.DELETE, tableIndex.getMappingId(), recordId);
+			transaction.addTransactionRecord(record);
+			record.addRecordValue(createInitialTransactionRecordValue(tableIndex.getColumnIndex(Table.FIELD_DELETION_DATE), recordId));
+			record.addRecordValue(createInitialTransactionRecordValue(tableIndex.getColumnIndex(Table.FIELD_DELETED_BY), recordId));
+			tableIndex.getRecordVersioningIndex().writeRecordUpdate(transaction, record);
+			transactionIndex.writeTransaction(transaction);
+		}
+	}
+
+	private ResolvedTransaction createInitialTransaction(TableIndex tableIndex, int recordId, boolean deleted) {
+		long transactionId = transactionIndex.getLastTransactionId() + 1;
+		int userId = 0;
+		int timestamp = 0;
+		ColumnIndex dateColumn = tableIndex.getColumnIndex(deleted ? Table.FIELD_DELETION_DATE : Table.FIELD_CREATION_DATE);
+		ColumnIndex userRefColumn = tableIndex.getColumnIndex(deleted ? Table.FIELD_DELETED_BY : Table.FIELD_CREATED_BY);
+		if (dateColumn != null && userRefColumn != null) {
+			userId = (int) userRefColumn.getGenericValue(recordId);
+			timestamp = (int) dateColumn.getGenericValue(recordId);
+		}
+		return new ResolvedTransaction(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), transactionId, userId, timestamp * 1_000L);
+	}
+
+	private ResolvedTransactionRecordValue createInitialTransactionRecordValue(ColumnIndex column, int recordId) {
+		switch (column.getType()) {
+			case BOOLEAN:
+			case SHORT:
+			case INT:
+			case LONG:
+			case FLOAT:
+			case DOUBLE:
+			case TEXT:
+			case TRANSLATABLE_TEXT:
+			case BINARY:
+				Object value = column.getGenericValue(recordId);
+				return new ResolvedTransactionRecordValue(column.getMappingId(), column.getType(), value);
+			case REFERENCE:
+				SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) column;
+				int referencedRecordId = singleReferenceIndex.getValue(recordId);
+				return new ResolvedTransactionRecordValue(column.getMappingId(), column.getType(), referencedRecordId);
+			case MULTI_REFERENCE:
+				MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) column;
+				List<Integer> references = multiReferenceIndex.getReferencesAsList(recordId);
+				ResolvedMultiReferenceUpdate multiReferenceUpdate = ResolvedMultiReferenceUpdate.createSetReferences(references);
+				return new ResolvedTransactionRecordValue(column.getMappingId(), column.getType(), multiReferenceUpdate);
+			case FILE:
+				FileIndex fileIndex = (FileIndex) column;
+				FileValue fileValue = fileIndex.getValue(recordId);
+				return new ResolvedTransactionRecordValue(column.getMappingId(), column.getType(), fileValue);
+			case FILE_NG:
+				break;
+		}
+		return null;
+	}
+
+	public synchronized void executeTransaction(TransactionRequest transaction) {
+		try {
+			ResolvedTransaction resolvedTransaction = handleTransactionRequest(transaction);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private synchronized ResolvedTransaction handleTransactionRequest(TransactionRequest transactionRequest) throws Exception {
+		TransactionType transactionType = transactionRequest.getTransactionType();
+		long transactionId = transactionIndex.getLastTransactionId() + 1;
+		ResolvedTransaction resolvedTransaction = ResolvedTransaction.createFromRequest(transactionId, transactionRequest);
+
+		if (transactionType == TransactionType.DATA_UPDATE) {
+			handleDataUpdateRequest(transactionRequest, resolvedTransaction);
+		} else {
+			handleModelUpdateRequest(transactionRequest, resolvedTransaction);
+		}
+		return resolvedTransaction;
+	}
+
+	private void handleModelUpdateRequest(TransactionRequest request, ResolvedTransaction resolvedTransaction) throws Exception {
+		Schema schema = request.getSchema();
+		if (!transactionIndex.isValidSchema(schema)) {
+			throw new RuntimeException("Cannot update incompatible schema. Current schema is:\n" + transactionIndex.getCurrentSchema() + "\nNew schema is:\n" + schema);
+		}
+
+		Schema localSchema = transactionIndex.getCurrentSchema();
+		if (localSchema != null) {
 			localSchema.merge(schema);
 		} else {
 			localSchema = schema;
 		}
 		localSchema.mapSchema();
-		String updatedSchema = localSchema.getSchemaDefinition();
-		boolean isSchemaUpdate = !Objects.equals(originalSchema, updatedSchema);
-		if (isSchemaUpdate) {
-			logger.info("SCHEMA UPDATE:\n" + originalSchema + "\nNew schema is:\n" + updatedSchema);
-		}
-		transactionIndex.updateSchema(localSchema);
-		schemaIndex.merge(localSchema, true);
+		resolvedTransaction.setSchema(localSchema);
+
+		transactionIndex.writeSchemaUpdate(resolvedTransaction.getSchemaUpdate());
+		schemaIndex.merge(localSchema, true, this);
 
 		for (DatabaseIndex database : schemaIndex.getDatabases()) {
 			databaseById.put(database.getMappingId(), database);
@@ -251,56 +326,19 @@ public class UniversalDB implements DataBaseMapper {
 				}
 			}
 		}
+
 	}
 
-	private void checkSchemaUpdate(Schema localSchema, Schema schemaUpdate) {
-		Schema schemaCopy = Schema.parse(localSchema.getSchemaDefinition());
-		if (!schemaCopy.isCompatibleWith(schemaUpdate)) {
-			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + localSchema + "\nNew schema is:\n" + schemaUpdate);
-		}
-		schemaCopy.merge(schemaUpdate);
-		schemaCopy.mapSchema();
-		if (!schemaCopy.checkModel()) {
-			throw new RuntimeException("Schema merging leads to corrupted model:\n" + schemaCopy + "\nNew schema is:\n" + schemaUpdate);
-		}
-	}
-
-	public synchronized TransactionRequest2 createTransactionRequest() {
-		return new TransactionRequest2(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), getUserId());
-	}
-
-	public synchronized int executeTransaction(TransactionRequest2 transaction) {
-
-		//if not leader -> send to leader
-		try {
-			ResolvedTransaction resolvedTransaction = handleTransactionRequest(transaction);
-			if (resolvedTransaction.getTransactionRecords().size() == 1) {
-				return resolvedTransaction.getTransactionRecords().get(0).getRecordId();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return 0;
-	}
-
-	private synchronized ResolvedTransaction handleTransactionRequest(TransactionRequest2 transaction) throws Exception {
-		//write TR to index -> create ResolvedTransaction (RT)
-		//write transaction log (RT)
-		//write table log (RT)
-		//send to peers - if leader
-
-		long transactionId = transactionIndex.getLastTransactionId() + 1;
-		ResolvedTransaction resolvedTransaction = ResolvedTransaction.createFromRequest(transactionId, transaction);
-
-		for (TransactionRequestRecord record : transaction.getRecords()) {
+	private void handleDataUpdateRequest(TransactionRequest request, ResolvedTransaction resolvedTransaction) throws Exception {
+		for (TransactionRequestRecord record : request.getRecords()) {
 			if (record.getRecordType() == TransactionRequestRecordType.CREATE || record.getRecordType() == TransactionRequestRecordType.CREATE_WITH_ID) {
 				TableIndex tableIndex = getTableIndexById(record.getTableId());
 				int recordId = tableIndex.createRecord(record.getRecordId());
-				transaction.putResolvedRecordIdForCorrelationId(record.getCorrelationId(), recordId);
+				request.putResolvedRecordIdForCorrelationId(record.getCorrelationId(), recordId);
 			}
 		}
 
-		for (TransactionRequestRecord record : transaction.getRecords()) {
+		for (TransactionRequestRecord record : request.getRecords()) {
 			TableIndex tableIndex = getTableIndexById(record.getTableId());
 			if (record.isTransactionProcessingStarted()) {
 				//make sure that a record that has been processed because of a reference ist not processed again
@@ -309,7 +347,7 @@ public class UniversalDB implements DataBaseMapper {
 			}
 			record.setTransactionProcessingStarted(true);
 
-			int recordId = record.getRecordId() != 0 ? record.getRecordId() : transaction.getResolvedRecordIdByCorrelationId(record.getCorrelationId());
+			int recordId = record.getRecordId() != 0 ? record.getRecordId() : request.getResolvedRecordIdByCorrelationId(record.getCorrelationId());
 			ResolvedTransactionRecord resolvedRecord = ResolvedTransactionRecord.createFromRequest(record, recordId);
 			resolvedTransaction.addTransactionRecord(resolvedRecord);
 
@@ -317,10 +355,8 @@ public class UniversalDB implements DataBaseMapper {
 				case CREATE:
 				case CREATE_WITH_ID:
 				case UPDATE:
-					//tableIndex.setTransactionId(recordId, transactionId);
-
 					for (TransactionRequestRecordValue recordValue : record.getRecordValues()) {
-						List<CyclicReferenceUpdate> cyclicReferenceUpdates = persistColumnValueUpdates(recordId, recordValue, transaction.getRecordIdByCorrelationId(), resolvedRecord);
+						List<CyclicReferenceUpdate> cyclicReferenceUpdates = persistColumnValueUpdates(recordId, recordValue, request.getRecordIdByCorrelationId(), resolvedRecord);
 						if (cyclicReferenceUpdates != null && !cyclicReferenceUpdates.isEmpty()) {
 							for (CyclicReferenceUpdate referenceUpdate : cyclicReferenceUpdates) {
 								resolvedTransaction.addTransactionRecord(ResolvedTransactionRecord.createCyclicRecord(referenceUpdate));
@@ -341,13 +377,13 @@ public class UniversalDB implements DataBaseMapper {
 				case DELETE:
 					tableIndex.deleteRecord(record.getRecordId());
 					for (TransactionRequestRecordValue recordValue : record.getRecordValues()) {
-						persistColumnValueUpdates(recordId, recordValue, transaction.getRecordIdByCorrelationId(), resolvedRecord);
+						persistColumnValueUpdates(recordId, recordValue, request.getRecordIdByCorrelationId(), resolvedRecord);
 					}
 					break;
 				case RESTORE:
 					tableIndex.restoreRecord(record.getRecordId());
 					for (TransactionRequestRecordValue recordValue : record.getRecordValues()) {
-						persistColumnValueUpdates(recordId, recordValue, transaction.getRecordIdByCorrelationId(), resolvedRecord);
+						persistColumnValueUpdates(recordId, recordValue, request.getRecordIdByCorrelationId(), resolvedRecord);
 					}
 					break;
 			}
@@ -358,16 +394,42 @@ public class UniversalDB implements DataBaseMapper {
 			TableIndex tableIndex = getTableIndexById(transactionRecord.getTableId());
 			tableIndex.getRecordVersioningIndex().writeRecordUpdate(resolvedTransaction, transactionRecord);
 		}
-
-		return resolvedTransaction;
+		resolvedTransaction.setRecordIdByCorrelationId(request.getRecordIdByCorrelationId());
 	}
 
 	private synchronized void handleTransaction(ResolvedTransaction transaction) throws Exception {
-		//only if peer:
-		//write RT to index
-		//write transaction log (RT)
-		//write table log (RT)
+		if (transaction.getTransactionType() == TransactionType.DATA_UPDATE) {
+			handleDataUpdateTransaction(transaction);
+		} else {
+			handleModelUpdateTransaction(transaction);
+		}
+	}
 
+	private void handleModelUpdateTransaction(ResolvedTransaction transaction) throws Exception {
+		Schema schema = transaction.getSchema();
+		Schema localSchema = transactionIndex.getCurrentSchema();
+		if (localSchema != null) {
+			localSchema.merge(schema);
+		} else {
+			localSchema = schema;
+		}
+		localSchema.mapSchema();
+
+		transactionIndex.writeSchemaUpdate(transaction.getSchemaUpdate());
+		schemaIndex.merge(localSchema, true, this);
+
+		for (DatabaseIndex database : schemaIndex.getDatabases()) {
+			databaseById.put(database.getMappingId(), database);
+			for (TableIndex table : database.getTables()) {
+				tableById.put(table.getMappingId(), table);
+				for (ColumnIndex columnIndex : table.getColumnIndices()) {
+					columnById.put(columnIndex.getMappingId(), columnIndex);
+				}
+			}
+		}
+	}
+
+	private void handleDataUpdateTransaction(ResolvedTransaction transaction) throws Exception {
 		for (ResolvedTransactionRecord record : transaction.getTransactionRecords()) {
 			TableIndex tableIndex = getTableIndexById(record.getTableId());
 
@@ -417,7 +479,6 @@ public class UniversalDB implements DataBaseMapper {
 			TableIndex tableIndex = getTableIndexById(transactionRecord.getTableId());
 			tableIndex.getRecordVersioningIndex().writeRecordUpdate(transaction, transactionRecord);
 		}
-
 	}
 
 	private List<CyclicReferenceUpdate> persistColumnValueUpdates(int recordId, TransactionRequestRecordValue recordValue, Map<Integer, Integer> recordIdByCorrelationId, ResolvedTransactionRecord resolvedRecord) {

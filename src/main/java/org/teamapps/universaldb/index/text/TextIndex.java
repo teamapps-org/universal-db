@@ -22,14 +22,12 @@ package org.teamapps.universaldb.index.text;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class TextIndex extends AbstractIndex<String, TextFilter> {
@@ -104,23 +102,6 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 			String textValue = value == null ? "" : value;
 			searchIndex.addValue(id, textValue, update);
 		}
-	}
-
-	@Override
-	public void writeTransactionValue(String value, DataOutputStream dataOutputStream) throws IOException {
-		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.STRING.getId());
-		dataOutputStream.writeInt(bytes.length);
-		dataOutputStream.write(bytes);
-	}
-
-	@Override
-	public String readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		int length = dataInputStream.readInt();
-		byte[] bytes = new byte[length];
-		dataInputStream.read(bytes);
-		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
 	@Override

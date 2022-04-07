@@ -32,12 +32,12 @@ import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
 import org.teamapps.universaldb.index.text.TextIndex;
-import org.teamapps.universaldb.index.transaction.request.TransactionRequest2;
+import org.teamapps.universaldb.index.transaction.request.TransactionRequest;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
-import org.teamapps.universaldb.index.versioning.RecordUpdate2;
+import org.teamapps.universaldb.index.versioning.RecordUpdate;
 import org.teamapps.universaldb.record.EntityBuilder;
 import org.teamapps.universaldb.schema.Table;
 
@@ -61,7 +61,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private boolean createEntity;
 	private int correlationId;
 	private EntityChangeSet entityChangeSet;
-	private TransactionRequest2 transactionRequest;
+	private TransactionRequest transactionRequest;
 
 	public static void setDatabase(UniversalDB database) {
 		AbstractUdbEntity.database = database;
@@ -166,7 +166,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return id;
 	}
 
-	public List<RecordUpdate2> getRecordUpdates() {
+	public List<RecordUpdate> getRecordUpdates() {
 		try {
 			return tableIndex.getRecordVersioningIndex().readRecordUpdates(id);
 		} catch (IOException e) {
@@ -696,7 +696,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public void saveRecord(TransactionRequest2 transactionRequest) {
+	public void saveRecord(TransactionRequest transactionRequest) {
 		if (entityChangeSet != null) {
 			this.transactionRequest = transactionRequest;
 			boolean update = !createEntity;
@@ -717,14 +717,14 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void deleteRecord() {
-		TransactionRequest2 transactionRequest = database.createTransactionRequest();
+		TransactionRequest transactionRequest = database.createTransactionRequest();
 		transactionRequest.addRecord(TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id));
 		clearChanges();
 		database.executeTransaction(transactionRequest);
 	}
 
 	public void restoreDeletedRecord() {
-		TransactionRequest2 transactionRequest = database.createTransactionRequest();
+		TransactionRequest transactionRequest = database.createTransactionRequest();
 		transactionRequest.addRecord(TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id));
 		database.executeTransaction(transactionRequest);
 	}

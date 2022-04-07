@@ -19,6 +19,7 @@
  */
 package org.teamapps.universaldb.index;
 
+import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.schema.Database;
 import org.teamapps.universaldb.schema.Table;
 
@@ -59,7 +60,7 @@ public class DatabaseIndex implements MappedObject {
 		return schemaIndex;
 	}
 
-	public void merge(Database database, boolean checkFullTextIndex) {
+	public void merge(Database database, boolean checkFullTextIndex, UniversalDB universalDB) {
 		Map<String, TableIndex> tableMap = tables.stream().collect(Collectors.toMap(TableIndex::getName, table -> table));
 		for (Table table : database.getTables()) {
 			TableIndex localTable = tableMap.get(table.getName());
@@ -74,7 +75,7 @@ public class DatabaseIndex implements MappedObject {
 		}
 		if (checkFullTextIndex) {
 			for (TableIndex table : tables) {
-				//table.getRecordVersioningIndex().checkVersionIndex();
+				table.getRecordVersioningIndex().checkVersionIndex(universalDB);
 				table.checkFullTextIndex();
 			}
 		}

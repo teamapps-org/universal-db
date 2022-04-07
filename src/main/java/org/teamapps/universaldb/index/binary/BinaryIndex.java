@@ -22,7 +22,6 @@ package org.teamapps.universaldb.index.binary;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
@@ -85,22 +84,6 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 
 	public void setValue(int id, byte[] value) {
 		atomicStore.setBytes(id, value);
-	}
-
-	@Override
-	public void writeTransactionValue(byte[] value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.STRING.getId());
-		dataOutputStream.writeInt(value.length);
-		dataOutputStream.write(value);
-	}
-
-	@Override
-	public byte[] readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		int length = dataInputStream.readInt();
-		byte[] bytes = new byte[length];
-		dataInputStream.read(bytes);
-		return bytes;
 	}
 
 	@Override

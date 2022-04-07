@@ -22,7 +22,6 @@ package org.teamapps.universaldb.index.numeric;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -74,18 +73,6 @@ public class LongIndex extends AbstractIndex<Long, NumericFilter> implements Num
 
 	public void setValue(int id, long value) {
 		atomicStore.setLong(id, value);
-	}
-
-	@Override
-	public void writeTransactionValue(Long value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.LONG.getId());
-		dataOutputStream.writeLong(value);
-	}
-
-	@Override
-	public Long readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return dataInputStream.readLong();
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {

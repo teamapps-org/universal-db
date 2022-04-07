@@ -22,7 +22,6 @@ package org.teamapps.universaldb.index.numeric;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -145,18 +144,6 @@ public class DoubleIndex extends AbstractIndex<Double, NumericFilter> implements
 				return filterContainsNot(records, set);
 		}
 		return null;
-	}
-
-	@Override
-	public void writeTransactionValue(Double value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.DOUBLE.getId());
-		dataOutputStream.writeDouble(value);
-	}
-
-	@Override
-	public Double readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return dataInputStream.readDouble();
 	}
 
 	public BitSet filterEquals(BitSet bitSet, double compare) {

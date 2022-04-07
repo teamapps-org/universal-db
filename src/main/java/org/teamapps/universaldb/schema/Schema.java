@@ -188,10 +188,10 @@ public class Schema {
 		DataStreamUtil.writeByteArrayWithLengthHeader(dataOutputStream, schemaData);
 	}
 
-	public String createDefinition() {
+	private String createDefinition(boolean ignoreMapping) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(pojoNamespace).append(" as SCHEMA").append("\n");
-		databases.forEach(db -> sb.append(db.createDefinition()));
+		databases.forEach(db -> sb.append(db.createDefinition(ignoreMapping)));
 		return sb.toString();
 	}
 
@@ -264,6 +264,10 @@ public class Schema {
 		byte[] schemaData = getSchemaData();
 		byte[] schemaData2 = schema.getSchemaData();
 		return Arrays.equals(schemaData, schemaData2);
+	}
+
+	public boolean isSameSchemaIgnoreMapping(Schema schema) {
+		return createDefinition(true).equals(schema.createDefinition(true));
 	}
 
 	public void merge(Schema schema) {
@@ -373,7 +377,7 @@ public class Schema {
 
 
 	public String getSchemaDefinition() {
-		return createDefinition();
+		return createDefinition(false);
 	}
 
 }

@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
@@ -84,7 +85,7 @@ public class SchemaIndex {
 		this.fileStore = fileStore;
 	}
 
-	public void merge(Schema schema, boolean checkFullTextIndex) {
+	public void merge(Schema schema, boolean checkFullTextIndex, UniversalDB universalDB) {
 		if (!this.schema.isCompatibleWith(schema)) {
 			throw new RuntimeException("Error: cannot merge incompatible schemas:" + this + " with " + schema);
 		}
@@ -98,7 +99,7 @@ public class SchemaIndex {
 			if (localDatabase.getMappingId() == 0) {
 				localDatabase.setMappingId(database.getMappingId());
 			}
-			localDatabase.merge(database, checkFullTextIndex);
+			localDatabase.merge(database, checkFullTextIndex, universalDB);
 		}
 		for (Database database : schema.getDatabases()) {
 			for (Table table : database.getTables()) {

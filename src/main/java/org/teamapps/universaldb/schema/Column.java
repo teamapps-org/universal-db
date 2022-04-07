@@ -109,7 +109,7 @@ public class Column implements MappedObject {
 		return indexType;
 	}
 
-	public String createDefinition() {
+	public String createDefinition(boolean ignoreMapping) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("\t\t").append(name).append(" as ").append(type.name());
 		switch (type) {
@@ -132,7 +132,7 @@ public class Column implements MappedObject {
 				sb.append(enumValues.stream().collect(Collectors.joining(", "))).append(")");
 				break;
 		}
-		sb.append(table.getDatabase().createMappingDefinition(mappingId));
+		sb.append(table.getDatabase().createMappingDefinition(mappingId, ignoreMapping));
 		sb.append("\n");
 		return sb.toString();
 	}

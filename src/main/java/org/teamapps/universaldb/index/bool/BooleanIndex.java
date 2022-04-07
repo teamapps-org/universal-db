@@ -22,7 +22,6 @@ package org.teamapps.universaldb.index.bool;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -135,18 +134,6 @@ public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 				recalculateMaxSetIndex();
 			}
 		}
-	}
-
-	@Override
-	public void writeTransactionValue(Boolean value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.BOOLEAN.getId());
-		dataOutputStream.writeBoolean(value);
-	}
-
-	@Override
-	public Boolean readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return dataInputStream.readBoolean();
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {

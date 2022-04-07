@@ -269,16 +269,6 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> implements F
 	}
 
 	@Override
-	public void writeTransactionValue(FileValue value, DataOutputStream dataOutputStream) throws IOException {
-
-	}
-
-	@Override
-	public FileValue readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return null;
-	}
-
-	@Override
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
 		return null;
 	}

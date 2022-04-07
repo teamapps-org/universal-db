@@ -108,14 +108,14 @@ public class Database implements MappedObject {
 		this.mappingId = mappingId;
 	}
 
-	public String createDefinition() {
+	public String createDefinition(boolean ignoreMapping) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(name).append(" as DATABASE").append(createMappingDefinition(mappingId)).append("\n");
-		tables.forEach(table -> sb.append(table.createDefinition()));
+		sb.append(name).append(" as DATABASE").append(createMappingDefinition(mappingId, ignoreMapping)).append("\n");
+		tables.forEach(table -> sb.append(table.createDefinition(ignoreMapping)));
 		return sb.toString();
 	}
 
-	protected String createMappingDefinition(int mappingId) {
+	protected String createMappingDefinition(int mappingId, boolean ignoreMapping) {
 		if (mappingId == 0) {
 			return "";
 		} else {

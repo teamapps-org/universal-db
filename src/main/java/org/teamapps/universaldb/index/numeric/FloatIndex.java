@@ -22,7 +22,6 @@ package org.teamapps.universaldb.index.numeric;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -70,18 +69,6 @@ public class FloatIndex extends AbstractIndex<Float, NumericFilter> implements N
 
 	public void setValue(int id, float value) {
 		atomicStore.setFloat(id, value);
-	}
-
-	@Override
-	public void writeTransactionValue(Float value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.FLOAT.getId());
-		dataOutputStream.writeFloat(value);
-	}
-
-	@Override
-	public Float readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return dataInputStream.readFloat();
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {

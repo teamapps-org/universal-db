@@ -25,7 +25,6 @@ import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
 import org.teamapps.universaldb.index.text.TextIndex;
-import org.teamapps.universaldb.transaction.DataType;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
@@ -164,18 +163,6 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	@Override
 	public void removeValue(int id) {
 		setValue(id, null);
-	}
-
-	@Override
-	public void writeTransactionValue(FileValue value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.FILE_VALUE.getId());
-		value.writeValues(dataOutputStream);
-	}
-
-	@Override
-	public FileValue readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return new FileValue(dataInputStream);
 	}
 
 	@Override

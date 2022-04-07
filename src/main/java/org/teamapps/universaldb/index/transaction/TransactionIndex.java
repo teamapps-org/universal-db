@@ -40,7 +40,7 @@ public class TransactionIndex {
 	private Schema currentSchema;
 
 	public TransactionIndex(File basePath) {
-		this.path = new File(basePath, "transaction-log");
+		this.path = new File(basePath, "transactions");
 		this.path.mkdir();
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
 		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
@@ -60,7 +60,7 @@ public class TransactionIndex {
 			List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
 			currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
 		}
-		logger.info("STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
+		logger.info("STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				logger.info("SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
@@ -72,6 +72,10 @@ public class TransactionIndex {
 				e.printStackTrace();
 			}
 		}));
+	}
+
+	public boolean isEmpty() {
+		return transactionLog.isEmpty();
 	}
 
 	public synchronized long createTransactionRequestId() {
@@ -121,16 +125,35 @@ public class TransactionIndex {
 		}
 	}
 
-	public synchronized boolean updateSchema(Schema schema) throws IOException {
-		if (!Objects.equals(currentSchema != null ? currentSchema.getSchemaDefinition() : null, schema.getSchemaDefinition())) {
-			logger.info("Updating schema");
-			SchemaUpdate schemaUpdate = new SchemaUpdate(schema, getLastTransactionId());
-			schemaLog.writeLog(schemaUpdate.getBytes());
-			currentSchema = schema;
-			return true;
-		} else {
-			return false;
+	public synchronized boolean isValidSchema(Schema schema) {
+		if (currentSchema != null) {
+			if (!currentSchema.isCompatibleWith(schema)) {
+				return false;
+			}
+			Schema schemaCopy = Schema.parse(currentSchema.getSchemaDefinition());
+			schemaCopy.merge(schema);
+			schemaCopy.mapSchema();
+			if (!schemaCopy.checkModel()) {
+				return false;
+			}
 		}
+		return true;
+	}
+
+	public synchronized boolean isSchemaUpdate(Schema schema) {
+		if (currentSchema == null) {
+			return true;
+		}
+		Schema schemaCopy = Schema.parse(currentSchema.getSchemaDefinition());
+		schemaCopy.merge(schema);
+		schemaCopy.mapSchema();
+		return !currentSchema.getSchemaDefinition().equals(schemaCopy.getSchemaDefinition());
+	}
+
+	public synchronized void writeSchemaUpdate(SchemaUpdate schemaUpdate) throws IOException {
+		schemaLog.writeLog(schemaUpdate.getBytes());
+		currentSchema = schemaUpdate.getSchema();
+		logger.info("Updating schema");
 	}
 
 	public synchronized Schema getCurrentSchema() {
@@ -148,12 +171,14 @@ public class TransactionIndex {
 	}
 
 	public synchronized List<SchemaUpdate> getSchemaUpdates() {
+		if (schemaLog.isEmpty()) {
+			return Collections.emptyList();
+		}
 		return schemaLog.readAllLogs()
 				.stream()
 				.map(SchemaUpdate::new)
 				.collect(Collectors.toList());
 	}
-
 
 	public Stream<ResolvedTransaction> getTransactions(long lastTransactionId) {
 		LogIterator logIterator = transactionLog.readLogs();

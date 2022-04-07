@@ -19,7 +19,7 @@
  */
 package org.teamapps.universaldb.pojo;
 
-import org.teamapps.universaldb.index.versioning.RecordUpdate2;
+import org.teamapps.universaldb.index.versioning.RecordUpdate;
 
 import java.util.List;
 
@@ -47,6 +47,6 @@ public interface Entity<ENTITY> extends Identifiable {
 
 	void setEntityValue(String fieldName, Object value);
 
-	List<RecordUpdate2> getRecordUpdates();
+	List<RecordUpdate> getRecordUpdates();
 
 }

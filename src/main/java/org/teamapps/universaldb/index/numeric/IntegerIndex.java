@@ -22,7 +22,6 @@ package org.teamapps.universaldb.index.numeric;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.transaction.DataType;
 
 import java.io.*;
 import java.util.*;
@@ -77,18 +76,6 @@ public class IntegerIndex extends AbstractIndex<Integer, NumericFilter> implemen
 			return Integer.compare(value1, value2) * order;
 		});
 		return sortEntries;
-	}
-
-	@Override
-	public void writeTransactionValue(Integer value, DataOutputStream dataOutputStream) throws IOException {
-		dataOutputStream.writeInt(getMappingId());
-		dataOutputStream.writeByte(DataType.INTEGER.getId());
-		dataOutputStream.writeInt(value);
-	}
-
-	@Override
-	public Integer readTransactionValue(DataInputStream dataInputStream) throws IOException {
-		return dataInputStream.readInt();
 	}
 
 

@@ -1,34 +1,57 @@
 package org.teamapps.universaldb.index.transaction.request;
 
+import org.teamapps.universaldb.index.transaction.TransactionType;
+import org.teamapps.universaldb.schema.Schema;
+import org.teamapps.universaldb.util.DataStreamUtil;
+
 import java.io.*;
 import java.util.*;
 
-public class TransactionRequest2 {
+public class TransactionRequest {
 
 	private final long nodeId;
-	private final long transactionRequestId;
+	private final long requestId;
+	private final TransactionType transactionType;
 	private final int userId;
-	private final long timestamp = System.currentTimeMillis();
+	private final long timestamp;
 	private final List<TransactionRequestRecord> records = new ArrayList<>();
 
+	private Schema schema;
 	private final Set<Integer> createRecordCorrelationSet = new HashSet<>();
 	private final Map<Integer, Integer> recordIdByCorrelationId = new HashMap<>();
 
 
-	public TransactionRequest2(long nodeId, long transactionRequestId, int userId) {
+	public TransactionRequest(long nodeId, long requestId, int userId) {
 		this.nodeId = nodeId;
-		this.transactionRequestId = transactionRequestId;
+		this.requestId = requestId;
+		this.transactionType = TransactionType.DATA_UPDATE;
 		this.userId = userId;
+		this.timestamp = System.currentTimeMillis();
 	}
 
-	public TransactionRequest2(byte[] bytes) throws IOException {
+	public TransactionRequest(long nodeId, long requestId, int userId, Schema schema) {
+		this.nodeId = nodeId;
+		this.requestId = requestId;
+		this.transactionType = TransactionType.MODEL_UPDATE;
+		this.userId = userId;
+		this.timestamp = System.currentTimeMillis();
+		this.schema = schema;
+	}
+
+	public TransactionRequest(byte[] bytes) throws IOException {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes));
 		this.nodeId = dis.readLong();
-		this.transactionRequestId = dis.readLong();
+		this.requestId = dis.readLong();
+		this.transactionType = TransactionType.getById(dis.readUnsignedByte());
 		this.userId = dis.readInt();
-		int size = dis.readInt();
-		for (int i = 0; i < size; i++) {
-			records.add(new TransactionRequestRecord(dis));
+		this.timestamp = dis.readLong();
+		if (transactionType == TransactionType.DATA_UPDATE) {
+			int size = dis.readInt();
+			for (int i = 0; i < size; i++) {
+				records.add(new TransactionRequestRecord(dis));
+			}
+		} else {
+			this.schema = new Schema(dis);
 		}
 	}
 
@@ -36,12 +59,17 @@ public class TransactionRequest2 {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(bos);
 		dos.writeLong(nodeId);
-		dos.writeLong(transactionRequestId);
+		dos.writeLong(requestId);
+		dos.writeByte(transactionType.getId());
 		dos.writeInt(userId);
 		dos.writeLong(timestamp);
-		dos.writeInt(records.size());
-		for (TransactionRequestRecord record : records) {
-			record.write(dos);
+		if (transactionType == TransactionType.DATA_UPDATE) {
+			dos.writeInt(records.size());
+			for (TransactionRequestRecord record : records) {
+				record.write(dos);
+			}
+		} else {
+			DataStreamUtil.writeStringWithLengthHeader(dos, schema.getSchemaDefinition());
 		}
 		return bos.toByteArray();
 	}
@@ -57,8 +85,12 @@ public class TransactionRequest2 {
 		return nodeId;
 	}
 
-	public long getTransactionRequestId() {
-		return transactionRequestId;
+	public long getRequestId() {
+		return requestId;
+	}
+
+	public TransactionType getTransactionType() {
+		return transactionType;
 	}
 
 	public int getUserId() {
@@ -71,6 +103,10 @@ public class TransactionRequest2 {
 
 	public List<TransactionRequestRecord> getRecords() {
 		return records;
+	}
+
+	public Schema getSchema() {
+		return schema;
 	}
 
 	public int getResolvedRecordIdByCorrelationId(int correlationId) {

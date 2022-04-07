@@ -27,11 +27,6 @@ public enum MultiReferenceValueType {
 
 	REFERENCE_ITERATOR(1),
 	EDIT_VALUE(2),
-//	SET_REFERENCES(3),
-//	ADD_REFERENCES(4),
-//	REMOVE_REFERENCES(5),
-//	REMOVE_ALL_REFERENCES(6),
-
 	;
 
 	private final int id;
