@@ -47,11 +47,11 @@
         <maven.compiler.target>12</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
-        <slf4j-version>1.7.25</slf4j-version>
+        <slf4j-version>1.7.36</slf4j-version>
         <guava-version>31.0.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
-        <tika-version>1.27</tika-version>
+        <tika-version>1.28.1</tika-version>
         <lucene-version>9.0.0</lucene-version>
     </properties>
 
@@ -126,11 +126,16 @@
             <version>${apache-commons-io}</version>
         </dependency>
 
-        <!-- [CVE-2021-36090] on 1.20 from tika -->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>1.21</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j-version}</version>
         </dependency>
 
         <dependency>
@@ -141,6 +146,10 @@
                 <exclusion>
                     <artifactId>commons-io</artifactId>
                     <groupId>commons-io</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -157,14 +166,6 @@
                 <exclusion>
                     <artifactId>slf4j-api</artifactId>
                     <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-compress</artifactId>
-                    <groupId>org.apache.commons</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -207,13 +208,18 @@
         </dependency>
 
         <dependency>
+            <!-- Java 17: https://chronicle.software/chronicle-support-java-17/ -->
             <groupId>net.openhft</groupId>
             <artifactId>chronicle-map</artifactId>
-            <version>3.22ea5</version>
+            <version>3.22ea6</version>
             <exclusions>
                 <exclusion>
                     <artifactId>xstream</artifactId>
                     <groupId>com.thoughtworks.xstream</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
