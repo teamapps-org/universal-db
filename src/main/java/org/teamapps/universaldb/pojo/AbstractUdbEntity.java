@@ -180,6 +180,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public Object getEntityValue(String fieldName) {
+		if (Table.FIELD_ID.equals(fieldName)) {
+			return getId();
+		}
 		ColumnIndex index = tableIndex.getColumnIndex(fieldName);
 		if (index != null) {
 			return index.getGenericValue(getId());
@@ -671,6 +674,18 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	@Override
 	public void clearChanges() {
 		entityChangeSet = null;
+	}
+
+	@Override
+	public boolean isChanged(String fieldName) {
+		return isChanged(tableIndex.getColumnIndex(fieldName));
+	}
+
+	@Override
+	public void clearFieldChanges(String fieldName) {
+		if (entityChangeSet != null) {
+			entityChangeSet.removeChange(tableIndex.getColumnIndex(fieldName));
+		}
 	}
 
 	@Override

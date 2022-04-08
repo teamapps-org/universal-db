@@ -41,7 +41,9 @@ public class Table implements MappedObject {
 	public final static String FIELD_RESTORE_DATE = "metaRestoreDate";
 	public final static String FIELD_RESTORED_BY = "metaRestoredBy";
 
-	public static final String[] FORBIDDEN_COLUMN_NAMES = new String[]{FIELD_CHECKPOINTS, FIELD_VERSIONING, FIELD_HIERARCHY, FIELD_CREATION_DATE, FIELD_CREATED_BY, FIELD_MODIFICATION_DATE, FIELD_MODIFIED_BY, FIELD_DELETION_DATE, FIELD_DELETED_BY, FIELD_RESTORE_DATE, FIELD_RESTORED_BY, "coll-recs", "coll-del-recs", "versioning-pos"};
+	public final static String FIELD_ID = "id";
+
+	public static final String[] FORBIDDEN_COLUMN_NAMES = new String[]{FIELD_CHECKPOINTS, FIELD_VERSIONING, FIELD_HIERARCHY, FIELD_CREATION_DATE, FIELD_CREATED_BY, FIELD_MODIFICATION_DATE, FIELD_MODIFIED_BY, FIELD_DELETION_DATE, FIELD_DELETED_BY, FIELD_RESTORE_DATE, FIELD_RESTORED_BY, FIELD_ID, "coll-recs", "coll-del-recs", "versioning-pos"};
 
 	public static boolean isReservedMetaName(String name) {
 		for (String columnName : FORBIDDEN_COLUMN_NAMES) {

@@ -29,6 +29,23 @@ public class {udbQuery} extends AbstractUdbQuery<{type}> implements {query} {
         super({udbType}.table, {type}.getBuilder());
     }
 
+    @Override
+    public {query} id(Integer... ids) {
+        return id(Arrays.asList(ids));
+    }
+
+    @Override
+    public {query} id(BitSet ids) {
+        filterById(ids);
+        return this;
+    }
+
+    @Override
+    public {query} id(Collection<Integer> ids) {
+        filterById(ids);
+        return this;
+    }
+
 	@Override
 	public {query} fullTextFilter(TextFilter textFilter, String... fieldNames) {
     	and({udbType}.table.createFullTextFilter(textFilter, fieldNames));

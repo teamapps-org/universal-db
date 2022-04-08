@@ -31,6 +31,7 @@ import org.teamapps.universaldb.query.*;
 import org.teamapps.universaldb.record.EntityBuilder;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -188,13 +189,20 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 		}
 	}
 
+	public void filterById(BitSet ids) {
+		and(new RecordIdFilter(ids));
+	}
+
+	public void filterById(Collection<Integer> ids) {
+		and(new RecordIdFilter(ids));
+	}
+
 	public BitSet executeToBitSet() {
 		return filter(tableIndex.getRecordBitSet());
 	}
 
 	public List<ENTITY> execute(String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
-		BitSet result = filter(tableIndex.getRecordBitSet());
-		return AbstractUdbEntity.sort(tableIndex, entityBuilder, result, sortFieldName, ascending, userContext, path);
+		return execute(false, sortFieldName, ascending, userContext, path);
 	}
 
 	public List<ENTITY> execute(boolean deletedRecords, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {

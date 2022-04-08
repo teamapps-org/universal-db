@@ -25,6 +25,12 @@ public interface {query} extends Query<{type}> {
         return new {udbQuery}();
     }
 
+    {query} id(Integer... ids);
+
+    {query} id(BitSet ids);
+
+    {query} id(Collection<Integer> ids);
+
     {query} fullTextFilter(TextFilter textFilter, String... fieldNames);
 
     {query} parseFullTextFilter(String query, String... fieldNames);
@@ -43,6 +49,8 @@ public interface {query} extends Query<{type}> {
     BitSet executeToBitSet();
 
     List<{type}> execute(String sortFieldName, boolean ascending, UserContext userContext, String ... path);
+
+    List<{type}> execute(boolean deletedRecords, String sortFieldName, boolean ascending, UserContext userContext, String ... path);
 
     List<{type}> execute(int startIndex, int length, Sorting sorting, UserContext userContext);
 

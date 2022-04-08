@@ -29,6 +29,10 @@ public interface Entity<ENTITY> extends Identifiable {
 
 	void clearChanges();
 
+	boolean isChanged(String fieldName);
+
+	void clearFieldChanges(String fieldName);
+
 	boolean isModified();
 
 	ENTITY save();

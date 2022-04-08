@@ -65,6 +65,10 @@ public class EntityChangeSet {
 		return changeMap.containsKey(columnIndex.getMappingId());
 	}
 
+	public void removeChange(ColumnIndex columnIndex) {
+		changeMap.remove(columnIndex);
+	}
+
 	public TransactionRequestRecordValue getChangeValue(ColumnIndex index) {
 		return changeMap.get(index.getMappingId());
 	}
