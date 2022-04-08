@@ -155,7 +155,7 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 					assert orphanedReference > 0;
 					setIndexValue(orphanedReference, 0);
 					reverseSingleIndex.setIndexValue(previousValue, 0);
-					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, 0));
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, orphanedReference));
 				}
 				if (value > 0) {
 					reverseSingleIndex.setIndexValue(value, id);

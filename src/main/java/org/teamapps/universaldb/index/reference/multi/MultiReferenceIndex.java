@@ -265,13 +265,13 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 				int previousValue = reverseSingleIndex.getValue(reference);
 				if (id == previousValue) {
 					reverseSingleIndex.setIndexValue(reference, 0);
-					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, reference, 0));
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, reference, id));
 				}
 			}
 		} else {
 			for (Integer reference : references) {
 				reverseMultiIndex.removeReferences(reference, Collections.singletonList(id), true);
-				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, true, reference, 0));
+				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseMultiIndex, true, reference, id));
 			}
 		}
 	}
