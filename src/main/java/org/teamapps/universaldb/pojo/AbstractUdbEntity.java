@@ -166,6 +166,13 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return id;
 	}
 
+	public int createdBy() {
+		ColumnIndex columnIndex = tableIndex.getColumnIndex(Table.FIELD_CREATED_BY);
+		return columnIndex != null ? getIntValue((IntegerIndex) columnIndex) : 0;
+	}
+
+
+
 	public List<RecordUpdate> getRecordUpdates() {
 		try {
 			return tableIndex.getRecordVersioningIndex().readRecordUpdates(id);
@@ -725,6 +732,11 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public TableIndex getTableIndex() {
 		return tableIndex;
+	}
+
+	@Override
+	public int getTableId() {
+		return tableIndex.getMappingId();
 	}
 
 	public String getQualifiedName() {

@@ -167,6 +167,13 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 		return new EntityBitSetList<>(entityBuilder, result);
 	}
 
+	public boolean matches(Entity<ENTITY> entity) {
+		BitSet bitSet = new BitSet();
+		bitSet.set(entity.getId());
+		BitSet result = filter(bitSet);
+		return result.get(entity.getId());
+	}
+
 	public List<ENTITY> execute(boolean deletedRecords) {
 		return deletedRecords ? executeOnDeletedRecords() : execute();
 	}

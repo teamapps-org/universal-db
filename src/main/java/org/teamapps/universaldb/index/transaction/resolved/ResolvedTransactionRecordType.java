@@ -20,6 +20,7 @@
 package org.teamapps.universaldb.index.transaction.resolved;
 
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordType;
+import org.teamapps.universaldb.update.RecordUpdateType;
 
 public enum ResolvedTransactionRecordType {
 
@@ -63,6 +64,23 @@ public enum ResolvedTransactionRecordType {
 			case UPDATE: return UPDATE;
 			case DELETE: return DELETE;
 			case RESTORE: return RESTORE;
+		}
+		return null;
+	}
+
+	public RecordUpdateType getUpdateType() {
+		switch (this) {
+			case CREATE:
+			case CREATE_WITH_ID:
+				return RecordUpdateType.CREATE;
+			case UPDATE:
+			case ADD_CYCLIC_REFERENCE:
+			case REMOVE_CYCLIC_REFERENCE:
+				return RecordUpdateType.UPDATE;
+			case DELETE:
+				return RecordUpdateType.DELETE;
+			case RESTORE:
+				return RecordUpdateType.RESTORE;
 		}
 		return null;
 	}

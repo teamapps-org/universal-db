@@ -28,7 +28,6 @@ import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.file.LocalFileStore;
 import org.teamapps.universaldb.index.log.LogIterator;
-import org.teamapps.universaldb.index.log.RotatingLogIndex;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
@@ -52,6 +51,7 @@ import org.teamapps.universaldb.schema.Database;
 import org.teamapps.universaldb.schema.Schema;
 import org.teamapps.universaldb.schema.SchemaInfoProvider;
 import org.teamapps.universaldb.schema.Table;
+import org.teamapps.universaldb.update.RecordUpdateEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,6 +61,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.stream.Collectors;
 
 public class UniversalDB implements DataBaseMapper {
@@ -78,6 +79,8 @@ public class UniversalDB implements DataBaseMapper {
 	private final Map<TableIndex, Class> entityClassByTableIndex = new HashMap<>();
 	private final Map<TableIndex, Class> queryClassByTableIndex = new HashMap<>();
 	private final Map<String, TableIndex> tableIndexByPath = new HashMap<>();
+
+	private final ArrayBlockingQueue<RecordUpdateEvent> updateEventQueue = new ArrayBlockingQueue<>(25_000);
 
 	public static int getUserId() {
 		return THREAD_LOCAL_USER_ID.get();
@@ -413,6 +416,7 @@ public class UniversalDB implements DataBaseMapper {
 					}
 					break;
 			}
+			addRecordUpdateEvent(resolvedRecord, resolvedTransaction.getUserId());
 		}
 		transactionIndex.writeTransaction(resolvedTransaction);
 
@@ -498,8 +502,8 @@ public class UniversalDB implements DataBaseMapper {
 				case REMOVE_CYCLIC_REFERENCE:
 					break;
 			}
+			addRecordUpdateEvent(record, transaction.getUserId());
 		}
-
 		transactionIndex.writeTransaction(transaction);
 
 		for (ResolvedTransactionRecord transactionRecord : transaction.getTransactionRecords()) {
@@ -572,6 +576,14 @@ public class UniversalDB implements DataBaseMapper {
 		}
 	}
 
+
+	private void addRecordUpdateEvent(ResolvedTransactionRecord resolvedRecord, int userId) {
+		if (userId > 0) {
+			RecordUpdateEvent updateEvent = new RecordUpdateEvent(resolvedRecord.getTableId(), resolvedRecord.getRecordId(), userId, resolvedRecord.getRecordType().getUpdateType());
+			updateEventQueue.offer(updateEvent);
+		}
+	}
+
 	@Override
 	public DatabaseIndex getDatabaseById(int mappingId) {
 		return databaseById.get(mappingId);
@@ -589,5 +601,9 @@ public class UniversalDB implements DataBaseMapper {
 
 	public SchemaIndex getSchemaIndex() {
 		return schemaIndex;
+	}
+
+	public ArrayBlockingQueue<RecordUpdateEvent> getUpdateEventQueue() {
+		return updateEventQueue;
 	}
 }

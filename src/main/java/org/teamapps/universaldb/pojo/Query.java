@@ -19,5 +19,29 @@
  */
 package org.teamapps.universaldb.pojo;
 
+import org.teamapps.universaldb.context.UserContext;
+import org.teamapps.universaldb.query.Sorting;
+
+import java.util.BitSet;
+import java.util.List;
+
 public interface Query<ENTITY extends Entity<ENTITY>> {
+
+	List<ENTITY> execute();
+
+	List<ENTITY> execute(String sortFieldName, boolean ascending, UserContext userContext, String ... path);
+
+	List<ENTITY> execute(boolean deletedRecords, String sortFieldName, boolean ascending, UserContext userContext, String ... path);
+
+	List<ENTITY> execute(int startIndex, int length, Sorting sorting, UserContext userContext);
+
+	ENTITY executeExpectSingleton();
+
+	List<ENTITY> executeOnDeletedRecords();
+
+	List<ENTITY> execute(boolean deletedRecords);
+
+	BitSet executeToBitSet();
+
+	boolean matches(Entity<ENTITY> entity);
 }
