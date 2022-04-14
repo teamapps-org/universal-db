@@ -55,6 +55,7 @@ public class TransactionIndex {
 	private LogIndex transactionLog;
 	private LogIndex schemaLog;
 	private PrimitiveEntryAtomicStore databaseStats;
+	private volatile boolean active = true;
 
 	private Schema currentSchema;
 
@@ -65,6 +66,7 @@ public class TransactionIndex {
 		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
 		init();
+		checkIndex();
 	}
 
 	private void init() {
@@ -82,6 +84,7 @@ public class TransactionIndex {
 		logger.info("STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
+				active = false;
 				logger.info("SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
 				databaseStats.setLong(TIMESTAMP_SHUTDOWN, System.currentTimeMillis());
 				transactionLog.close();
@@ -91,6 +94,26 @@ public class TransactionIndex {
 				e.printStackTrace();
 			}
 		}));
+	}
+
+	private boolean checkIndex() {
+		LogIterator logIterator = transactionLog.readLogs();
+		long expectedTransactionId = 1;
+		boolean ok = true;
+		logger.info("Checking transaction index...");
+		while (logIterator.hasNext()) {
+			ResolvedTransaction transaction = ResolvedTransaction.createResolvedTransaction(logIterator.next());
+			if (expectedTransactionId != transaction.getTransactionId()) {
+				logger.error("Wrong transaction id: {}, expected: {}", transaction.getTransactionId(), expectedTransactionId);
+				ok = false;
+			}
+			expectedTransactionId = transaction.getTransactionId() + 1;
+		}
+		logger.info("Transaction index check result: {}", ok);
+		if (!ok) {
+			throw new RuntimeException("Error in transaction log!");
+		}
+		return ok;
 	}
 
 	public boolean isEmpty() {
@@ -180,13 +203,16 @@ public class TransactionIndex {
 	}
 
 	public synchronized void writeTransaction(ResolvedTransaction transaction) throws Exception {
-		if (transaction.getTransactionId() != getLastTransactionId() + 1) {
-			throw new RuntimeException(String.format("Error wrong transaction id: %s, last transaction id: %s", transaction.getTransactionId(), getLastTransaction()));
+		if (!active) {
+			throw new RuntimeException("Error transaction index already shut down");
 		}
+		if (transaction.getTransactionId() != getLastTransactionId() + 1) {
+			throw new RuntimeException(String.format("Error wrong transaction id: %s, last transaction id: %s", transaction.getTransactionId(), getLastTransactionId()));
+		}
+		transactionLog.writeLog(transaction.getBytes());
 		databaseStats.setLong(LAST_TRANSACTION_ID, transaction.getTransactionId());
 		databaseStats.setLong(LAST_TRANSACTION_STORE_ID, transactionLog.getPosition());
 		databaseStats.setLong(TRANSACTIONS_COUNT, getTransactionCount() + 1);
-		transactionLog.writeLog(transaction.getBytes());
 	}
 
 	public synchronized List<SchemaUpdate> getSchemaUpdates() {
@@ -206,6 +232,10 @@ public class TransactionIndex {
 		return stream
 				.map(ResolvedTransaction::createResolvedTransaction)
 				.filter(transaction -> transaction.getTransactionId() > lastTransactionId);
+	}
+
+	public LogIterator getLogIterator() {
+		return transactionLog.readLogs();
 	}
 
 	private static long createId() {
