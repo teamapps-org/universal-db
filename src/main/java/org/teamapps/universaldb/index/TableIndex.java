@@ -668,6 +668,12 @@ public class TableIndex implements MappedObject {
 	}
 
 	public void merge(Table table) {
+		if (!tableConfig.keepDeleted() && table.getTableConfig().keepDeleted()) {
+			keepDeletedRecords = true;
+			deletedRecords = new BooleanIndex("coll-del-recs", this, ColumnType.BOOLEAN);
+			logger.warn("Updated table {} with keep deleted option", getFQN());
+		}
+		this.tableConfig.merge(table.getTableConfig());
 		for (Column column : table.getColumns()) {
 			ColumnIndex localColumn = getColumnIndex(column.getName());
 			if (localColumn == null) {
