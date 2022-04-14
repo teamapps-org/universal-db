@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,13 @@ package org.teamapps.universaldb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.cluster.model.cluster.AbstractDbLeader;
+import org.teamapps.cluster.model.cluster.DbLeaderClient;
+import org.teamapps.cluster.model.cluster.DbTransactionList;
+import org.teamapps.cluster.model.cluster.DbTransactionListRequest;
+import org.teamapps.cluster.network.NodeAddress;
+import org.teamapps.cluster.service.ClusterTopic;
+import org.teamapps.cluster.service.TeamAppsCluster;
 import org.teamapps.universaldb.index.*;
 import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.file.FileStore;
@@ -52,9 +59,9 @@ import org.teamapps.universaldb.schema.Schema;
 import org.teamapps.universaldb.schema.SchemaInfoProvider;
 import org.teamapps.universaldb.schema.Table;
 import org.teamapps.universaldb.update.RecordUpdateEvent;
+import reactor.core.publisher.Mono;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.BitSet;
@@ -62,6 +69,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class UniversalDB implements DataBaseMapper {
@@ -81,6 +91,12 @@ public class UniversalDB implements DataBaseMapper {
 	private final Map<String, TableIndex> tableIndexByPath = new HashMap<>();
 
 	private final ArrayBlockingQueue<RecordUpdateEvent> updateEventQueue = new ArrayBlockingQueue<>(25_000);
+	private TeamAppsCluster cluster;
+	private DbLeaderClient dbLeaderClient;
+	private ClusterTopic clusterClientTopic;
+	private final Map<Long, CompletableFuture<ResolvedTransaction>> transactionCompletableFutureMap = new ConcurrentHashMap<>();
+	private ClusterTopic leaderTransactionClusterMessageQueue;
+	private volatile boolean active = true;
 
 	public static int getUserId() {
 		return THREAD_LOCAL_USER_ID.get();
@@ -103,20 +119,200 @@ public class UniversalDB implements DataBaseMapper {
 		AbstractUdbEntity.setDatabase(this);
 		this.storagePath = storagePath;
 		this.transactionIndex = new TransactionIndex(storagePath);
+		createShutdownHook();
+
 
 		Schema schema = schemaInfo.getSchema();
 		this.schemaIndex = new SchemaIndex(schema, storagePath);
 		this.schemaIndex.setFileStore(fileStore);
-		mapSchema(schema);
+		mapSchema(schema, true);
 
 		installTableClasses(transactionIndex.getCurrentSchema(), UniversalDB.class.getClassLoader(), false);
 	}
+
+	public UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, String clusterSecret, int port) throws Exception {
+		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+		AbstractUdbEntity.setDatabase(this);
+		this.storagePath = storagePath;
+		this.transactionIndex = new TransactionIndex(storagePath);
+		createShutdownHook();
+
+
+		Schema schema = schemaInfo.getSchema();
+		this.schemaIndex = new SchemaIndex(schema, storagePath);
+		this.schemaIndex.setFileStore(fileStore);
+		mapSchema(schema, true);
+		installTableClasses(transactionIndex.getCurrentSchema(), UniversalDB.class.getClassLoader(), false);
+
+		cluster = new TeamAppsCluster(clusterSecret, "" + transactionIndex.getNodeId(), null, port);
+
+		leaderTransactionClusterMessageQueue = cluster.createTopic("udb-resolved-transactions", null);
+
+		cluster.createTopic("udb-transaction-requests", clusterTopicMessage -> {
+			try {
+				TransactionRequest request = new TransactionRequest(clusterTopicMessage.getData());
+				executeTransaction(request);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+
+		new AbstractDbLeader(cluster) {
+			@Override
+			public DbTransactionList requestMissingTransactions(DbTransactionListRequest request) {
+				try {
+					DbTransactionList dbTransactionList = new DbTransactionList();
+					;
+					long lastKnownTransactionId = request.getLastKnownTransactionId();
+					logger.info("Client requested transactions with last known id: {}", lastKnownTransactionId);
+					LogIterator logIterator = transactionIndex.getLogIterator();
+					File transactionsFile = File.createTempFile("transactions", ".temp");
+					DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(transactionsFile, false)));
+					int counter = 0;
+					while (logIterator.hasNext()) {
+						byte[] bytes = logIterator.next();
+						ResolvedTransaction transaction = ResolvedTransaction.createResolvedTransaction(bytes);
+						if (transaction.getTransactionId() > lastKnownTransactionId) {
+							dos.writeInt(bytes.length);
+							dos.write(bytes);
+							counter++;
+						}
+					}
+					dos.close();
+					dbTransactionList.setLastKnownTransactionId(lastKnownTransactionId);
+					dbTransactionList.setTransactionsFile(transactionsFile);
+					dbTransactionList.setTransactionCount(counter);
+					logger.info("Send transactions file, size: {}", transactionsFile.length());
+					logIterator.close();
+					return dbTransactionList;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		};
+	}
+
+	public UniversalDB(File storagePath, SchemaInfoProvider schemaInfo, String clusterSecret, int port, NodeAddress leaderNode) throws Exception {
+		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+		AbstractUdbEntity.setDatabase(this);
+		this.storagePath = storagePath;
+		this.transactionIndex = new TransactionIndex(storagePath);
+		createShutdownHook();
+
+		boolean emptyTransactionIndex = transactionIndex.isEmpty();
+
+		if (!emptyTransactionIndex) {
+			Schema schema = schemaInfo.getSchema();
+			this.schemaIndex = new SchemaIndex(schema, storagePath);
+			this.schemaIndex.setFileStore(fileStore);
+			mapSchema(schema, false);
+			installTableClasses(transactionIndex.getCurrentSchema(), UniversalDB.class.getClassLoader(), false);
+		} else {
+			Schema schema = new Schema();
+			this.schemaIndex = new SchemaIndex(schema, storagePath);
+			this.schemaIndex.setFileStore(fileStore);
+		}
+
+		cluster = new TeamAppsCluster(clusterSecret, "" + transactionIndex.getNodeId(), null, port, leaderNode);
+
+		clusterClientTopic = cluster.createTopic("udb-transaction-requests", null);
+
+		ArrayBlockingQueue<ResolvedTransaction> transactionQueue = new ArrayBlockingQueue<>(10_000);
+		AtomicBoolean syncingFinished = new AtomicBoolean(false);
+
+		cluster.createTopic("udb-resolved-transactions", clusterTopicMessage -> {
+			try {
+				if (!active) {
+					return;
+				}
+				ResolvedTransaction transaction = ResolvedTransaction.createResolvedTransaction(clusterTopicMessage.getData());
+				if (syncingFinished.get()) {
+					if (!transactionQueue.isEmpty()) {
+						while (!transactionQueue.isEmpty()) {
+							logger.info("Run queued transactions: {}", transactionQueue.size());
+							ResolvedTransaction resolvedTransaction = transactionQueue.take();
+							if (transactionIndex.getLastTransactionId() >= resolvedTransaction.getTransactionId()) {
+								logger.info("Transaction already processed: {}, last known transaction id: {}", resolvedTransaction.getTransactionId(), transactionIndex.getLastTransactionId());
+							} else {
+								handleTransaction(resolvedTransaction);
+								CompletableFuture<ResolvedTransaction> completableFuture = transactionCompletableFutureMap.get(resolvedTransaction.getRequestId());
+								if (completableFuture != null) {
+									completableFuture.complete(resolvedTransaction);
+								}
+							}
+						}
+					}
+					handleTransaction(transaction);
+					CompletableFuture<ResolvedTransaction> completableFuture = transactionCompletableFutureMap.get(transaction.getRequestId());
+					if (completableFuture != null) {
+						completableFuture.complete(transaction);
+					}
+				} else {
+					logger.info("Queue transaction with id: {}", transaction.getTransactionId());
+					transactionQueue.offer(transaction);
+				}
+			} catch (Exception e) {
+				throw new RuntimeException("Error syncing transactions", e);
+			}
+		});
+
+
+		dbLeaderClient = new DbLeaderClient(cluster);
+		while (!dbLeaderClient.isAvailable()) {
+			logger.info("Wait for db leader service...");
+			Thread.sleep(1_000);
+		}
+
+		logger.info("Wait for logs...");
+		Thread.sleep(3_000);
+
+
+		Mono<DbTransactionList> transactionListMono = dbLeaderClient.requestMissingTransactions(new DbTransactionListRequest().setLastKnownTransactionId(transactionIndex.getLastTransactionId()));
+		DbTransactionList transactionList = transactionListMono.block();
+		if (transactionList.getTransactionCount() > 0) {
+
+			File transactionsFile = transactionList.getTransactionsFile();
+			DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(transactionsFile)));
+			logger.info("Transactions file size: {}", transactionsFile.length());
+			int loop = 0;
+			int pos = 0;
+			long lastTransactionId = 0;
+			while (true) {
+				try {
+					int length = dis.readInt();
+					byte[] bytes = new byte[length];
+					dis.readFully(bytes);
+					pos += length;
+					ResolvedTransaction transaction = null;
+					try {
+						transaction = ResolvedTransaction.createResolvedTransaction(bytes);
+						lastTransactionId = transaction.getTransactionId();
+						handleTransaction(transaction);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					if (loop % 1_000 == 0) {
+						logger.info("Consumed transactions for far: {}, current transaction-id: {}, file pos: {}", loop, transaction == null ? "missing" : transaction.getTransactionId(), +pos);
+					}
+					loop++;
+				} catch (EOFException ignore) {
+					break;
+				}
+			}
+			logger.info("Finished loading transactions, last transaction id: {}, consumed transactions: {}", lastTransactionId, loop);
+			syncingFinished.set(true);
+		}
+		logger.info("Syncing transactions done");
+	}
+
 
 	public UniversalDB(File storagePath, LogIterator logIterator) throws Exception {
 		AbstractUdbEntity.setDatabase(this);
 		this.storagePath = storagePath;
 		this.transactionIndex = new TransactionIndex(storagePath);
 		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
+		createShutdownHook();
 
 		Schema schema = new Schema();
 		this.schemaIndex = new SchemaIndex(schema, storagePath);
@@ -133,11 +329,25 @@ public class UniversalDB implements DataBaseMapper {
 		logger.info("Imported " + count + " transactions in: " + (System.currentTimeMillis() - time));
 	}
 
-	private void mapSchema(Schema schema) {
+	private void createShutdownHook() {
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			try {
+				active = false;
+				logger.info("SHUTTING DOWN DATABASE");
+				if (cluster != null) {
+					cluster.shutDown();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}));
+	}
+
+	private void mapSchema(Schema schema, boolean executeAsTransaction) {
 		if (!transactionIndex.isValidSchema(schema)) {
 			throw new RuntimeException("Cannot load incompatible schema. Current schema is:\n" + transactionIndex.getCurrentSchema() + "\nNew schema is:\n" + schema);
 		}
-		if (transactionIndex.isSchemaUpdate(schema)) {
+		if (executeAsTransaction && transactionIndex.isSchemaUpdate(schema)) {
 			TransactionRequest modelUpdateTransactionRequest = createModelUpdateTransactionRequest(schema);
 			executeTransaction(modelUpdateTransactionRequest);
 		} else {
@@ -306,12 +516,29 @@ public class UniversalDB implements DataBaseMapper {
 		return null;
 	}
 
-	public synchronized void executeTransaction(TransactionRequest transaction) {
+	public ResolvedTransaction executeTransaction(TransactionRequest transaction) {
 		try {
-			ResolvedTransaction resolvedTransaction = handleTransactionRequest(transaction);
+			if (clusterClientTopic != null) {
+				if (!active) {
+					return null;
+				}
+				if (transaction.getTransactionType() == TransactionType.MODEL_UPDATE) {
+					return null;
+				} else {
+					CompletableFuture<ResolvedTransaction> completableFuture = new CompletableFuture<>();
+					transactionCompletableFutureMap.put(transaction.getRequestId(), completableFuture);
+					clusterClientTopic.sendMessageAsync(transaction.getBytes());
+					ResolvedTransaction resolvedTransaction = completableFuture.get();
+					resolvedTransaction.getRecordIdByCorrelationId().entrySet().forEach(entry -> transaction.putResolvedRecordIdForCorrelationId(entry.getKey(), entry.getValue()));
+					return resolvedTransaction;
+				}
+			} else {
+				return handleTransactionRequest(transaction);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return null;
 	}
 
 	private synchronized ResolvedTransaction handleTransactionRequest(TransactionRequest transactionRequest) throws Exception {
@@ -323,6 +550,9 @@ public class UniversalDB implements DataBaseMapper {
 			handleDataUpdateRequest(transactionRequest, resolvedTransaction);
 		} else {
 			handleModelUpdateRequest(transactionRequest, resolvedTransaction);
+		}
+		if (leaderTransactionClusterMessageQueue != null) {
+			leaderTransactionClusterMessageQueue.sendMessageAsync(resolvedTransaction.getBytes());
 		}
 		return resolvedTransaction;
 	}
