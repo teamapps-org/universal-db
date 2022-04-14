@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import org.teamapps.datamodel.testdb1.EnumField;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
-import org.teamapps.universaldb.index.enumeration.EnumFilter;
 import org.teamapps.universaldb.index.enumeration.EnumFilterType;
 import org.teamapps.universaldb.index.file.FileDataField;
 import org.teamapps.universaldb.index.file.FileFilter;
@@ -37,10 +36,7 @@ import org.teamapps.universaldb.index.translation.TranslatableTextFilter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -232,7 +228,7 @@ public class QueryTest {
 			table.setIntField(i);
 			table.setLongField(longOffset + i);
 			table.setTextField("Test" + i + " abc");
-			table.setTranslatableText(new TranslatableText("En" + i + "xval","en").setTranslation("De" + i + "xval", "de").setTranslation("Fr" + i + "xval", "fr"));
+			table.setTranslatableText(new TranslatableText("En" + i + "xval", "en").setTranslation("De" + i + "xval", "de").setTranslation("Fr" + i + "xval", "fr"));
 			table.save();
 		}
 		List<FieldTest> values;

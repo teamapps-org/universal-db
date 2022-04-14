@@ -15,7 +15,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>universal-db</artifactId>
@@ -77,6 +78,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.teamapps</groupId>
+            <artifactId>teamapps-cluster</artifactId>
+            <version>0.2</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.github.pemistahl</groupId>
             <artifactId>lingua</artifactId>
             <version>1.1.0</version>
@@ -87,7 +94,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
 
         <dependency>
             <groupId>org.agrona</groupId>
@@ -229,8 +235,6 @@
             <artifactId>xstream</artifactId>
             <version>1.4.19</version>
         </dependency>
-
-
 
 
     </dependencies>
