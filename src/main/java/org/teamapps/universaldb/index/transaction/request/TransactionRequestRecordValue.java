@@ -22,6 +22,7 @@ package org.teamapps.universaldb.index.transaction.request;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
+import org.teamapps.universaldb.index.reference.value.RecordReference;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
@@ -78,7 +79,7 @@ public class TransactionRequestRecordValue {
 			case TRANSLATABLE_TEXT:
 				return new TranslatableText(dis);
 			case REFERENCE:
-				return dis.readInt();
+				return new RecordReference(dis.readInt(), dis.readInt());
 			case MULTI_REFERENCE:
 				return new MultiReferenceEditValue(dis);
 			case FILE:
@@ -125,7 +126,9 @@ public class TransactionRequestRecordValue {
 					translatableText.writeValues(dos);
 					break;
 				case REFERENCE:
-					dos.writeInt((Integer) value);
+					RecordReference reference = (RecordReference) value;
+					dos.writeInt(reference.getRecordId());
+					dos.writeInt(reference.getCorrelationId());
 					break;
 				case MULTI_REFERENCE:
 					MultiReferenceEditValue multiReferenceEditValue = (MultiReferenceEditValue) value;
