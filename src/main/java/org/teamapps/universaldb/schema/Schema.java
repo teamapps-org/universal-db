@@ -367,12 +367,7 @@ public class Schema {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("Schema, version:").append(schemaVersion).append("\n");
-		for (Database database : databases) {
-			sb.append(database.toString()).append("\n");
-		}
-		return sb.toString();
+		return createDefinition(false);
 	}
 
 
