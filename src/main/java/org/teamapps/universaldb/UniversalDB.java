@@ -22,6 +22,7 @@ package org.teamapps.universaldb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 import org.teamapps.cluster.model.cluster.AbstractDbLeader;
 import org.teamapps.cluster.model.cluster.DbLeaderClient;
 import org.teamapps.cluster.model.cluster.DbTransactionList;
@@ -230,10 +231,10 @@ public class UniversalDB implements DataBaseMapper {
 				if (syncingFinished.get()) {
 					if (!transactionQueue.isEmpty()) {
 						while (!transactionQueue.isEmpty()) {
-							logger.info("Run queued transactions: {}", transactionQueue.size());
+							System.out.println(format("Run queued transactions: {}", transactionQueue.size()));
 							ResolvedTransaction resolvedTransaction = transactionQueue.take();
 							if (transactionIndex.getLastTransactionId() >= resolvedTransaction.getTransactionId()) {
-								logger.info("Transaction already processed: {}, last known transaction id: {}", resolvedTransaction.getTransactionId(), transactionIndex.getLastTransactionId());
+								System.out.println(format("Transaction already processed: {}, last known transaction id: {}", resolvedTransaction.getTransactionId(), transactionIndex.getLastTransactionId()));
 							} else {
 								handleTransaction(resolvedTransaction);
 								CompletableFuture<ResolvedTransaction> completableFuture = transactionCompletableFutureMap.get(resolvedTransaction.getRequestId());
@@ -249,7 +250,7 @@ public class UniversalDB implements DataBaseMapper {
 						completableFuture.complete(transaction);
 					}
 				} else {
-					logger.info("Queue transaction with id: {}", transaction.getTransactionId());
+					//logger.info("Queue transaction with id: {}", transaction.getTransactionId());
 					transactionQueue.offer(transaction);
 				}
 			} catch (Exception e) {
@@ -260,11 +261,11 @@ public class UniversalDB implements DataBaseMapper {
 
 		dbLeaderClient = new DbLeaderClient(cluster);
 		while (!dbLeaderClient.isAvailable()) {
-			logger.info("Wait for db leader service...");
+			System.out.println("Wait for db leader service...");
 			Thread.sleep(1_000);
 		}
 
-		logger.info("Wait for logs...");
+		System.out.println("Wait for logs...");
 		Thread.sleep(3_000);
 
 
@@ -274,7 +275,7 @@ public class UniversalDB implements DataBaseMapper {
 
 			File transactionsFile = transactionList.getTransactionsFile();
 			DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(transactionsFile)));
-			logger.info("Transactions file size: {}", transactionsFile.length());
+			System.out.println(format("Transactions file size: {}", transactionsFile.length()));
 			int loop = 0;
 			int pos = 0;
 			long lastTransactionId = 0;
@@ -293,17 +294,17 @@ public class UniversalDB implements DataBaseMapper {
 						e.printStackTrace();
 					}
 					if (loop % 1_000 == 0) {
-						logger.info("Consumed transactions for far: {}, current transaction-id: {}, file pos: {}", loop, transaction == null ? "missing" : transaction.getTransactionId(), +pos);
+						System.out.println(format("Consumed transactions for far: {}, current transaction-id: {}, file pos: {}", loop, transaction == null ? "missing" : transaction.getTransactionId(), +pos));
 					}
 					loop++;
 				} catch (EOFException ignore) {
 					break;
 				}
 			}
-			logger.info("Finished loading transactions, last transaction id: {}, consumed transactions: {}", lastTransactionId, loop);
+			System.out.println(format("Finished loading transactions, last transaction id: {}, consumed transactions: {}", lastTransactionId, loop));
 			syncingFinished.set(true);
 		}
-		logger.info("Syncing transactions done");
+		System.out.println("Syncing transactions done");
 	}
 
 
@@ -341,6 +342,10 @@ public class UniversalDB implements DataBaseMapper {
 				e.printStackTrace();
 			}
 		}));
+	}
+
+	public static String format(String format, Object... params) {
+		return MessageFormatter.arrayFormat(format, params).getMessage();
 	}
 
 	private void mapSchema(Schema schema, boolean executeAsTransaction) {
@@ -634,15 +639,25 @@ public class UniversalDB implements DataBaseMapper {
 					}
 					break;
 				case DELETE:
-					tableIndex.deleteRecord(record.getRecordId());
+					List<CyclicReferenceUpdate> cyclicReferenceUpdates = tableIndex.deleteRecord(record.getRecordId());
 					for (TransactionRequestRecordValue recordValue : record.getRecordValues()) {
 						persistColumnValueUpdates(recordId, recordValue, request.getRecordIdByCorrelationId(), resolvedRecord);
 					}
+					if (cyclicReferenceUpdates != null && !cyclicReferenceUpdates.isEmpty()) {
+						for (CyclicReferenceUpdate referenceUpdate : cyclicReferenceUpdates) {
+							resolvedTransaction.addTransactionRecord(ResolvedTransactionRecord.createCyclicRecord(referenceUpdate));
+						}
+					}
 					break;
 				case RESTORE:
-					tableIndex.restoreRecord(record.getRecordId());
+					List<CyclicReferenceUpdate> cyclicReferenceUpdates2 = tableIndex.restoreRecord(record.getRecordId());
 					for (TransactionRequestRecordValue recordValue : record.getRecordValues()) {
 						persistColumnValueUpdates(recordId, recordValue, request.getRecordIdByCorrelationId(), resolvedRecord);
+					}
+					if (cyclicReferenceUpdates2 != null && !cyclicReferenceUpdates2.isEmpty()) {
+						for (CyclicReferenceUpdate referenceUpdate : cyclicReferenceUpdates2) {
+							resolvedTransaction.addTransactionRecord(ResolvedTransactionRecord.createCyclicRecord(referenceUpdate));
+						}
 					}
 					break;
 			}
