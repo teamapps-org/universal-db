@@ -43,16 +43,16 @@
 
 
     <properties>
-        <maven.compiler.source>12</maven.compiler.source>
-        <maven.compiler.target>12</maven.compiler.target>
+        <maven.compiler.source>14</maven.compiler.source>
+        <maven.compiler.target>14</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <slf4j-version>1.7.36</slf4j-version>
-        <guava-version>31.0.1-jre</guava-version>
+        <guava-version>31.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
         <tika-version>1.28.1</tika-version>
-        <lucene-version>9.0.0</lucene-version>
+        <lucene-version>9.1.0</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -79,7 +79,7 @@
         <dependency>
             <groupId>org.teamapps</groupId>
             <artifactId>teamapps-cluster</artifactId>
-            <version>0.2</version>
+            <version>0.3</version>
         </dependency>
 
         <dependency>
@@ -255,8 +255,6 @@
                 <configuration>
                     <modelClasses>
                         <modelClass>Model</modelClass>
-                        <modelClass>S3Model</modelClass>
-                        <modelClass>MyAppModel</modelClass>
                     </modelClasses>
                 </configuration>
             </plugin>
