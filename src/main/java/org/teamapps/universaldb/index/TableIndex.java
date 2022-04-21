@@ -26,6 +26,7 @@ import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileStore;
 import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
@@ -377,19 +378,19 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
-	public void deleteRecord(int id) {
-		deleteRecord(id, null);
+	public List<CyclicReferenceUpdate> deleteRecord(int id) {
+		return deleteRecord(id, null);
 	}
 
-	private void deleteRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
+	private List<CyclicReferenceUpdate> deleteRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
 		records.setValue(id, false);
 		if (keepDeletedRecords) {
 			if (deletedRecords.getValue(id)) {
-				return;
+				return Collections.emptyList();
 			}
 			deletedRecords.setValue(id, true);
 		}
-
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		for (ColumnIndex<?, ?> referenceColumn : getReferenceColumns()) {
 			if (referenceColumn == cascadeOriginIndex) {
 				continue;
@@ -417,7 +418,8 @@ public class TableIndex implements MappedObject {
 					} else {
 						//remove back references
 						if (isWithBackReferenceColumn) {
-							removeBackReferences(id, backReferenceColumn, isMultiBackReference, referencedRecords);
+							List<CyclicReferenceUpdate> referenceUpdates = removeBackReferences(id, backReferenceColumn, isMultiBackReference, referencedRecords);
+							cyclicReferenceUpdates.addAll(referenceUpdates);
 						}
 					}
 				} else {
@@ -454,32 +456,40 @@ public class TableIndex implements MappedObject {
 				collectionTextSearchIndex.delete(id, getFileFieldNames());
 			}
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	private void removeBackReferences(int id, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+	private List<CyclicReferenceUpdate> removeBackReferences(int id, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (isMultiBackReference) {
 			MultiReferenceIndex multiBackReferenceColumn = (MultiReferenceIndex) backReferenceColumn;
-			referencedRecords.forEach(refId -> multiBackReferenceColumn.removeReferences(refId, Collections.singletonList(id), true));
+			referencedRecords.forEach(refId -> {
+				multiBackReferenceColumn.removeReferences(refId, Collections.singletonList(id), true);
+				cyclicReferenceUpdates.add(new CyclicReferenceUpdate(multiBackReferenceColumn, true, refId, id));
+			});
 		} else {
 			SingleReferenceIndex singleBackReferenceColumn = (SingleReferenceIndex) backReferenceColumn;
 			referencedRecords.forEach(refId -> {
 				int value = singleBackReferenceColumn.getValue(refId);
 				if (id == value) {
 					singleBackReferenceColumn.setValue(refId, 0, true);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(singleBackReferenceColumn, true, refId, id));
 				}
 			});
 		}
+		return cyclicReferenceUpdates;
 	}
 
-	public void restoreRecord(int id) {
-		restoreRecord(id, null);
+	public List<CyclicReferenceUpdate> restoreRecord(int id) {
+		return restoreRecord(id, null);
 	}
 
-	public void restoreRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
+	public List<CyclicReferenceUpdate> restoreRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
 		if (!keepDeletedRecords || !deletedRecords.getValue(id)) {
-			return;
+			return Collections.emptyList();
 		}
 		deletedRecords.setValue(id, false);
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 
 		for (ColumnIndex<?, ?> referenceColumn : getReferenceColumns()) {
 			if (referenceColumn == cascadeOriginIndex) {
@@ -507,7 +517,8 @@ public class TableIndex implements MappedObject {
 				} else {
 					//restore back references
 					if (isWithBackReferenceColumn) {
-						restoreBackReferences(id, referenceColumn, referencedTable, isMultiReference, backReferenceColumn, isMultiBackReference, referencedRecords);
+						List<CyclicReferenceUpdate> referenceUpdates = restoreBackReferences(id, referenceColumn, referencedTable, isMultiReference, backReferenceColumn, isMultiBackReference, referencedRecords);
+						cyclicReferenceUpdates.addAll(referenceUpdates);
 					}
 				}
 			} else {
@@ -523,16 +534,20 @@ public class TableIndex implements MappedObject {
 		}
 
 		records.setValue(id, true);
+		return cyclicReferenceUpdates;
 	}
 
-	private void restoreBackReferences(int id, ColumnIndex<?, ?> referenceColumn, TableIndex referencedTable, boolean isMultiReference, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+	private List<CyclicReferenceUpdate> restoreBackReferences(int id, ColumnIndex<?, ?> referenceColumn, TableIndex referencedTable, boolean isMultiReference, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (isMultiBackReference) {
 			MultiReferenceIndex multiBackReferenceColumn = (MultiReferenceIndex) backReferenceColumn;
 			referencedRecords.forEach(refId -> {
 				if (referencedTable.isStored(refId)) {
+					//recreate back references
 					multiBackReferenceColumn.addReferences(refId, Collections.singletonList(id), true);
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(multiBackReferenceColumn, false, refId, id));
 				} else {
-					//remove local refs
+					//referenced entity was deleted so remove local refs
 					if (isMultiReference) {
 						MultiReferenceIndex multiReferenceColumn = (MultiReferenceIndex) referenceColumn;
 						multiReferenceColumn.removeAllReferences(id, true);
@@ -548,9 +563,11 @@ public class TableIndex implements MappedObject {
 				if (referencedTable.isStored(refId)) {
 					int value = singleBackReferenceColumn.getValue(refId);
 					if (value == 0) {
+						//recreate back references
 						singleBackReferenceColumn.setValue(refId, id, true);
+						cyclicReferenceUpdates.add(new CyclicReferenceUpdate(singleBackReferenceColumn, false, refId, id));
 					} else {
-						//remove local refs
+						//referenced entity was deleted so remove local refs
 						if (isMultiReference) {
 							MultiReferenceIndex multiReferenceColumn = (MultiReferenceIndex) referenceColumn;
 							multiReferenceColumn.removeAllReferences(id, true);
@@ -562,6 +579,7 @@ public class TableIndex implements MappedObject {
 				}
 			});
 		}
+		return cyclicReferenceUpdates;
 	}
 
 
