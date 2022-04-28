@@ -21,7 +21,10 @@ package org.teamapps.universaldb.index;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 import org.teamapps.universaldb.TableConfig;
+import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileStore;
@@ -716,7 +719,7 @@ public class TableIndex implements MappedObject {
 
 	public void close() {
 		try {
-			logger.info("Shutdown on collection:" + name);
+			logger.info(UniversalDB.SKIP_DB_LOGGING, "Shutdown on collection:" + name);
 			if (collectionTextSearchIndex != null) {
 				collectionTextSearchIndex.commit(true);
 			}

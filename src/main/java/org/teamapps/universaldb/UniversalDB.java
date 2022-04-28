@@ -22,6 +22,8 @@ package org.teamapps.universaldb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import org.teamapps.cluster.model.cluster.AbstractDbLeader;
 import org.teamapps.cluster.model.cluster.DbLeaderClient;
@@ -76,6 +78,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class UniversalDB implements DataBaseMapper {
+	public static final Marker SKIP_DB_LOGGING = MarkerFactory.getMarker("SKIP_DB_LOGGING");
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
@@ -165,7 +168,7 @@ public class UniversalDB implements DataBaseMapper {
 					DbTransactionList dbTransactionList = new DbTransactionList();
 					;
 					long lastKnownTransactionId = request.getLastKnownTransactionId();
-					logger.info("Client requested transactions with last known id: {}", lastKnownTransactionId);
+					logger.info(SKIP_DB_LOGGING, "Client requested transactions with last known id: {}", lastKnownTransactionId);
 					LogIterator logIterator = transactionIndex.getLogIterator();
 					File transactionsFile = File.createTempFile("transactions", ".temp");
 					DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(transactionsFile, false)));
@@ -183,7 +186,7 @@ public class UniversalDB implements DataBaseMapper {
 					dbTransactionList.setLastKnownTransactionId(lastKnownTransactionId);
 					dbTransactionList.setTransactionsFile(transactionsFile);
 					dbTransactionList.setTransactionCount(counter);
-					logger.info("Send transactions file, size: {}", transactionsFile.length());
+					logger.info(SKIP_DB_LOGGING, "Send transactions file, size: {}", transactionsFile.length());
 					logIterator.close();
 					return dbTransactionList;
 				} catch (Exception e) {
@@ -231,10 +234,10 @@ public class UniversalDB implements DataBaseMapper {
 				if (syncingFinished.get()) {
 					if (!transactionQueue.isEmpty()) {
 						while (!transactionQueue.isEmpty()) {
-							System.out.println(format("Run queued transactions: {}", transactionQueue.size()));
+							logger.info(SKIP_DB_LOGGING, "Run queued transactions: {}", transactionQueue.size());
 							ResolvedTransaction resolvedTransaction = transactionQueue.take();
 							if (transactionIndex.getLastTransactionId() >= resolvedTransaction.getTransactionId()) {
-								System.out.println(format("Transaction already processed: {}, last known transaction id: {}", resolvedTransaction.getTransactionId(), transactionIndex.getLastTransactionId()));
+								logger.info(SKIP_DB_LOGGING, "Transaction already processed: {}, last known transaction id: {}", resolvedTransaction.getTransactionId(), transactionIndex.getLastTransactionId());
 							} else {
 								handleTransaction(resolvedTransaction);
 								CompletableFuture<ResolvedTransaction> completableFuture = transactionCompletableFutureMap.get(resolvedTransaction.getRequestId());
@@ -261,11 +264,11 @@ public class UniversalDB implements DataBaseMapper {
 
 		dbLeaderClient = new DbLeaderClient(cluster);
 		while (!dbLeaderClient.isAvailable()) {
-			System.out.println("Wait for db leader service...");
+			logger.info(SKIP_DB_LOGGING, "Wait for db leader service...");
 			Thread.sleep(1_000);
 		}
 
-		System.out.println("Wait for logs...");
+		logger.info(SKIP_DB_LOGGING, "Wait for logs...");
 		Thread.sleep(3_000);
 
 
@@ -275,7 +278,7 @@ public class UniversalDB implements DataBaseMapper {
 
 			File transactionsFile = transactionList.getTransactionsFile();
 			DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(transactionsFile)));
-			System.out.println(format("Transactions file size: {}", transactionsFile.length()));
+			logger.info(SKIP_DB_LOGGING, "Transactions file size: {}", transactionsFile.length());
 			int loop = 0;
 			int pos = 0;
 			long lastTransactionId = 0;
@@ -294,17 +297,17 @@ public class UniversalDB implements DataBaseMapper {
 						e.printStackTrace();
 					}
 					if (loop % 1_000 == 0) {
-						System.out.println(format("Consumed transactions for far: {}, current transaction-id: {}, file pos: {}", loop, transaction == null ? "missing" : transaction.getTransactionId(), +pos));
+						logger.info(SKIP_DB_LOGGING, "Consumed transactions for far: {}, current transaction-id: {}, file pos: {}", loop, transaction == null ? "missing" : transaction.getTransactionId(), +pos);
 					}
 					loop++;
 				} catch (EOFException ignore) {
 					break;
 				}
 			}
-			System.out.println(format("Finished loading transactions, last transaction id: {}, consumed transactions: {}", lastTransactionId, loop));
+			logger.info(SKIP_DB_LOGGING, "Finished loading transactions, last transaction id: {}, consumed transactions: {}", lastTransactionId, loop);
 			syncingFinished.set(true);
 		}
-		System.out.println("Syncing transactions done");
+		logger.info(SKIP_DB_LOGGING, "Syncing transactions done");
 	}
 
 
@@ -334,7 +337,7 @@ public class UniversalDB implements DataBaseMapper {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				active = false;
-				logger.info("SHUTTING DOWN DATABASE");
+				logger.info(SKIP_DB_LOGGING, "SHUTTING DOWN DATABASE");
 				if (cluster != null) {
 					cluster.shutDown();
 				}
@@ -342,10 +345,6 @@ public class UniversalDB implements DataBaseMapper {
 				e.printStackTrace();
 			}
 		}));
-	}
-
-	public static String format(String format, Object... params) {
-		return MessageFormatter.arrayFormat(format, params).getMessage();
 	}
 
 	private void mapSchema(Schema schema, boolean executeAsTransaction) {

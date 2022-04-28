@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.transaction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.log.DefaultLogIndex;
 import org.teamapps.universaldb.index.log.LogIndex;
@@ -81,11 +82,11 @@ public class TransactionIndex {
 			List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
 			currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
 		}
-		logger.info("STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
+		logger.info(UniversalDB.SKIP_DB_LOGGING, "STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				active = false;
-				logger.info("SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
+				logger.info(UniversalDB.SKIP_DB_LOGGING, "SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
 				databaseStats.setLong(TIMESTAMP_SHUTDOWN, System.currentTimeMillis());
 				transactionLog.close();
 				schemaLog.close();
@@ -100,16 +101,16 @@ public class TransactionIndex {
 		LogIterator logIterator = transactionLog.readLogs();
 		long expectedTransactionId = 1;
 		boolean ok = true;
-		logger.info("Checking transaction index...");
+		logger.info(UniversalDB.SKIP_DB_LOGGING, "Checking transaction index...");
 		while (logIterator.hasNext()) {
 			ResolvedTransaction transaction = ResolvedTransaction.createResolvedTransaction(logIterator.next());
 			if (expectedTransactionId != transaction.getTransactionId()) {
-				logger.error("Wrong transaction id: {}, expected: {}", transaction.getTransactionId(), expectedTransactionId);
+				logger.error(UniversalDB.SKIP_DB_LOGGING, "Wrong transaction id: {}, expected: {}", transaction.getTransactionId(), expectedTransactionId);
 				ok = false;
 			}
 			expectedTransactionId = transaction.getTransactionId() + 1;
 		}
-		logger.info("Transaction index check result: {}", ok);
+		logger.info(UniversalDB.SKIP_DB_LOGGING, "Transaction index check result: {}", ok);
 		if (!ok) {
 			throw new RuntimeException("Error in transaction log!");
 		}
@@ -195,7 +196,7 @@ public class TransactionIndex {
 	public synchronized void writeSchemaUpdate(SchemaUpdate schemaUpdate) throws IOException {
 		schemaLog.writeLog(schemaUpdate.getBytes());
 		currentSchema = schemaUpdate.getSchema();
-		logger.info("Updating schema");
+		logger.info(UniversalDB.SKIP_DB_LOGGING, "Updating schema");
 	}
 
 	public synchronized Schema getCurrentSchema() {
