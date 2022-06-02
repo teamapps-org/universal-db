@@ -12,7 +12,6 @@ import org.teamapps.universaldb.index.reference.single.*;
 import org.teamapps.universaldb.index.binary.*;
 import org.teamapps.universaldb.pojo.*;
 import org.teamapps.universaldb.pojo.template.*;
-import org.teamapps.universaldb.transaction.*;
 import org.teamapps.universaldb.record.*;
 import org.teamapps.universaldb.context.*;
 import org.teamapps.universaldb.index.transaction.request.*;
