@@ -847,6 +847,10 @@ public class UniversalDB implements DataBaseMapper {
 		return schemaIndex;
 	}
 
+	public TransactionIndex getTransactionIndex() {
+		return transactionIndex;
+	}
+
 	public ArrayBlockingQueue<RecordUpdateEvent> getUpdateEventQueue() {
 		return updateEventQueue;
 	}
