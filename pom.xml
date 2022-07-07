@@ -51,7 +51,7 @@
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
         <tika-version>2.3.0</tika-version>
-        <lucene-version>9.1.0</lucene-version>
+        <lucene-version>9.2.0</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -84,7 +84,7 @@
         <dependency>
             <groupId>com.github.pemistahl</groupId>
             <artifactId>lingua</artifactId>
-            <version>1.1.1</version>
+            <version>1.2.1</version>
             <exclusions>
                 <exclusion>
                     <artifactId>annotations</artifactId>
