@@ -50,7 +50,7 @@
         <guava-version>31.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
-        <tika-version>2.3.0</tika-version>
+        <tika-version>2.4.1</tika-version>
         <lucene-version>9.2.0</lucene-version>
     </properties>
 
