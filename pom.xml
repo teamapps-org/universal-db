@@ -51,7 +51,7 @@
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
         <tika-version>2.4.1</tika-version>
-        <lucene-version>9.2.0</lucene-version>
+        <lucene-version>9.3.0</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -84,7 +84,7 @@
         <dependency>
             <groupId>com.github.pemistahl</groupId>
             <artifactId>lingua</artifactId>
-            <version>1.2.1</version>
+            <version>1.2.2</version>
             <exclusions>
                 <exclusion>
                     <artifactId>annotations</artifactId>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.15.1</version>
+            <version>1.16.0</version>
         </dependency>
 
         <dependency>
@@ -209,29 +209,6 @@
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-memory</artifactId>
             <version>${lucene-version}</version>
-        </dependency>
-
-        <dependency>
-            <!-- Java 17: https://chronicle.software/chronicle-support-java-17/ -->
-            <groupId>net.openhft</groupId>
-            <artifactId>chronicle-map</artifactId>
-            <version>3.23ea1</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>xstream</artifactId>
-                    <groupId>com.thoughtworks.xstream</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
-            <version>1.4.19</version>
         </dependency>
 
 

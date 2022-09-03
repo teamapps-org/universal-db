@@ -19,13 +19,13 @@
  */
 package org.teamapps.universaldb.index.map;
 
-import net.openhft.chronicle.map.ChronicleMap;
+//import net.openhft.chronicle.map.ChronicleMap;
 
 import java.io.File;
 import java.io.IOException;
 
 public class CharIntPersistedMap {
-
+/*
 	private static final String MAP_CURRENT_ENTRIES_KEY = "_mapCurrent$Entries#";
 	private static final int BASE_ENTRIES = 100_000;
 	private final File path;
@@ -143,5 +143,5 @@ public class CharIntPersistedMap {
 			}
 		}
 	}
-
+*/
 }
