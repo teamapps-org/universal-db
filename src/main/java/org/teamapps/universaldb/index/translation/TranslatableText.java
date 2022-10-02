@@ -29,7 +29,6 @@ import java.util.*;
 public class TranslatableText {
 
     private final static String DELIMITER = "\n<=@#!=>\n";
-    public static boolean REPAIR_ENCODED_TEXTS = false;
 
     private String originalText;
     private String originalLanguage;
@@ -60,13 +59,7 @@ public class TranslatableText {
 
     public TranslatableText(String encodedValue) {
         if (!isTranslatableText(encodedValue)) {
-            if (REPAIR_ENCODED_TEXTS) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(DELIMITER).append("en").append(":").append(encodedValue).append(DELIMITER);;
-                encodedValue = sb.toString();
-            } else {
-                throw new RuntimeException("Error: invalid translation encoding:" + encodedValue);
-            }
+            throw new RuntimeException("Error: invalid translation encoding:" + encodedValue);
         }
         this.encodedValue = encodedValue;
     }
@@ -111,6 +104,19 @@ public class TranslatableText {
     public String getText(List<String> rankedLanguages) {
         String translation = getTranslation(rankedLanguages);
         return translation != null ? translation : getText();
+    }
+
+    public boolean isTranslation(Set<String> languages) {
+        if (languages.contains(getOriginalLanguage())) {
+            return false;
+        }
+        Map<String, String> map = getTranslationMap();
+        for (String language : languages) {
+            if (map.containsKey(language)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public String getTranslation(String language) {
