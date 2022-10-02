@@ -29,6 +29,7 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 	private int currentFileIndex = -1;
 	private DataInputStream dis;
 	private byte[] nextLog;
+	private long currentReadPos;
 
 	public LogIterator(List<File> logFiles, long startPosition, boolean rotatingLogIndex) {
 		this.logFiles = logFiles;
@@ -52,8 +53,10 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 			dis = new DataInputStream(new BufferedInputStream(new FileInputStream(logFiles.get(currentFileIndex)), 64_000));
 			if (skipBytes > 0) {
 				dis.skipNBytes(skipBytes);
+				currentReadPos = RotatingLogIndex.calculatePosition(currentFileIndex, (int) skipBytes);
 			} else if (!rotatingLogIndex) {
 				dis.readInt();
+				currentReadPos = 4;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -69,8 +72,10 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 					return;
 				}
 				dis = new DataInputStream(new BufferedInputStream(new FileInputStream(logFiles.get(currentFileIndex)), 64_000));
+				currentReadPos = RotatingLogIndex.calculatePosition(currentFileIndex, 0);
 			}
 			int size = dis.readInt();
+			currentReadPos += size + 4;
 			byte[] bytes = new byte[size];
 			dis.readFully(bytes);
 			nextLog = bytes;
@@ -82,6 +87,7 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 			e.printStackTrace();
 		}
 	}
+
 
 	@Override
 	public boolean hasNext() {
@@ -100,10 +106,22 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 		return bytes;
 	}
 
+	public long getCurrentReadPosition() {
+		return currentReadPos;
+	}
+
 	@Override
 	public void close() throws Exception {
 		if (dis != null) {
 			dis.close();
+		}
+	}
+
+	public void closeSave() {
+		try {
+			close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 

@@ -36,6 +36,8 @@ public interface LogIndex {
 
 	LogIterator readLogs(long pos);
 
+	long[] readLogPositions();
+
 	default List<byte[]> readAllLogs() {
 		LogIterator logIterator = readLogs();
 		List<byte[]> logs = new ArrayList<>();

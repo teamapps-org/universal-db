@@ -22,7 +22,9 @@ package org.teamapps.universaldb.index.log;
 
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class DefaultLogIndex implements LogIndex {
 	private final File storeFile;
@@ -90,6 +92,21 @@ public class DefaultLogIndex implements LogIndex {
 	@Override
 	public LogIterator readLogs(long pos) {
 		return new LogIterator(Collections.singletonList(storeFile), pos, false);
+	}
+
+	@Override
+	public long[] readLogPositions() {
+		if (isEmpty()) {
+			return new long[0];
+		}
+		LogIterator logIterator = new LogIterator(Collections.singletonList(storeFile), 0, true);
+		List<Long> positions = new ArrayList<>();
+		positions.add(4L);
+		while (logIterator.hasNext()) {
+			positions.add(logIterator.getCurrentReadPosition());
+			logIterator.next();
+		}
+		return positions.stream().limit(positions.size() - 1).mapToLong(l -> l).toArray();
 	}
 
 	@Override

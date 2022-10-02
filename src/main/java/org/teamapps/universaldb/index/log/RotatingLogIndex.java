@@ -139,6 +139,22 @@ public class RotatingLogIndex implements LogIndex {
 		return new LogIterator(storeFiles, pos, true);
 	}
 
+	@Override
+	public long[] readLogPositions() {
+		if (isEmpty()) {
+			return new long[0];
+		}
+		List<File> storeFiles = getStoreFiles();
+		LogIterator logIterator = new LogIterator(storeFiles, 0, true);
+		List<Long> positions = new ArrayList<>();
+		positions.add(0L);
+		while (logIterator.hasNext()) {
+			positions.add(logIterator.getCurrentReadPosition());
+			logIterator.next();
+		}
+		return positions.stream().limit(positions.size() - 1).mapToLong(l -> l).toArray();
+	}
+
 	private List<File> getStoreFiles() {
 		List<File> storeFiles = new ArrayList<>();
 		for (int i = 0; i <= currentFileIndex; i++) {
