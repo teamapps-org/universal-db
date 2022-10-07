@@ -28,6 +28,7 @@ public class ChunkedLogIndex {
 	private final LogIndex logIndex;
 	private final int entriesPerChunk;
 
+	private long lastEntryPosition = -1;
 	private long[] chunks;
 	private int currentChunkIndex;
 	private int messagesInCurrentChunk;
@@ -42,6 +43,7 @@ public class ChunkedLogIndex {
 		chunks = new long[Math.max(10_000, (totalEntries / entriesPerChunk) * 2)];
 		currentChunkIndex = 0;
 		if (totalEntries > 0){
+			lastEntryPosition = logPositions[logPositions.length - 1];
 			currentChunkIndex = -1;
 			for (int i = 0; i < totalEntries; i += entriesPerChunk) {
 				currentChunkIndex++;
@@ -57,6 +59,7 @@ public class ChunkedLogIndex {
 
 	public synchronized long writeLog(byte[] bytes) {
 		long position = logIndex.writeLog(bytes);
+		lastEntryPosition = position;
 		messagesInCurrentChunk++;
 		if (messagesInCurrentChunk > entriesPerChunk) {
 			currentChunkIndex++;
@@ -75,7 +78,16 @@ public class ChunkedLogIndex {
 		return logIndex.readLog(pos);
 	}
 
+	public byte[] getLastEntry() {
+		if (lastEntryPosition >= 0) {
+			return logIndex.readLog(lastEntryPosition);
+		} else {
+			return null;
+		}
+	}
+
 	public List<byte[]> readLastLogEntries(int numberOfEntries) {
+		numberOfEntries = Math.min(numberOfEntries, getLogEntryCount());
 		int chunkCount = numberOfEntries / entriesPerChunk;
 		if (chunkCount * entriesPerChunk + messagesInCurrentChunk < numberOfEntries) {
 			chunkCount++;

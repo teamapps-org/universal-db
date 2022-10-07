@@ -70,6 +70,11 @@ public class ChunkedIndexMessageStore<TYPE extends MessageObject> {
 				.collect(Collectors.toList());
 	}
 
+	public TYPE getLastMessage() {
+		byte[] bytes = messageIndex.getLastEntry();
+		return bytes != null ? pojoObjectDecoder.decode(bytes, fileStore) : null;
+	}
+
 	public void close() {
 		messageIndex.close();
 	}
