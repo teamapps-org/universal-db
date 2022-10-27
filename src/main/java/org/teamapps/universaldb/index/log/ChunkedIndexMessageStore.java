@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ChunkedIndexMessageStore<TYPE extends MessageObject> {
@@ -33,6 +35,7 @@ public class ChunkedIndexMessageStore<TYPE extends MessageObject> {
 	private final ChunkedLogIndex messageIndex;
 	private final PojoObjectDecoder<TYPE> pojoObjectDecoder;
 	private LocalFileStore fileStore;
+	private BiConsumer<TYPE, Integer> messageIdHandler;
 
 	public ChunkedIndexMessageStore(File path, String name, int entriesPerChunk, boolean rotatingLogIndex, boolean withFileStore, PojoObjectDecoder<TYPE> pojoObjectDecoder) {
 		File basePath = new File(path, name);
@@ -44,9 +47,16 @@ public class ChunkedIndexMessageStore<TYPE extends MessageObject> {
 		this.pojoObjectDecoder = pojoObjectDecoder;
 	}
 
+	public void setMessageIdHandler(BiConsumer<TYPE, Integer> messageIdHandler) {
+		this.messageIdHandler = messageIdHandler;
+	}
+
 	public synchronized long addMessage(TYPE message) {
 		try {
 			byte[] bytes = message.toBytes(fileStore);
+			if (messageIdHandler != null) {
+				messageIdHandler.accept(message, messageIndex.getLogEntryCount() + 1);
+			}
 			return messageIndex.writeLog(bytes);
 		} catch (IOException e) {
 			e.printStackTrace();

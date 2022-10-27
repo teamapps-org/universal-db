@@ -115,6 +115,11 @@ public class UniversalDB implements DataBaseMapper {
 		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
 	}
 
+	public static UniversalDB createStandalone(File storagePath, File fileStorePath, SchemaInfoProvider schemaInfoProvider) throws Exception {
+		LocalFileStore fileStore = new LocalFileStore(fileStorePath);
+		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
+	}
+
 	public static UniversalDB createStandalone(File storagePath, SchemaInfoProvider schemaInfoProvider, FileStore fileStore) throws Exception {
 		return new UniversalDB(storagePath, schemaInfoProvider, fileStore);
 	}
