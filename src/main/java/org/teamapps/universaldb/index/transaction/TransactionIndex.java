@@ -60,6 +60,27 @@ public class TransactionIndex {
 
 	private Schema currentSchema;
 
+	public static void exportEmptyIndexWithModel(File baseInputPath, File baseOutputPath) {
+		new TransactionIndex(baseInputPath, baseOutputPath);
+	}
+
+	private TransactionIndex(File basePath, File baseOutputPath) {
+		this.path = new File(basePath, "transactions");
+		this.path.mkdir();
+		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
+		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
+		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
+		List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
+		currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
+
+		try {
+			TransactionIndex newTransactionIndex = new TransactionIndex(baseOutputPath);
+			newTransactionIndex.writeSchemaUpdate(new SchemaUpdate(currentSchema, 0, System.currentTimeMillis()));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public TransactionIndex(File basePath) {
 		this.path = new File(basePath, "transactions");
 		this.path.mkdir();
