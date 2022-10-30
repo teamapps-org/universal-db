@@ -99,7 +99,7 @@ public class DefaultLogIndex implements LogIndex {
 		if (isEmpty()) {
 			return new long[0];
 		}
-		LogIterator logIterator = new LogIterator(Collections.singletonList(storeFile), 0, true);
+		LogIterator logIterator = new LogIterator(Collections.singletonList(storeFile), 0, false);
 		List<Long> positions = new ArrayList<>();
 		positions.add(4L);
 		while (logIterator.hasNext()) {

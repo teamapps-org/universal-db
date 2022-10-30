@@ -47,6 +47,7 @@ public class ChunkedIndexMessageStoreTest {
 		store = createMessageStore(path);
 		nodeInfos = store.readLastMessages(1);
 		assertTrue(nodeInfos.size() > 0);
+		assertEquals(size, store.readLastMessages(1000).size());
 	}
 
 	private static File createTempDir() throws IOException {

@@ -88,7 +88,7 @@ public class ChunkedLogIndex {
 
 	public List<byte[]> readLastLogEntries(int numberOfEntries) {
 		numberOfEntries = Math.min(numberOfEntries, getLogEntryCount());
-		int chunkCount = numberOfEntries / entriesPerChunk;
+		int chunkCount = (numberOfEntries - 1) / entriesPerChunk;
 		if (chunkCount * entriesPerChunk + messagesInCurrentChunk < numberOfEntries) {
 			chunkCount++;
 		}
