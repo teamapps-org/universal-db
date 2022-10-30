@@ -50,8 +50,8 @@
         <guava-version>31.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
-        <tika-version>2.4.1</tika-version>
-        <lucene-version>9.3.0</lucene-version>
+        <tika-version>2.5.0</tika-version>
+        <lucene-version>9.4.1</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.teamapps</groupId>
             <artifactId>teamapps-cluster</artifactId>
-            <version>0.7</version>
+            <version>0.8</version>
         </dependency>
 
         <dependency>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.16.0</version>
+            <version>1.17.1</version>
         </dependency>
 
         <dependency>
