@@ -21,6 +21,8 @@ package org.teamapps.universaldb.index.log;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class RotatingLogIndex implements LogIndex {
@@ -140,6 +142,17 @@ public class RotatingLogIndex implements LogIndex {
 	}
 
 	@Override
+	public void readLogs(List<IndexMessage> messages) {
+		if (!messages.isEmpty()) {
+			List<File> storeFiles = getStoreFiles();
+			messages.sort(Comparator.comparingLong(IndexMessage::getPosition));
+			LogIterator iterator = new LogIterator(storeFiles, messages.get(0).getPosition(), true);
+			iterator.readMessages(messages);
+			iterator.closeSave();
+		}
+	}
+
+	@Override
 	public long[] readLogPositions() {
 		if (isEmpty()) {
 			return new long[0];
@@ -171,6 +184,13 @@ public class RotatingLogIndex implements LogIndex {
 	@Override
 	public boolean isEmpty() {
 		return currentFileIndex == 0 && currentFilePosition == 0;
+	}
+
+	@Override
+	public long getStoreSize() {
+		return getStoreFiles().stream()
+				.mapToLong(File::length)
+				.sum();
 	}
 
 	@Override

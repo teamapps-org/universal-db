@@ -24,6 +24,7 @@ package org.teamapps.universaldb.index.log;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class DefaultLogIndex implements LogIndex {
@@ -95,6 +96,16 @@ public class DefaultLogIndex implements LogIndex {
 	}
 
 	@Override
+	public void readLogs(List<IndexMessage> messages) {
+		if (!messages.isEmpty()) {
+			messages.sort(Comparator.comparingLong(IndexMessage::getPosition));
+			LogIterator iterator = new LogIterator(Collections.singletonList(storeFile), messages.get(0).getPosition(), false);
+			iterator.readMessages(messages);
+			iterator.closeSave();
+		}
+	}
+
+	@Override
 	public long[] readLogPositions() {
 		if (isEmpty()) {
 			return new long[0];
@@ -117,6 +128,11 @@ public class DefaultLogIndex implements LogIndex {
 	@Override
 	public boolean isEmpty() {
 		return position <= 4;
+	}
+
+	@Override
+	public long getStoreSize() {
+		return storeFile.length();
 	}
 
 	@Override

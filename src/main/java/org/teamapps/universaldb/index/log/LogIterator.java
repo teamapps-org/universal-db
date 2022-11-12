@@ -20,6 +20,8 @@
 package org.teamapps.universaldb.index.log;
 
 import java.io.*;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -86,6 +88,29 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void readMessages(List<IndexMessage> messages) {
+		if (messages.isEmpty() || logFiles.isEmpty()) {
+			return;
+		}
+		long position = 0;
+		int index = 0;
+		while (hasNext()) {
+			IndexMessage message = messages.get(index);
+			boolean addMessage = message.getPosition() == position || index == 0;
+			position = currentReadPos;
+			byte[] bytes = next();
+			if (addMessage) {
+				message.setMessage(bytes);
+				index++;
+				if (index >= messages.size()) {
+					break;
+				}
+			}
+		}
+		messages.sort(Comparator.comparingInt(IndexMessage::getId));
+		closeSave();
 	}
 
 

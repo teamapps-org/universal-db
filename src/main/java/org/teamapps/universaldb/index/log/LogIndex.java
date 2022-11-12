@@ -32,9 +32,21 @@ public interface LogIndex {
 
 	byte[] readLog(long pos);
 
+	default List<byte[]> readLogs(long pos, int messages) {
+		LogIterator logIterator = readLogs(pos);
+		List<byte[]> logs = new ArrayList<>();
+		while (logIterator.hasNext() && logs.size() < messages) {
+			logs.add(logIterator.next());
+		}
+		logIterator.closeSave();
+		return logs;
+	}
+
 	LogIterator readLogs();
 
 	LogIterator readLogs(long pos);
+
+	void readLogs(List<IndexMessage> messages);
 
 	long[] readLogPositions();
 
@@ -55,6 +67,8 @@ public interface LogIndex {
 	long getPosition();
 
 	boolean isEmpty();
+
+	long getStoreSize();
 
 	void flush();
 
