@@ -331,6 +331,12 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 				removeAllMultiReferenceValue(multiReferenceIndex);
 			}
 		} else {
+			if (getChangeValue(multiReferenceIndex) == null && multiReferenceIndex.getReferencesCount(getId()) == entities.size() && entities.stream().allMatch(Entity::isStored)) {
+				Set<Integer> entityIdSet = entities.stream().map(Entity::getId).collect(Collectors.toSet());
+				if (entityIdSet.containsAll(multiReferenceIndex.getReferencesAsList(getId()))) {
+					return;
+				}
+			}
 			MultiReferenceEditValue editValue = getOrCreateMultiReferenceEditValue(multiReferenceIndex);
 			List<RecordReference> references = createRecordReferences(entities);
 			editValue.setReferences(references);
