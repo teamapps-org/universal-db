@@ -51,6 +51,9 @@ public class TranslatableText {
     }
 
     public TranslatableText(String originalText, String originalLanguage) {
+        if (originalLanguage == null) {
+            throw new RuntimeException("Error: no language for translatable text");
+        }
         this.originalText = originalText;
         this.originalLanguage = originalLanguage;
         this.translationMap = new HashMap<>();
