@@ -200,6 +200,6 @@ public class MessageStoreTest {
 	}
 
 	private static MessageStore<TestMessage> createStore(String storeName) throws IOException {
-		return new MessageStore<>(TEMP_DIR, storeName, TestMessage.getMessageDecoder(), TestMessage::setMessageId, TestMessage::getMessageId);
+		return new MessageStore<>(TEMP_DIR, storeName, false, TestMessage.getMessageDecoder(), TestMessage::setMessageId, TestMessage::getMessageId);
 	}
 }

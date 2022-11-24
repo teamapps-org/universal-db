@@ -42,13 +42,13 @@ public class MessageStore<TYPE extends MessageObject> {
 	private final BiConsumer<TYPE, Integer> messageIdHandler;
 	private final Function<TYPE, Integer> messageToIdFunction;
 
-	public MessageStore(File path, String name, PojoObjectDecoder<TYPE> pojoObjectDecoder, BiConsumer<TYPE, Integer> messageIdHandler, Function<TYPE, Integer> messageToIdFunction) {
+	public MessageStore(File path, String name, boolean withFileStore, PojoObjectDecoder<TYPE> pojoObjectDecoder, BiConsumer<TYPE, Integer> messageIdHandler, Function<TYPE, Integer> messageToIdFunction) {
 		File basePath = new File(path, name);
 		basePath.mkdir();
 		this.records = new RecordIndex(basePath, "records");
 		this.messagePositionStore = new PrimitiveEntryAtomicStore(basePath, "positions");
 		this.logIndex = new RotatingLogIndex(basePath, "messages");
-		this.fileStore = new LocalFileStore(basePath, "file-store");
+		this.fileStore = withFileStore ? new LocalFileStore(basePath, "file-store") : null;
 		this.pojoObjectDecoder = pojoObjectDecoder;
 		this.messageIdHandler = messageIdHandler;
 		this.messageToIdFunction = messageToIdFunction;
