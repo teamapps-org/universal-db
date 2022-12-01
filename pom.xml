@@ -51,7 +51,7 @@
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
         <tika-version>2.6.0</tika-version>
-        <lucene-version>9.4.1</lucene-version>
+        <lucene-version>9.4.2</lucene-version>
     </properties>
 
     <distributionManagement>
