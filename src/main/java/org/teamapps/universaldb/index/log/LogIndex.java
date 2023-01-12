@@ -46,7 +46,7 @@ public interface LogIndex {
 
 	LogIterator readLogs(long pos);
 
-	void readLogs(List<IndexMessage> messages);
+	void readLogs(List<PositionIndexedMessage> messages);
 
 	long[] readLogPositions();
 

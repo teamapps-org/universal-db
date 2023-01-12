@@ -21,49 +21,46 @@ package org.teamapps.universaldb.index.log;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
 public class RotatingLogIndex implements LogIndex {
 
+	public static final String EXTENSION = ".lgx";
 	private final File basePath;
 	private final String name;
 	private final int maxLogFileSize;
-	private final int scanUpToFileIndex;
 	private int currentFileIndex;
 	private int currentFilePosition;
 	private DataOutputStream dos;
 
 	public RotatingLogIndex(File basePath, String name) {
-		this(basePath, name, 1966_080_000, 10);
+		this(basePath, name, 1966_080_000);
 	}
 
-	public RotatingLogIndex(File basePath, String name, int maxLogFileSize, int scanUpToFileIndex) {
+	public RotatingLogIndex(File basePath, String name, int maxLogFileSize) {
 		this.basePath = basePath;
 		this.name = name;
 		this.maxLogFileSize = maxLogFileSize;
-		this.scanUpToFileIndex = Math.min(1, scanUpToFileIndex);
 		init();
 	}
 
 	private void init() {
-		int index = 0;
-		int lastAvailableIndex = -1;
-		while (index < scanUpToFileIndex || lastAvailableIndex + 1 == index) {
-			if (getLogFile(index).exists()) {
-				lastAvailableIndex = index;
-			}
-			index++;
-		}
+		int maxIndex = Arrays.stream(basePath.listFiles())
+				.map(File::getName)
+				.filter(s -> s.endsWith(EXTENSION) && s.contains(name))
+				.map(s -> s.substring(s.lastIndexOf('-') + 1, s.length() - EXTENSION.length()))
+				.mapToInt(Integer::parseInt)
+				.max().orElse(-1);
 		try {
-			if (lastAvailableIndex < 0) {
+			if (maxIndex < 0) {
 				currentFileIndex = 0;
 				currentFilePosition = 0;
 				File logFile = getLogFile(currentFileIndex);
 				dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(logFile, true), 32_000));
 			} else {
-				currentFileIndex = lastAvailableIndex;
+				currentFileIndex = maxIndex;
 				File logFile = getLogFile(currentFileIndex);
 				currentFilePosition = (int) logFile.length();
 				dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(logFile, true), 32_000));
@@ -74,7 +71,7 @@ public class RotatingLogIndex implements LogIndex {
 	}
 
 	private File getLogFile(int fileIndex) {
-		return new File(basePath, name + "-" + fileIndex + ".lgx");
+		return new File(basePath, name + "-" + fileIndex + EXTENSION);
 	}
 
 	private void checkWritePosition(int length) throws IOException {
@@ -142,10 +139,10 @@ public class RotatingLogIndex implements LogIndex {
 	}
 
 	@Override
-	public void readLogs(List<IndexMessage> messages) {
+	public void readLogs(List<PositionIndexedMessage> messages) {
 		if (!messages.isEmpty()) {
 			List<File> storeFiles = getStoreFiles();
-			messages.sort(Comparator.comparingLong(IndexMessage::getPosition));
+			messages.sort(Comparator.comparingLong(PositionIndexedMessage::getPosition));
 			LogIterator iterator = new LogIterator(storeFiles, messages.get(0).getPosition(), true);
 			iterator.readMessages(messages);
 			iterator.closeSave();

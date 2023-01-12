@@ -48,7 +48,7 @@ public class MessageStoreTest {
 		assertEquals(0, store.getMessageCount());
 		int size = 10;
 		for (int i = 0; i < size; i++) {
-			store.addMessage(new TestMessage().setTestId(i));
+			store.saveMessage(new TestMessage().setTestId(i));
 		}
 		assertEquals(10, store.getMessageCount());
 		store.close();
@@ -65,7 +65,7 @@ public class MessageStoreTest {
 		MessageStore<TestMessage> store = createStore(name);
 		int size = 10_000;
 		for (int i = 0; i < size; i++) {
-			store.addMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
+			store.saveMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
 		}
 		List<TestMessage> messages = store.readAllMessages();
 		for (int i = 0; i < size; i++) {
@@ -74,11 +74,11 @@ public class MessageStoreTest {
 		int partSize = 1_000;
 		List<TestMessage> testMessages = store.readLastMessages(partSize);
 		assertEquals(partSize, testMessages.size());
-		assertEquals(9_001, testMessages.get(0).getMessageId());
+		assertEquals(9_001, testMessages.get(0).getRecordId());
 		assertEquals(9_000, testMessages.get(0).getTestId());
 
 		for (int i = 0; i < partSize; i++) {
-			assertEquals(i + 9_001, testMessages.get(i).getMessageId());
+			assertEquals(i + 9_001, testMessages.get(i).getRecordId());
 		}
 		store.close();
 		store = createStore(name);
@@ -100,12 +100,12 @@ public class MessageStoreTest {
 		store.saveMessage(msg2);
 		store.saveMessage(msg3);
 		assertEquals(3, store.getMessageCount());
-		assertEquals("test 2", store.readMessage(msg2.getMessageId()).getSubject());
+		assertEquals("test 2", store.readMessage(msg2.getRecordId()).getSubject());
 		store.saveMessage(msg2.setSubject("test updated 2"));
-		assertEquals("test updated 2", store.readMessage(msg2.getMessageId()).getSubject());
+		assertEquals("test updated 2", store.readMessage(msg2.getRecordId()).getSubject());
 		store.close();
 		store = createStore(name);
-		assertEquals("test updated 2", store.readMessage(msg2.getMessageId()).getSubject());
+		assertEquals("test updated 2", store.readMessage(msg2.getRecordId()).getSubject());
 	}
 
 	@Test
@@ -173,7 +173,7 @@ public class MessageStoreTest {
 		MessageStore<TestMessage> store = createStore(name);
 		int size = 1_000;
 		for (int i = 0; i < size; i++) {
-			store.addMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
+			store.saveMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
 		}
 		for (int i = 0; i < size; i += 2) {
 			TestMessage message = store.readMessage(i + 1);
@@ -183,13 +183,13 @@ public class MessageStoreTest {
 		store.deleteMessage(900);
 		assertEquals(999, store.getMessageCount());
 		List<TestMessage> messages = store.readLastMessages(10);
-		assertEquals(991, messages.get(0).getMessageId());
+		assertEquals(991, messages.get(0).getRecordId());
 		assertEquals(990, messages.get(0).getTestId());
 		assertEquals("body-990", messages.get(0).getBody());
-		assertEquals(992, messages.get(1).getMessageId());
+		assertEquals(992, messages.get(1).getRecordId());
 		store.deleteMessage(991);
 		messages = store.readLastMessages(10);
-		assertEquals(990, messages.get(0).getMessageId());
+		assertEquals(990, messages.get(0).getRecordId());
 	}
 
 	@Test
@@ -206,7 +206,7 @@ public class MessageStoreTest {
 		MessageStore<TestMessage> store = createStore(name);
 		int size = 1_000;
 		for (int i = 0; i < size; i++) {
-			store.addMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
+			store.saveMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
 		}
 		List<TestMessage> messages = store.readAllMessages();
 		for (int i = 0; i < size; i++) {
@@ -219,6 +219,6 @@ public class MessageStoreTest {
 	}
 
 	private static MessageStore<TestMessage> createStore(String storeName) throws IOException {
-		return new MessageStore<>(TEMP_DIR, storeName, false, TestMessage.getMessageDecoder(), TestMessage::setMessageId, TestMessage::getMessageId);
+		return new MessageStore<>(TEMP_DIR, storeName, false, TestMessage.getMessageDecoder());
 	}
 }

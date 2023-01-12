@@ -96,9 +96,9 @@ public class DefaultLogIndex implements LogIndex {
 	}
 
 	@Override
-	public void readLogs(List<IndexMessage> messages) {
+	public void readLogs(List<PositionIndexedMessage> messages) {
 		if (!messages.isEmpty()) {
-			messages.sort(Comparator.comparingLong(IndexMessage::getPosition));
+			messages.sort(Comparator.comparingLong(PositionIndexedMessage::getPosition));
 			LogIterator iterator = new LogIterator(Collections.singletonList(storeFile), messages.get(0).getPosition(), false);
 			iterator.readMessages(messages);
 			iterator.closeSave();

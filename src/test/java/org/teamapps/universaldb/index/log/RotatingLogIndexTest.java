@@ -103,7 +103,7 @@ public class RotatingLogIndexTest {
 
 	@Test
 	public void testRotating() {
-		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log", 10_000, 100);
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log", 10_000);
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
 			long pos = logIndex.writeLog(TEST_DATA);
@@ -122,7 +122,7 @@ public class RotatingLogIndexTest {
 
 	@Test
 	public void readLogs() throws Exception {
-		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-rl", 50_000, 100);
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-rl", 50_000);
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
 			long pos = logIndex.writeLog(TEST_DATA);
@@ -154,7 +154,7 @@ public class RotatingLogIndexTest {
 
 	@Test
 	public void readLogs2() throws Exception {
-		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-rl2", 50_000, 100);
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-rl2", 50_000);
 		Map<Integer, Long> positionMap = new HashMap<>();
 		for (int i = 0; i < 1_000; i++) {
 			byte[] testValue = createTestValue(i);
@@ -187,7 +187,7 @@ public class RotatingLogIndexTest {
 
 	@Test
 	public void getPosition() {
-		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log2", 10_000, 100);
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log2", 10_000);
 		assertEquals(0, logIndex.getPosition());
 		logIndex.writeLog(TEST_DATA);
 		assertEquals(TEST_DATA.length + 4, logIndex.getPosition());
@@ -214,7 +214,7 @@ public class RotatingLogIndexTest {
 
 	@Test(expected = RuntimeException.class)
 	public void close() {
-		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log3", 10_000, 100);
+		RotatingLogIndex logIndex = new RotatingLogIndex(tempDir, "rotating-log3", 10_000);
 		logIndex.writeLog(TEST_DATA);
 		logIndex.close();
 		logIndex.writeLog(TEST_DATA);
