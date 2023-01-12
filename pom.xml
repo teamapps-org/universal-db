@@ -15,7 +15,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>universal-db</artifactId>
@@ -47,7 +48,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <slf4j-version>2.0.5</slf4j-version>
-        <guava-version>31.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
         <tika-version>2.6.0</tika-version>
@@ -77,38 +77,15 @@
 
         <dependency>
             <groupId>org.teamapps</groupId>
-            <artifactId>teamapps-cluster</artifactId>
-            <version>0.9-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.teamapps</groupId>
             <artifactId>teamapps-message-protocol</artifactId>
             <version>0.7-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.github.pemistahl</groupId>
-            <artifactId>lingua</artifactId>
-            <version>1.2.2</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>annotations</artifactId>
-                    <groupId>org.jetbrains</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
             <version>1.17.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava-version}</version>
         </dependency>
 
         <dependency>
@@ -239,20 +216,6 @@
                         <modelClass>Model</modelClass>
                     </modelClasses>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.teamapps</groupId>
-                <artifactId>teamapps-protocol-schema-maven-plugin</artifactId>
-                <version>0.3</version>
-                <executions>
-                    <execution>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>generate-test-protocol-api</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
