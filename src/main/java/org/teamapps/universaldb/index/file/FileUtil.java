@@ -20,9 +20,6 @@
 package org.teamapps.universaldb.index.file;
 
 
-import com.github.pemistahl.lingua.api.Language;
-import com.github.pemistahl.lingua.api.LanguageDetector;
-import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -51,7 +48,6 @@ public class FileUtil {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	private static final int MAX_CHARACTERS_CONTENT = 75_000;
-	private static LanguageDetector languageDetector;
 
 	public static void compressAndEncrypt(File src, File dst, String password) throws Exception {
 		BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(dst));
@@ -142,21 +138,6 @@ public class FileUtil {
 			e.printStackTrace();
 		}
 		return null;
-	}
-
-	public static String getFileContentLanguage(String content) {
-		if (content == null) {
-			return null;
-		}
-		if (languageDetector == null) {
-			languageDetector = LanguageDetectorBuilder.fromAllLanguages().build();
-		}
-		Language language = languageDetector.detectLanguageOf(content);
-		if (language == null) {
-			return null;
-		} else {
-			return language.getIsoCode639_1().name().toLowerCase();
-		}
 	}
 
 	public static String createFileHash(File file) {
