@@ -67,7 +67,7 @@ public class MessageStore<TYPE extends MessageObject> {
 		return logIndex.getStoreSize();
 	}
 
-	public void saveMessage(TYPE message) {
+	public synchronized void saveMessage(TYPE message) {
 		boolean create = false;
 		Integer id = messageToIdFunction.apply(message);
 		if (id == null || id == 0) {
@@ -77,13 +77,13 @@ public class MessageStore<TYPE extends MessageObject> {
 		addMessage(id, message, create);
 	}
 
-	public int addMessage(TYPE message) {
+	public synchronized int addMessage(TYPE message) {
 		int id = getNextRecordId();
 		addMessage(id, message, true);
 		return id;
 	}
 
-	private synchronized void addMessage(int id, TYPE message, boolean create) {
+	private void addMessage(int id, TYPE message, boolean create) {
 		try {
 			if (create) {
 				messageIdHandler.accept(message, id);

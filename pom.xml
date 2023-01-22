@@ -46,7 +46,7 @@
         <maven.compiler.target>14</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
-        <slf4j-version>2.0.4</slf4j-version>
+        <slf4j-version>2.0.5</slf4j-version>
         <guava-version>31.1-jre</guava-version>
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
@@ -78,7 +78,13 @@
         <dependency>
             <groupId>org.teamapps</groupId>
             <artifactId>teamapps-cluster</artifactId>
-            <version>0.8</version>
+            <version>0.9-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.teamapps</groupId>
+            <artifactId>teamapps-message-protocol</artifactId>
+            <version>0.7-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -244,6 +250,20 @@
                         <phase>generate-test-sources</phase>
                         <goals>
                             <goal>generate-test-protocol-api</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.teamapps</groupId>
+                <artifactId>teamapps-message-protocol-maven-plugin</artifactId>
+                <version>0.4-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>generate-test-message-protocol-api</goal>
                         </goals>
                     </execution>
                 </executions>
