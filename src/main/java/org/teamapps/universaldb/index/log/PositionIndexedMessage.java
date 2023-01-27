@@ -19,13 +19,13 @@
  */
 package org.teamapps.universaldb.index.log;
 
-public class IndexMessage {
+public class PositionIndexedMessage {
 
 	private final int id;
 	private final long position;
 	private byte[] message;
 
-	public IndexMessage(int id, long position) {
+	public PositionIndexedMessage(int id, long position) {
 		this.id = id;
 		this.position = position;
 	}

@@ -19,8 +19,8 @@
  */
 package org.teamapps.universaldb.index.log;
 
-import org.teamapps.protocol.schema.MessageObject;
-import org.teamapps.protocol.schema.PojoObjectDecoder;
+import org.teamapps.protocol.message.Message;
+import org.teamapps.protocol.model.PojoObjectDecoder;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.buffer.RecordIndex;
 
@@ -28,21 +28,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class MessageStore<TYPE extends MessageObject> {
+public class MessageStore<TYPE extends Message> {
 
 	private final RecordIndex records;
 	private final PrimitiveEntryAtomicStore messagePositionStore;
 	private final LogIndex logIndex;
 	private final LocalFileStore fileStore;
 	private final PojoObjectDecoder<TYPE> pojoObjectDecoder;
-	private final BiConsumer<TYPE, Integer> messageIdHandler;
-	private final Function<TYPE, Integer> messageToIdFunction;
 
-	public MessageStore(File path, String name, boolean withFileStore, PojoObjectDecoder<TYPE> pojoObjectDecoder, BiConsumer<TYPE, Integer> messageIdHandler, Function<TYPE, Integer> messageToIdFunction) {
+	public MessageStore(File path, String name, boolean withFileStore, PojoObjectDecoder<TYPE> pojoObjectDecoder) {
 		File basePath = new File(path, name);
 		basePath.mkdir();
 		this.records = new RecordIndex(basePath, "records");
@@ -50,8 +46,6 @@ public class MessageStore<TYPE extends MessageObject> {
 		this.logIndex = new RotatingLogIndex(basePath, "messages");
 		this.fileStore = withFileStore ? new LocalFileStore(basePath, "file-store") : null;
 		this.pojoObjectDecoder = pojoObjectDecoder;
-		this.messageIdHandler = messageIdHandler;
-		this.messageToIdFunction = messageToIdFunction;
 		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
 
@@ -67,27 +61,17 @@ public class MessageStore<TYPE extends MessageObject> {
 		return logIndex.getStoreSize();
 	}
 
-	public synchronized void saveMessage(TYPE message) {
-		boolean create = false;
-		Integer id = messageToIdFunction.apply(message);
-		if (id == null || id == 0) {
-			id = getNextRecordId();
-			create = true;
+	public void saveMessage(TYPE message) {
+		int recordId = message.getRecordId();
+		if (recordId <= 0) {
+			recordId = getNextRecordId();
+			message.setRecordId(recordId);
 		}
-		addMessage(id, message, create);
+		addMessage(recordId, message);
 	}
 
-	public synchronized int addMessage(TYPE message) {
-		int id = getNextRecordId();
-		addMessage(id, message, true);
-		return id;
-	}
-
-	private void addMessage(int id, TYPE message, boolean create) {
+	private synchronized void addMessage(int id, TYPE message) {
 		try {
-			if (create) {
-				messageIdHandler.accept(message, id);
-			}
 			byte[] bytes = message.toBytes(fileStore);
 			long position = logIndex.writeLog(bytes);
 			messagePositionStore.setLong(id, position);
@@ -96,33 +80,26 @@ public class MessageStore<TYPE extends MessageObject> {
 		}
 	}
 
-	public void updateMessage(TYPE message) {
-		Integer id = messageToIdFunction.apply(message);
-		addMessage(id, message, false);
-	}
-
 	public void deleteMessage(TYPE message) {
-		Integer id = messageToIdFunction.apply(message);
-		deleteMessage(id);
+		deleteMessage(message.getRecordId());
 	}
 
 	public void deleteMessage(int id) {
 		records.setBoolean(id, false);
-		messagePositionStore.setLong(id, (Math.abs(getMessagePositionStoreLong(id)) * -1));
+		messagePositionStore.setLong(id, (Math.abs(getMessagePosition(id)) * -1));
 	}
 
 	public void undeleteMessage(TYPE message) {
-		Integer id = messageToIdFunction.apply(message);
-		undeleteMessage(id);
+		undeleteMessage(message.getRecordId());
 	}
 
 	public void undeleteMessage(int id) {
 		records.setBoolean(id, true);
-		messagePositionStore.setLong(id, (Math.abs(getMessagePositionStoreLong(id))));
+		messagePositionStore.setLong(id, (Math.abs(getMessagePosition(id))));
 	}
 
 	public TYPE readMessage(int id) {
-		long position = getMessagePositionStoreLong(id);
+		long position = getMessagePosition(id);
 		if (position >= 0) {
 			byte[] bytes = logIndex.readLog(position);
 			return pojoObjectDecoder.decode(bytes, fileStore);
@@ -131,7 +108,7 @@ public class MessageStore<TYPE extends MessageObject> {
 		}
 	}
 
-	private long getMessagePositionStoreLong(int id) {
+	private long getMessagePosition(int id) {
 		return messagePositionStore.getLong(id);
 	}
 
@@ -165,14 +142,14 @@ public class MessageStore<TYPE extends MessageObject> {
 		if (messageIds.isEmpty()) {
 			return Collections.emptyList();
 		} else {
-			List<IndexMessage> indexMessages = messageIds.stream()
-					.map(id -> new IndexMessage(id, getMessagePositionStoreLong(id)))
+			List<PositionIndexedMessage> positionIndexedMessages = messageIds.stream()
+					.map(id -> new PositionIndexedMessage(id, getMessagePosition(id)))
 					.collect(Collectors.toList());
-			return readIndexMessages(indexMessages);
+			return readIndexMessages(positionIndexedMessages);
 		}
 	}
 
-	private List<TYPE> readIndexMessages(List<IndexMessage> messages) {
+	private List<TYPE> readIndexMessages(List<PositionIndexedMessage> messages) {
 		logIndex.readLogs(messages);
 		return messages.stream()
 				.map(msg -> pojoObjectDecoder.decode(msg.getMessage(), fileStore))
@@ -180,10 +157,10 @@ public class MessageStore<TYPE extends MessageObject> {
 	}
 
 	public List<TYPE> readAllMessages() {
-		List<IndexMessage> indexMessages = records.getRecords().stream()
-				.map(id -> new IndexMessage(id, getMessagePositionStoreLong(id)))
+		List<PositionIndexedMessage> positionIndexedMessages = records.getRecords().stream()
+				.map(id -> new PositionIndexedMessage(id, getMessagePosition(id)))
 				.collect(Collectors.toList());
-		return readIndexMessages(indexMessages);
+		return readIndexMessages(positionIndexedMessages);
 	}
 
 	public void close() {

@@ -19,15 +19,13 @@
  */
 package org.teamapps.universaldb.index.log;
 
-import org.teamapps.protocol.file.FileProvider;
-import org.teamapps.protocol.file.FileSink;
+import org.teamapps.protocol.file.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class LocalFileStore implements FileSink, FileProvider {
+public class LocalFileStore implements FileDataReader, FileDataWriter {
 
 	private final File basePath;
 	private AtomicInteger idGenerator;
@@ -38,24 +36,21 @@ public class LocalFileStore implements FileSink, FileProvider {
 		this.idGenerator = new AtomicInteger(basePath.listFiles().length + 1);
 	}
 
-	public String saveFile(File file) throws IOException {
-		if (file == null || file.length() == 0) {
-			return null;
+	@Override
+	public FileData readFileData(FileDataType type, String fileName, long length, String descriptor, boolean encrypted, String encryptionKey) {
+		return new LocalFileData(fileName, length, descriptor);
+	}
+
+	@Override
+	public FileData writeFileData(FileData fileData) throws IOException {
+		if (fileData.getBasePath().equals(basePath.getPath())) {
+			return fileData;
 		} else {
 			String fileId = "F-" + System.currentTimeMillis() + "-" + Integer.toHexString(idGenerator.incrementAndGet()).toUpperCase() + ".bin";
 			File destFile = new File(basePath, fileId);
-			Files.copy(file.toPath(), destFile.toPath());
-			return fileId;
+			fileData.copyToFile(destFile);
+			return new LocalFileData(fileData.getFileName(), fileData.getLength(), destFile.getPath());
 		}
 	}
 
-	@Override
-	public File getFile(String fileId) {
-		return new File(basePath, fileId);
-	}
-
-	@Override
-	public String handleFile(File file) throws IOException {
-		return saveFile(file);
-	}
 }

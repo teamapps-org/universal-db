@@ -20,7 +20,6 @@
 package org.teamapps.universaldb.index.log;
 
 import java.io.*;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -90,14 +89,14 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 		}
 	}
 
-	public void readMessages(List<IndexMessage> messages) {
+	public void readMessages(List<PositionIndexedMessage> messages) {
 		if (messages.isEmpty() || logFiles.isEmpty()) {
 			return;
 		}
 		long position = 0;
 		int index = 0;
 		while (hasNext()) {
-			IndexMessage message = messages.get(index);
+			PositionIndexedMessage message = messages.get(index);
 			boolean addMessage = message.getPosition() == position || index == 0;
 			position = currentReadPos;
 			byte[] bytes = next();
@@ -109,7 +108,7 @@ public class LogIterator implements Iterator<byte[]>, AutoCloseable {
 				}
 			}
 		}
-		messages.sort(Comparator.comparingInt(IndexMessage::getId));
+		messages.sort(Comparator.comparingInt(PositionIndexedMessage::getId));
 		closeSave();
 	}
 
