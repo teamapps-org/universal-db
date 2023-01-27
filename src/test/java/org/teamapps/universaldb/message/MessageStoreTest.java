@@ -2,9 +2,8 @@ package org.teamapps.universaldb.message;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.teamapps.protocol.test.Company;
-import org.teamapps.protocol.test.Employee;
-import org.teamapps.test.protocol.TestMessage;
+import org.teamapps.test.protocol.Company;
+import org.teamapps.test.protocol.Employee;
 
 import java.io.File;
 import java.io.IOException;

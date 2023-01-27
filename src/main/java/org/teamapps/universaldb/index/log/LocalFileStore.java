@@ -19,7 +19,7 @@
  */
 package org.teamapps.universaldb.index.log;
 
-import org.teamapps.protocol.file.*;
+import org.teamapps.message.protocol.file.*;
 
 import java.io.File;
 import java.io.IOException;

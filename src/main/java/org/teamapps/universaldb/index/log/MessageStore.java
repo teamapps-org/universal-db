@@ -19,8 +19,8 @@
  */
 package org.teamapps.universaldb.index.log;
 
-import org.teamapps.protocol.message.Message;
-import org.teamapps.protocol.model.PojoObjectDecoder;
+import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.model.PojoObjectDecoder;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.buffer.RecordIndex;
 
@@ -61,7 +61,7 @@ public class MessageStore<TYPE extends Message> {
 		return logIndex.getStoreSize();
 	}
 
-	public void saveMessage(TYPE message) {
+	public synchronized void saveMessage(TYPE message) {
 		int recordId = message.getRecordId();
 		if (recordId <= 0) {
 			recordId = getNextRecordId();
@@ -80,20 +80,20 @@ public class MessageStore<TYPE extends Message> {
 		}
 	}
 
-	public void deleteMessage(TYPE message) {
+	public synchronized void deleteMessage(TYPE message) {
 		deleteMessage(message.getRecordId());
 	}
 
-	public void deleteMessage(int id) {
+	public synchronized void deleteMessage(int id) {
 		records.setBoolean(id, false);
 		messagePositionStore.setLong(id, (Math.abs(getMessagePosition(id)) * -1));
 	}
 
-	public void undeleteMessage(TYPE message) {
+	public synchronized void undeleteMessage(TYPE message) {
 		undeleteMessage(message.getRecordId());
 	}
 
-	public void undeleteMessage(int id) {
+	public synchronized void undeleteMessage(int id) {
 		records.setBoolean(id, true);
 		messagePositionStore.setLong(id, (Math.abs(getMessagePosition(id))));
 	}

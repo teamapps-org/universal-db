@@ -19,10 +19,10 @@
  */
 package org.teamapps.universaldb.index.log;
 
-import org.teamapps.protocol.file.FileDataReader;
-import org.teamapps.protocol.file.FileDataWriter;
-import org.teamapps.protocol.message.Message;
-import org.teamapps.protocol.model.PojoObjectDecoder;
+import org.teamapps.message.protocol.file.FileDataReader;
+import org.teamapps.message.protocol.file.FileDataWriter;
+import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.model.PojoObjectDecoder;
 
 import java.io.File;
 import java.io.IOException;
