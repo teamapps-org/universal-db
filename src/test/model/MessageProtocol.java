@@ -34,8 +34,8 @@ public class MessageProtocol implements ModelCollectionProvider {
 		company.addMultiReference("employee", 4, employee);
 		company.addAttribute("picture", 5, AttributeType.FILE);
 
-		person1.addStringAttribute("name", 1);
-		person1.addStringAttribute("email", 2);
+		person1.addString("name", 1);
+		person1.addString("email", 2);
 
 		ServiceProtocol testService = modelCollection.createService("testService");
 		testService.addMethod("method1", company, employee);
@@ -44,25 +44,25 @@ public class MessageProtocol implements ModelCollectionProvider {
 		MessageDefinition user = modelCollection.createModel("testUser", "testUser", true);
 		MessageDefinition attachment = modelCollection.createModel("testAttachment", "testAttachment", false);
 
-		message.addIntAttribute("messageId", 1);
-		message.addLongAttribute("date", 2);
-		message.addStringAttribute("subject", 3);
-		message.addStringAttribute("body", 4);
+		message.addInteger("messageId", 1);
+		message.addLong("date", 2);
+		message.addString("subject", 3);
+		message.addString("body", 4);
 		message.addSingleReference("author", 5, user);
 		message.addMultiReference("recipients", 6, user);
 		message.addMultiReference("attachments", 7, attachment);
-		message.addIntAttribute("testId", 8);
+		message.addInteger("testId", 8);
 
-		user.addIntAttribute("userId", 1);
-		user.addStringAttribute("firstName", 2);
-		user.addStringAttribute("lastName", 3);
-		user.addByteArrayAttribute("avatar", 4);
-		user.addIntAttribute("testId", 5);
+		user.addInteger("userId", 1);
+		user.addString("firstName", 2);
+		user.addString("lastName", 3);
+		user.addByteArray("avatar", 4);
+		user.addInteger("testId", 5);
 
-		attachment.addStringAttribute("fileName", 1);
-		attachment.addLongAttribute("fileSize", 2);
-		attachment.addFileAttribute("file", 3);
-		attachment.addIntAttribute("testId", 4);
+		attachment.addString("fileName", 1);
+		attachment.addLong("fileSize", 2);
+		attachment.addFile("file", 3);
+		attachment.addInteger("testId", 4);
 
 		return modelCollection;
 
