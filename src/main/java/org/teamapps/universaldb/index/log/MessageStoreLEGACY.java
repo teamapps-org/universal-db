@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MessageStore<TYPE extends Message> {
+public class MessageStoreLEGACY<TYPE extends Message> {
 
 	private final RecordIndex records;
 	private final PrimitiveEntryAtomicStore messagePositionStore;
@@ -38,7 +38,7 @@ public class MessageStore<TYPE extends Message> {
 	private final LocalFileStore fileStore;
 	private final PojoObjectDecoder<TYPE> pojoObjectDecoder;
 
-	public MessageStore(File path, String name, boolean withFileStore, PojoObjectDecoder<TYPE> pojoObjectDecoder) {
+	public MessageStoreLEGACY(File path, String name, boolean withFileStore, PojoObjectDecoder<TYPE> pojoObjectDecoder) {
 		File basePath = new File(path, name);
 		basePath.mkdir();
 		this.records = new RecordIndex(basePath, "records");

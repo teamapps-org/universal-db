@@ -29,10 +29,13 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 		this.messageDecoder = messageDecoder;
 		this.localFileStore = new LocalFileStore(basePath, "file-store");
 		this.storeFile = new File(basePath, "messages.msx");
-		this.messageCache = messageCache;
 		this.position = storeFile.length();
 		this.messagePositions = new PrimitiveEntryAtomicStore(basePath, "pos");
 		this.dos = init();
+		if (messageCache != null && messageCache.isFullCache()) {
+			getStream().forEach(message -> messageCache.addMessage(message.getRecordId(), false, message));
+		}
+		this.messageCache = messageCache;
 	}
 
 	private DataOutputStream init() {
@@ -86,6 +89,15 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 	}
 
 	@Override
+	public void saveSecure(MESSAGE message) {
+		try {
+			save(message);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
 	public synchronized void delete(int id) throws IOException {
 		long pos = messagePositions.getLong(id);
 		if (pos > 0) {
@@ -121,12 +133,20 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 	public MESSAGE getById(int id) {
 		if (messageCache != null) {
 			MESSAGE message = messageCache.getMessage(id);
-			if (message != null) {
+			if (message == null) {
+				long pos = messagePositions.getLong(id);
+				message= getByPosition(pos);
+				if (message != null) {
+					messageCache.addMessage(id, false, message);
+				}
+				return message;
+			} else {
 				return message;
 			}
+		} else {
+			long pos = messagePositions.getLong(id);
+			return getByPosition(pos);
 		}
-		long pos = messagePositions.getLong(id);
-		return getByPosition(pos);
 	}
 
 	@Override

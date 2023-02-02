@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -44,7 +43,7 @@ public class MessageStoreTest {
 	@Test
 	public void getMessageCount() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		assertEquals(0, store.getMessageCount());
 		int size = 10;
 		for (int i = 0; i < size; i++) {
@@ -62,7 +61,7 @@ public class MessageStoreTest {
 	@Test
 	public void addMessage() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		int size = 10_000;
 		for (int i = 0; i < size; i++) {
 			store.saveMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
@@ -92,7 +91,7 @@ public class MessageStoreTest {
 	@Test
 	public void updateMessage() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		TestMessage msg1 = new TestMessage().setSubject("test 1");
 		TestMessage msg2 = new TestMessage().setSubject("test 2");
 		TestMessage msg3 = new TestMessage().setSubject("test 3");
@@ -111,7 +110,7 @@ public class MessageStoreTest {
 	@Test
 	public void deleteMessage() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		TestMessage msg1 = new TestMessage().setSubject("test 1");
 		TestMessage msg2 = new TestMessage().setSubject("test 2");
 		TestMessage msg3 = new TestMessage().setSubject("test 3");
@@ -134,7 +133,7 @@ public class MessageStoreTest {
 	@Test
 	public void undeleteMessage() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		TestMessage msg1 = new TestMessage().setSubject("test 1");
 		TestMessage msg2 = new TestMessage().setSubject("test 2");
 		TestMessage msg3 = new TestMessage().setSubject("test 3");
@@ -170,7 +169,7 @@ public class MessageStoreTest {
 	@Test
 	public void readLastMessages() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		int size = 1_000;
 		for (int i = 0; i < size; i++) {
 			store.saveMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
@@ -203,7 +202,7 @@ public class MessageStoreTest {
 	@Test
 	public void readAllMessages() throws IOException {
 		String name = createRandomStoreName();
-		MessageStore<TestMessage> store = createStore(name);
+		MessageStoreLEGACY<TestMessage> store = createStore(name);
 		int size = 1_000;
 		for (int i = 0; i < size; i++) {
 			store.saveMessage(new TestMessage().setTestId(i).setSubject("test-" + i).setAuthor(new TestUser().setTestId(i).setLastName("last-" + i)));
@@ -218,7 +217,7 @@ public class MessageStoreTest {
 		return "temp-store-" + ((long) (System.currentTimeMillis() * Math.random() * 1_000));
 	}
 
-	private static MessageStore<TestMessage> createStore(String storeName) throws IOException {
-		return new MessageStore<>(TEMP_DIR, storeName, false, TestMessage.getMessageDecoder());
+	private static MessageStoreLEGACY<TestMessage> createStore(String storeName) throws IOException {
+		return new MessageStoreLEGACY<>(TEMP_DIR, storeName, false, TestMessage.getMessageDecoder());
 	}
 }
