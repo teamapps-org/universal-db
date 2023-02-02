@@ -221,7 +221,7 @@
             <plugin>
                 <groupId>org.teamapps</groupId>
                 <artifactId>teamapps-message-protocol-maven-plugin</artifactId>
-                <version>0.4-SNAPSHOT</version>
+                <version>0.4</version>
                 <executions>
                     <execution>
                         <phase>generate-test-sources</phase>
@@ -259,10 +259,8 @@
                         <artifactId>maven-release-plugin</artifactId>
                         <version>2.5.3</version>
                         <configuration>
-                            <!-- see https://docs.sonatype.org/display/Repository/How+To+Generate+PGP+Signatures+With+Maven -->
                             <mavenExecutorId>forked-path</mavenExecutorId>
                             <useReleaseProfile>false</useReleaseProfile>
-                            <!--<arguments>-Psonatype-oss-release -D${gpg.arguments}</arguments>-->
                             <autoVersionSubmodules>true</autoVersionSubmodules>
                             <tagNameFormat>v@{version}</tagNameFormat>
                             <releaseProfiles>javadoc-jar,sources-jar,license-handling</releaseProfiles>
@@ -371,10 +369,8 @@
                             <organizationName>TeamApps.org</organizationName>
                             <inceptionYear>2014</inceptionYear>
                             <licenseName>apache_v2</licenseName>
-                            <processStartTag>========================LICENSE_START=================================
-                            </processStartTag>
-                            <processEndTag>=========================LICENSE_END==================================
-                            </processEndTag>
+                            <processStartTag>========================LICENSE_START=================================</processStartTag>
+                            <processEndTag>=========================LICENSE_END==================================</processEndTag>
                             <sectionDelimiter>---</sectionDelimiter>
                             <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
                             <canUpdateCopyright>true</canUpdateCopyright>
