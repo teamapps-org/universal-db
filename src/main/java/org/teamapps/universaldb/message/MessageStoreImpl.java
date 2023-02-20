@@ -74,77 +74,80 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 	}
 
 	@Override
-	public synchronized void save(MESSAGE message) throws IOException {
-		int recordId = message.getRecordId();
-		long previousPos = 0;
-
-		if (recordId == 0) {
-			recordId = ++lastId;
-			messagePositions.setLong(0, recordId);
-			message.setRecordId(recordId);
-		} else {
-			previousPos = messagePositions.getLong(recordId);
-		}
-		byte[] bytes = message.toBytes(localFileStore);
-		dos.writeBoolean(false);
-		dos.writeLong(previousPos);
-		dos.writeLong(0);
-		dos.writeInt(bytes.length);
-		dos.write(bytes);
-		long storePos = position;
-		position += bytes.length + 21;
-		dos.flush();
-		messagePositions.setLong(recordId, storePos);
-
-		if (previousPos > 0) {
-			RandomAccessFile ras = new RandomAccessFile(storeFile, "rw");
-			ras.seek(previousPos + 9);
-			ras.writeLong(storePos);
-			ras.close();
-		}
-		if (messageCache != null) {
-			messageCache.addMessage(recordId, previousPos > 0, message);
-		}
-	}
-
-	@Override
-	public void saveSecure(MESSAGE message) {
+	public synchronized void save(MESSAGE message)  {
 		try {
-			save(message);
+			int recordId = message.getRecordId();
+			long previousPos = 0;
+
+			if (recordId == 0) {
+				recordId = ++lastId;
+				messagePositions.setLong(0, recordId);
+				message.setRecordId(recordId);
+			} else {
+				previousPos = messagePositions.getLong(recordId);
+			}
+			byte[] bytes = message.toBytes(localFileStore);
+			dos.writeBoolean(false);
+			dos.writeLong(previousPos);
+			dos.writeLong(0);
+			dos.writeInt(bytes.length);
+			dos.write(bytes);
+			long storePos = position;
+			position += bytes.length + 21;
+			dos.flush();
+			messagePositions.setLong(recordId, storePos);
+
+			if (previousPos > 0) {
+				RandomAccessFile ras = new RandomAccessFile(storeFile, "rw");
+				ras.seek(previousPos + 9);
+				ras.writeLong(storePos);
+				ras.close();
+			}
+			if (messageCache != null) {
+				messageCache.addMessage(recordId, previousPos > 0, message);
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public synchronized void delete(int id) throws IOException {
-		long pos = messagePositions.getLong(id);
-		if (pos > 0) {
-			messagePositions.setLong(id, pos * -1);
-			RandomAccessFile ras = new RandomAccessFile(storeFile, "rw");
-			ras.seek(pos);
-			ras.writeBoolean(true);
-			ras.close();
+	public synchronized void delete(int id) {
+		try {
+			long pos = messagePositions.getLong(id);
+			if (pos > 0) {
+				messagePositions.setLong(id, pos * -1);
+				RandomAccessFile ras = new RandomAccessFile(storeFile, "rw");
+				ras.seek(pos);
+				ras.writeBoolean(true);
+				ras.close();
 
-			if (messageCache != null) {
-				messageCache.removeMessage(id);
+				if (messageCache != null) {
+					messageCache.removeMessage(id);
+				}
 			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public synchronized void undelete(int id) throws IOException {
-		long pos = messagePositions.getLong(id);
-		if (pos < 0) {
-			messagePositions.setLong(id, pos * -1);
-			RandomAccessFile ras = new RandomAccessFile(storeFile, "rw");
-			ras.seek(pos * -1);
-			ras.writeBoolean(false);
-			ras.close();
+	public synchronized void undelete(int id) {
+		try {
+			long pos = messagePositions.getLong(id);
+			if (pos < 0) {
+				messagePositions.setLong(id, pos * -1);
+				RandomAccessFile ras = new RandomAccessFile(storeFile, "rw");
+				ras.seek(pos * -1);
+				ras.writeBoolean(false);
+				ras.close();
 
-			if (messageCache != null) {
-				messageCache.removeMessage(id);
+				if (messageCache != null) {
+					messageCache.removeMessage(id);
+				}
 			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -187,6 +190,11 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public MESSAGE getLast() {
+		return getById(lastId);
 	}
 
 	@Override

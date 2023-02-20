@@ -39,17 +39,17 @@ public interface MessageStore<MESSAGE extends Message> {
 		return new MessageStoreImpl<>(path, name, messageDecoder, messageCache);
 	}
 
-	void save(MESSAGE message) throws IOException;
+	void save(MESSAGE message);
 
-	void saveSecure(MESSAGE message);
+	void delete(int id);
 
-	void delete(int id) throws IOException;
-
-	void undelete(int id) throws IOException;
+	void undelete(int id);
 
 	MESSAGE getById(int id);
 
 	MESSAGE getByPosition(long position);
+
+	MESSAGE getLast();
 
 	int getMessageCount();
 
