@@ -27,6 +27,7 @@ import org.teamapps.message.protocol.model.PojoObjectDecoder;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 public interface MessageStore<MESSAGE extends Message> {
@@ -37,6 +38,10 @@ public interface MessageStore<MESSAGE extends Message> {
 
 	static <MESSAGE extends Message> MessageStore<MESSAGE> create(File path, String name, PojoObjectDecoder<MESSAGE> messageDecoder, MessageCache<MESSAGE> messageCache) {
 		return new MessageStoreImpl<>(path, name, messageDecoder, messageCache);
+	}
+
+	static <MESSAGE extends Message> MessageStore<MESSAGE> create(File path, String name, PojoObjectDecoder<MESSAGE> messageDecoder, MessageCache<MESSAGE> messageCache, BiConsumer<MESSAGE, MessageChangeType> changeHandler) {
+		return new MessageStoreImpl<>(path, name, messageDecoder, messageCache, changeHandler);
 	}
 
 	void save(MESSAGE message);

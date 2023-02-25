@@ -25,10 +25,16 @@ import org.teamapps.message.protocol.model.PojoObjectDecoder;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 
 import java.io.*;
+import java.time.Instant;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.teamapps.universaldb.message.MessageChangeType.CREATE;
+import static org.teamapps.universaldb.message.MessageChangeType.UPDATE;
 
 public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<MESSAGE> {
 
@@ -38,11 +44,20 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 	private final PojoObjectDecoder<MESSAGE> messageDecoder;
 	private final LocalFileStore localFileStore;
 	private final MessageCache<MESSAGE> messageCache;
+	private final BiConsumer<MESSAGE, MessageChangeType> changeHandler;
 	private int lastId;
 	private long position;
 
 
+	public MessageStoreImpl(File path, String name, PojoObjectDecoder<MESSAGE> messageDecoder) {
+		this(path, name, messageDecoder, null, null);
+	}
+
 	public MessageStoreImpl(File path, String name, PojoObjectDecoder<MESSAGE> messageDecoder, MessageCache<MESSAGE> messageCache) {
+		this(path, name, messageDecoder, messageCache, null);
+	}
+
+	public MessageStoreImpl(File path, String name, PojoObjectDecoder<MESSAGE> messageDecoder, MessageCache<MESSAGE> messageCache, BiConsumer<MESSAGE, MessageChangeType> changeHandler) {
 		File basePath = new File(path, name);
 		basePath.mkdir();
 		this.messageDecoder = messageDecoder;
@@ -50,11 +65,13 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 		this.storeFile = new File(basePath, "messages.msx");
 		this.position = storeFile.length();
 		this.messagePositions = new PrimitiveEntryAtomicStore(basePath, "pos");
+		this.changeHandler = changeHandler;
 		this.dos = init();
 		if (messageCache != null && messageCache.isFullCache()) {
 			getStream().forEach(message -> messageCache.addMessage(message.getRecordId(), false, message));
 		}
 		this.messageCache = messageCache;
+		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
 
 	private DataOutputStream init() {
@@ -78,15 +95,21 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 		try {
 			int recordId = message.getRecordId();
 			long previousPos = 0;
-
+			MessageChangeType changeType = UPDATE;
 			if (recordId == 0) {
+				changeType = CREATE;
 				recordId = ++lastId;
 				messagePositions.setLong(0, recordId);
 				message.setRecordId(recordId);
+				message.setRecordModificationDate(Instant.now());
 			} else {
 				previousPos = messagePositions.getLong(recordId);
+				message.setRecordModificationDate(Instant.now());
 			}
-			byte[] bytes = message.toBytes(localFileStore);
+			if (changeHandler != null) {
+				changeHandler.accept(message, changeType);
+			}
+			byte[] bytes = message.toBytes(localFileStore, true);
 			dos.writeBoolean(false);
 			dos.writeLong(previousPos);
 			dos.writeLong(0);
@@ -346,6 +369,7 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 	@Override
 	public void flush() {
 		try {
+			messagePositions.flush();
 			dos.flush();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -355,6 +379,7 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 	@Override
 	public void close() {
 		try {
+			messagePositions.close();
 			dos.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -366,6 +391,7 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 		try {
 			close();
 			storeFile.delete();
+			messagePositions.drop();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

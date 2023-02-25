@@ -25,12 +25,12 @@ import java.util.*;
 
 public class MessageCache<MESSAGE extends Message> {
 
-	public static MessageCache fullCache() {
-		return new MessageCache(true, 0);
+	public static <MESSAGE extends Message> MessageCache<MESSAGE> fullCache() {
+		return new MessageCache<>(true, 0);
 	}
 
-	public static MessageCache lruCache(int size) {
-		return new MessageCache(false, size);
+	public static <MESSAGE extends Message>  MessageCache<MESSAGE> lruCache(int size) {
+		return new MessageCache<>(false, size);
 	}
 
 	private final boolean fullCache;
@@ -52,7 +52,9 @@ public class MessageCache<MESSAGE extends Message> {
 		if (fullCache) {
 			if (update) {
 				MESSAGE oldMessage = messageMap.get(id);
-				messageList.remove(oldMessage);
+				if (oldMessage != null) {
+					messageList.remove(oldMessage);
+				}
 			}
 			messageList.add(message);
 		}
