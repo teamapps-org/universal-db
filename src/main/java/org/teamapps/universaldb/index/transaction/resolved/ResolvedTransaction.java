@@ -60,6 +60,10 @@ public class ResolvedTransaction {
 		}
 	}
 
+	public static ResolvedTransaction recreateNewId(long transactionId, ResolvedTransaction resolvedTransaction) {
+		return new ResolvedTransaction(transactionId, resolvedTransaction);
+	}
+
 	public ResolvedTransaction(long nodeId, long requestId, long transactionId, int userId, long timestamp) {
 		this.nodeId = nodeId;
 		this.requestId = requestId;
@@ -82,6 +86,18 @@ public class ResolvedTransaction {
 		this.transactionRecords = null;
 		this.recordIdByCorrelationId = null;
 		this.schema = schema;
+	}
+
+	private ResolvedTransaction(long transactionId, ResolvedTransaction transaction) {
+		this.nodeId = transaction.getNodeId();
+		this.requestId = transaction.getRequestId();
+		this.transactionId = transactionId;
+		this.transactionType = transaction.getTransactionType();
+		this.userId = transaction.getUserId();
+		this.timestamp = transaction.getTimestamp();
+		this.transactionRecords = transaction.getTransactionRecords();
+		this.schema = transaction.getSchema();
+		this.recordIdByCorrelationId = transaction.getRecordIdByCorrelationId();
 	}
 
 	public ResolvedTransaction(DataInputStream dis) throws IOException {
