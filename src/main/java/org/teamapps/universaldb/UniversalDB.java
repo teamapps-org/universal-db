@@ -484,7 +484,7 @@ public class UniversalDB implements DataBaseMapper {
 		resolvedTransaction.setRecordIdByCorrelationId(request.getRecordIdByCorrelationId());
 	}
 
-	private synchronized void handleTransaction(ResolvedTransaction transaction) throws Exception {
+	public synchronized void handleTransaction(ResolvedTransaction transaction) throws Exception {
 		if (transaction.getTransactionType() == TransactionType.DATA_UPDATE) {
 			handleDataUpdateTransaction(transaction);
 		} else {
