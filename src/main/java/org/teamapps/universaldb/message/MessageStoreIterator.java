@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,12 +21,13 @@ package org.teamapps.universaldb.message;
 
 import org.teamapps.message.protocol.file.LocalFileStore;
 import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.message.MessageRecord;
 import org.teamapps.message.protocol.model.PojoObjectDecoder;
 
 import java.io.*;
 import java.util.Set;
 
-public class MessageStoreIterator<MESSAGE extends Message> implements CloseableIterator<MESSAGE> {
+public class MessageStoreIterator<MESSAGE extends MessageRecord> implements CloseableIterator<MESSAGE> {
 
 	private final File storeFile;
 	private final PojoObjectDecoder<MESSAGE> messageDecoder;
@@ -70,7 +71,7 @@ public class MessageStoreIterator<MESSAGE extends Message> implements CloseableI
 			if (skip || nextPos > 0 || (readDeleted != deleted)) {
 				return false;
 			} else {
-				message =  messageDecoder.decode(bytes, localFileStore);
+				message = messageDecoder.decode(bytes, localFileStore);
 				return true;
 			}
 		} catch (EOFException eof) {

@@ -22,6 +22,7 @@ package org.teamapps.universaldb.message;
 
 
 import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.message.MessageRecord;
 import org.teamapps.message.protocol.model.PojoObjectDecoder;
 
 import java.io.File;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-public interface MessageStore<MESSAGE extends Message> {
+public interface MessageStore<MESSAGE extends MessageRecord> {
 
 	static <MESSAGE extends Message> MessageStore<MESSAGE> create(File path, String name, PojoObjectDecoder<MESSAGE> messageDecoder) {
 		return new MessageStoreImpl<>(path, name, messageDecoder, null);

@@ -19,9 +19,9 @@
  */
 package org.teamapps.universaldb.message;
 
-import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.message.MessageRecord;
 
-public class MessagePosition<MESSAGE extends Message> {
+public class MessagePosition<MESSAGE extends MessageRecord> {
 
 	private final int id;
 	private final long position;

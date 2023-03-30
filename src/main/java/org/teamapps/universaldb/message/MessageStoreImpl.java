@@ -21,6 +21,7 @@ package org.teamapps.universaldb.message;
 
 import org.teamapps.message.protocol.file.LocalFileStore;
 import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.message.MessageRecord;
 import org.teamapps.message.protocol.model.PojoObjectDecoder;
 import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
 
@@ -36,7 +37,7 @@ import java.util.stream.StreamSupport;
 import static org.teamapps.universaldb.message.MessageChangeType.CREATE;
 import static org.teamapps.universaldb.message.MessageChangeType.UPDATE;
 
-public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<MESSAGE> {
+public class MessageStoreImpl<MESSAGE extends MessageRecord> implements MessageStore<MESSAGE> {
 
 	private final File storeFile;
 	private final DataOutputStream dos;
@@ -246,7 +247,7 @@ public class MessageStoreImpl<MESSAGE extends Message> implements MessageStore<M
 			while (iterator.hasNext() && messages.size() < limit) {
 				messages.add(iterator.next());
 			}
-			return messages.stream().sorted(Comparator.comparingInt(Message::getRecordId)).collect(Collectors.toList());
+			return messages.stream().sorted(Comparator.comparingInt(MessageRecord::getRecordId)).collect(Collectors.toList());
 		}
 	}
 

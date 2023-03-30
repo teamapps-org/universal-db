@@ -20,16 +20,17 @@
 package org.teamapps.universaldb.message;
 
 import org.teamapps.message.protocol.message.Message;
+import org.teamapps.message.protocol.message.MessageRecord;
 
 import java.util.*;
 
-public class MessageCache<MESSAGE extends Message> {
+public class MessageCache<MESSAGE extends MessageRecord> {
 
-	public static <MESSAGE extends Message> MessageCache<MESSAGE> fullCache() {
+	public static <MESSAGE extends MessageRecord> MessageCache<MESSAGE> fullCache() {
 		return new MessageCache<>(true, 0);
 	}
 
-	public static <MESSAGE extends Message>  MessageCache<MESSAGE> lruCache(int size) {
+	public static <MESSAGE extends MessageRecord>  MessageCache<MESSAGE> lruCache(int size) {
 		return new MessageCache<>(false, size);
 	}
 
