@@ -19,13 +19,23 @@
  */
 package org.teamapps.universaldb.index.reference;
 
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.model.ReferenceFieldModel;
 
-public interface ReferenceIndex {
+public interface ReferenceIndex<TYPE, FILTER> extends FieldIndex<TYPE, FILTER>{
 
 	TableIndex getReferencedTable();
+
+	default ReferenceFieldModel getReferenceFieldModel() {
+		return (ReferenceFieldModel) getFieldModel();
+	}
 
 	boolean isCascadeDeleteReferences();
 
 	boolean isMultiReference();
+
+	void setReferencedTable(TableIndex referencedTable, FieldIndex reverseIndex, boolean cascadeDeleteReferences);
+
+
 }

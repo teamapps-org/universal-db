@@ -27,7 +27,8 @@ import java.util.function.Supplier;
 public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 {staticFields}
 
-    private static void setTableIndex(TableIndex tableIndex) {
+    private static void setTableIndex(TableIndex tableIndex, UniversalDB udb) {
+		universalDB = udb;
         table = tableIndex;
 {staticFieldSetters}
     }

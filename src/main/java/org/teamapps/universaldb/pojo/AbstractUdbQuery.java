@@ -20,7 +20,7 @@
 package org.teamapps.universaldb.pojo;
 
 import org.teamapps.universaldb.context.UserContext;
-import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
@@ -144,19 +144,19 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 	}
 
 	public void addTextFilter(String columnName, TextFilter filter) {
-		TextIndex textIndex = (TextIndex) tableIndex.getColumnIndex(columnName);
+		TextIndex textIndex = (TextIndex) tableIndex.getFieldIndex(columnName);
 		IndexFilter<String, TextFilter> indexFilter = textIndex.createFilter(filter);
 		and(indexFilter);
 	}
 
 	public void addNumericFilter(String columnName, NumericFilter filter) {
-		ColumnIndex columnIndex = tableIndex.getColumnIndex(columnName);
-		IndexFilter indexFilter = columnIndex.createFilter(filter);
+		FieldIndex fieldIndex = tableIndex.getFieldIndex(columnName);
+		IndexFilter indexFilter = fieldIndex.createFilter(filter);
 		and(indexFilter);
 	}
 
 	public void addBooleanFilter(String columnName, BooleanFilter booleanFilter) {
-		BooleanIndex booleanIndex = (BooleanIndex) tableIndex.getColumnIndex(columnName);
+		BooleanIndex booleanIndex = (BooleanIndex) tableIndex.getFieldIndex(columnName);
 		IndexFilter<Boolean, BooleanFilter> indexFilter = booleanIndex.createFilter(booleanFilter);
 		and(indexFilter);
 	}
@@ -179,7 +179,7 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 	}
 
 	public List<ENTITY> executeOnDeletedRecords() {
-		if (!tableIndex.getTableConfig().keepDeleted()) {
+		if (!tableIndex.isKeepDeletedRecords()) {
 			throw new RuntimeException("Query error: this table has no 'keep deleted' option set.");
 		}
 		BitSet result = filter(tableIndex.getDeletedRecordsBitSet());
@@ -213,7 +213,7 @@ public class AbstractUdbQuery<ENTITY extends Entity<ENTITY>> {
 	}
 
 	public List<ENTITY> execute(boolean deletedRecords, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
-		if (deletedRecords && !tableIndex.getTableConfig().keepDeleted()) {
+		if (deletedRecords && !tableIndex.isKeepDeletedRecords()) {
 			throw new RuntimeException("Query error: this table has no 'keep deleted' option set.");
 		}
 		BitSet recordBitSet = deletedRecords ? tableIndex.getDeletedRecordsBitSet() : tableIndex.getRecordBitSet();

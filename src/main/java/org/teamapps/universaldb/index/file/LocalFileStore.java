@@ -22,7 +22,7 @@ package org.teamapps.universaldb.index.file;
 import java.io.File;
 import java.nio.file.Files;
 
-public class LocalFileStore extends AbstractFileStore {
+public class LocalFileStore implements FileStore {
 
 	private final File storePath;
 	private final boolean encrypt;

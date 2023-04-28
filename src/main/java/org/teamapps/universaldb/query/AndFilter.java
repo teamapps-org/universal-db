@@ -19,8 +19,8 @@
  */
 package org.teamapps.universaldb.query;
 
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
@@ -81,15 +81,15 @@ public class AndFilter implements Filter {
                 }
 
                 for (IndexFilter filter : Filter.getCollectionFullTextFiltersWithLocalIndexFilterPart(filters)) {
-                    ColumnIndex columnIndex = filter.getColumnIndex();
-                    if (columnIndex instanceof TextIndex) {
-                        TextIndex textIndex = (TextIndex) columnIndex;
+                    FieldIndex fieldIndex = filter.getColumnIndex();
+                    if (fieldIndex instanceof TextIndex) {
+                        TextIndex textIndex = (TextIndex) fieldIndex;
                         localRecords = textIndex.filter(localRecords, (TextFilter) filter.getFilter(), false);
-                    } else if (columnIndex instanceof TranslatableTextIndex) {
-                        TranslatableTextIndex textIndex = (TranslatableTextIndex) columnIndex;
+                    } else if (fieldIndex instanceof TranslatableTextIndex) {
+                        TranslatableTextIndex textIndex = (TranslatableTextIndex) fieldIndex;
                         localRecords = textIndex.filter(localRecords, (TextFilter) filter.getFilter(), false);
-                    } else if (columnIndex instanceof FileIndex) {
-                        FileIndex fileIndex = (FileIndex) columnIndex;
+                    } else if (fieldIndex instanceof FileIndex) {
+                        FileIndex fileIndex = (FileIndex) fieldIndex;
                         //currently file index maintains its own index...
                     }
                 }

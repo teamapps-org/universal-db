@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,14 +21,15 @@ package org.teamapps.universaldb.index;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
-import org.teamapps.universaldb.TableConfig;
+import org.teamapps.commons.util.collections.ByKeyComparisonResult;
+import org.teamapps.commons.util.collections.CollectionUtil;
 import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.context.UserContext;
+import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
-import org.teamapps.universaldb.index.file.FileStore;
-import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.buffer.index.RecordIndex;
+import org.teamapps.universaldb.index.file2.FileIndex2;
+import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
@@ -40,12 +41,14 @@ import org.teamapps.universaldb.index.text.TextIndex;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
 import org.teamapps.universaldb.index.versioning.RecordVersioningIndex;
+import org.teamapps.universaldb.model.FieldModel;
+import org.teamapps.universaldb.model.FieldType;
+import org.teamapps.universaldb.model.FileFieldModel;
+import org.teamapps.universaldb.model.TableModel;
 import org.teamapps.universaldb.query.AndFilter;
 import org.teamapps.universaldb.query.Filter;
 import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.OrFilter;
-import org.teamapps.universaldb.schema.Column;
-import org.teamapps.universaldb.schema.Table;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,57 +60,120 @@ public class TableIndex implements MappedObject {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final DatabaseIndex databaseIndex;
-	private final Table table;
+	private final TableModel tableModel;
 	private final String name;
-	private final String parentFQN;
 	private final File dataPath;
 	private final File fullTextIndexPath;
-	private final TableConfig tableConfig;
+	private final RecordIndex records;
+	private final List<FieldIndex> fieldIndices;
+	private final Map<String, FieldIndex<?, ?>> fieldIndexByName;
 	private boolean keepDeletedRecords;
-	private final BooleanIndex records;
-	private BooleanIndex deletedRecords;
-	private LongIndex transactionIndex;
-
-	private final List<ColumnIndex> columnIndices;
-	private final Map<String, ColumnIndex> columnIndexByName;
+	private RecordIndex deletedRecords;
 	private CollectionTextSearchIndex collectionTextSearchIndex;
 	private List<String> fileFieldNames;
 	private List<TextIndex> textFields;
 	private List<TranslatableTextIndex> translatedTextFields;
-	private int mappingId;
-	private IndexMetaData indexMetaData;
 	private RecordVersioningIndex recordVersioningIndex;
 	private long lastFullTextIndexCheck;
 
-	public TableIndex(DatabaseIndex database, Table table, TableConfig tableConfig) {
-		this(database, database.getFQN(), table, tableConfig);
-	}
 
-	public TableIndex(DatabaseIndex databaseIndex, String parentFQN, Table table, TableConfig tableConfig) {
+	public TableIndex(DatabaseIndex databaseIndex, TableModel tableModel) {
 		this.databaseIndex = databaseIndex;
-		this.table = table;
-		this.name = table.getName();
-		this.parentFQN = parentFQN;
+		this.tableModel = tableModel;
+		this.name = tableModel.getName();
 		this.dataPath = new File(databaseIndex.getDataPath(), name);
 		this.fullTextIndexPath = new File(databaseIndex.getFullTextIndexPath(), name);
 		dataPath.mkdir();
 		fullTextIndexPath.mkdir();
-		records = new BooleanIndex("coll-recs", this, ColumnType.BOOLEAN);
-		this.tableConfig = tableConfig;
+		records = new RecordIndex(dataPath, "coll-recs");
 
-		columnIndices = new ArrayList<>();
-		columnIndexByName = new HashMap<>();
+		fieldIndices = new ArrayList<>();
+		fieldIndexByName = new HashMap<>();
 
-		if (tableConfig.keepDeleted()) {
+		if (tableModel.isRecoverableRecords()) {
 			keepDeletedRecords = true;
-			deletedRecords = new BooleanIndex("coll-del-recs", this, ColumnType.BOOLEAN);
+			deletedRecords = new RecordIndex(dataPath, "coll-del-recs");
 		}
-		this.indexMetaData = new IndexMetaData(dataPath, name, getFQN(), 0);
-		this.mappingId = indexMetaData.getMappingId();
-		this.recordVersioningIndex = new RecordVersioningIndex(this);
+		new IndexMetaData(dataPath, name, getFQN(), 0, tableModel.getTableId());
+		if (tableModel.isVersioning()) {
+			this.recordVersioningIndex = new RecordVersioningIndex(this);
+		}
 		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
 
+	public void merge(TableModel tableModel) {
+
+		ByKeyComparisonResult<FieldIndex, FieldModel, String> compareResult = CollectionUtil.compareByKey(fieldIndices, tableModel.getFields(), FieldIndex::getName, FieldModel::getName, true);
+		//unknown fields for this model
+		if (!compareResult.getAEntriesNotInB().isEmpty()) {
+			throw new RuntimeException("Unknown fields that are not within the model:" + compareResult.getAEntriesNotInB().stream().map(FieldIndex::getName).collect(Collectors.joining(", ")));
+		}
+
+		//existing fields
+		for (FieldIndex<?, ?> fieldIndex : compareResult.getAEntriesInB()) {
+			//todo: which fields must be updated? enums, ...
+		}
+
+		//new fields
+		for (FieldModel fieldModel : compareResult.getBEntriesNotInA()) {
+			FieldIndex<?, ?> fieldIndex = createField(this, fieldModel);
+			addIndex(fieldIndex);
+		}
+	}
+
+	private FieldIndex createField(TableIndex table, FieldModel fieldModel) {
+		FieldIndex<?, ?> column = null;
+
+		switch (fieldModel.getFieldType()) {
+			case BOOLEAN:
+				column = new BooleanIndex(fieldModel, table);
+				break;
+			case SHORT:
+				column = new ShortIndex(fieldModel, table);
+				break;
+			case INT:
+				column = new IntegerIndex(fieldModel, table);
+				break;
+			case LONG:
+				column = new LongIndex(fieldModel, table);
+				break;
+			case FLOAT:
+				column = new FloatIndex(fieldModel, table);
+				break;
+			case DOUBLE:
+				column = new DoubleIndex(fieldModel, table);
+				break;
+			case TEXT:
+				column = new TextIndex(fieldModel, table, table.getCollectionTextSearchIndex());
+				break;
+			case TRANSLATABLE_TEXT:
+				column = new TranslatableTextIndex(fieldModel, table, table.getCollectionTextSearchIndex());
+				break;
+			case SINGLE_REFERENCE:
+				column = new SingleReferenceIndex(fieldModel, table);
+				break;
+			case MULTI_REFERENCE:
+				column = new MultiReferenceIndex(fieldModel, table);
+				break;
+			case FILE:
+//				column = new FileIndex(fieldModel, table, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
+				column = new FileIndex2((FileFieldModel) fieldModel, table, null);
+				break;
+			case BINARY:
+				column = new BinaryIndex(name, table, false, fieldModel);
+				break;
+		}
+		return column;
+	}
+
+
+
+	public void addIndex(FieldIndex index) {
+		fieldIndices.add(index);
+		fieldIndexByName.put(index.getName(), index);
+		fileFieldNames = null;
+		textFields = null;
+	}
 
 	public CollectionTextSearchIndex getCollectionTextSearchIndex() {
 		if (collectionTextSearchIndex == null) {
@@ -121,8 +187,8 @@ public class TableIndex implements MappedObject {
 			return;
 		}
 		if (
-				(!records.getValue(0) && getCount() > 0 && (System.currentTimeMillis() - lastFullTextIndexCheck > 300_000)) ||
-						getCount() > 0 && collectionTextSearchIndex.getMaxDoc() == 0
+				(!records.getBoolean(0) && getCount() > 0 && (System.currentTimeMillis() - lastFullTextIndexCheck > 300_000)) ||
+				getCount() > 0 && collectionTextSearchIndex.getMaxDoc() == 0
 		) {
 			long time = System.currentTimeMillis();
 			logger.warn("RECREATING FULL TEXT INDEX FOR: " + getName() + " (RECORDS:" + getCount() + ", MAX-DOC:" + collectionTextSearchIndex.getMaxDoc() + ")");
@@ -130,7 +196,7 @@ public class TableIndex implements MappedObject {
 			lastFullTextIndexCheck = System.currentTimeMillis();
 			logger.warn("RECREATING FINISHED FOR: " + getName() + " (TIME:" + (System.currentTimeMillis() - time) + ")");
 		}
-		records.setValue(0, false);
+		records.setBoolean(0, false);
 	}
 
 	public void forceFullTextIndexRecreation() {
@@ -167,13 +233,13 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
-	public Table getTable() {
-		return table;
+	public TableModel getTableModel() {
+		return tableModel;
 	}
 
-	public FileStore getFileStore() {
-		return databaseIndex.getSchemaIndex().getFileStore();
-	}
+//	public FileStore getFileStore() {
+//		return databaseIndex.getSchemaIndex().getFileStore();
+//	}
 
 	public RecordVersioningIndex getRecordVersioningIndex() {
 		return recordVersioningIndex;
@@ -187,16 +253,12 @@ public class TableIndex implements MappedObject {
 		return fullTextIndexPath;
 	}
 
-	public TableConfig getTableConfig() {
-		return tableConfig;
-	}
-
 	public BitSet getRecords() {
 		return records.getBitSet();
 	}
 
 	public boolean isStored(int id) {
-		return records.getValue(id);
+		return records.getBoolean(id);
 	}
 
 	public int getCount() {
@@ -216,23 +278,12 @@ public class TableIndex implements MappedObject {
 
 	public boolean isDeleted(int id) {
 		if (deletedRecords != null) {
-			return deletedRecords.getValue(id);
+			return deletedRecords.getBoolean(id);
 		} else {
-			return !records.getValue(id);
+			return !records.getBoolean(id);
 		}
 	}
 
-	public void addIndex(ColumnType type, String name) {
-		ColumnIndex column = ColumnIndex.createColumn(this, name, type);
-		addIndex(column);
-	}
-
-	public void addIndex(ColumnIndex index) {
-		columnIndices.add(index);
-		columnIndexByName.put(index.getName(), index);
-		fileFieldNames = null;
-		textFields = null;
-	}
 
 	public Filter createFullTextFilter(String query, String... fieldNames) {
 		AndFilter andFilter = new AndFilter();
@@ -290,7 +341,7 @@ public class TableIndex implements MappedObject {
 	public Filter createFullTextFilter(TextFilter textFilter, boolean orQuery, String... fieldNames) {
 		Filter filter = orQuery ? new OrFilter() : new AndFilter();
 		if (fieldNames == null || fieldNames.length == 0) {
-			columnIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT || columnIndex.getType() == IndexType.TRANSLATABLE_TEXT).forEach(columnIndex -> {
+			fieldIndices.stream().filter(columnIndex -> columnIndex.getType() == IndexType.TEXT || columnIndex.getType() == IndexType.TRANSLATABLE_TEXT).forEach(columnIndex -> {
 				IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter);
 				if (orQuery) {
 					filter.or(indexFilter);
@@ -300,9 +351,9 @@ public class TableIndex implements MappedObject {
 			});
 		} else {
 			for (String fieldName : fieldNames) {
-				ColumnIndex columnIndex = columnIndexByName.get(fieldName);
-				if (columnIndex != null && columnIndex.getType() == IndexType.TEXT || columnIndex.getType() == IndexType.TRANSLATABLE_TEXT) {
-					IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(columnIndex, textFilter);
+				FieldIndex fieldIndex = fieldIndexByName.get(fieldName);
+				if (fieldIndex != null && fieldIndex.getType() == IndexType.TEXT || fieldIndex.getType() == IndexType.TRANSLATABLE_TEXT) {
+					IndexFilter<TextIndex, TextFilter> indexFilter = new IndexFilter<TextIndex, TextFilter>(fieldIndex, textFilter);
 					if (orQuery) {
 						filter.or(indexFilter);
 					} else {
@@ -315,35 +366,35 @@ public class TableIndex implements MappedObject {
 	}
 
 	public List<SortEntry> sortRecords(String columnName, BitSet records, boolean ascending, UserContext userContext, SingleReferenceIndex... path) {
-		ColumnIndex column = null;
+		FieldIndex index = null;
 		if (path != null && path.length > 0) {
-			column = path[path.length - 1].getReferencedTable().getColumnIndex(columnName);
+			index = path[path.length - 1].getReferencedTable().getFieldIndex(columnName);
 		} else {
-			column = getColumnIndex(columnName);
+			index = getFieldIndex(columnName);
 		}
-		if (column == null) {
+		if (index == null) {
 			return null;
 		}
 		List<SortEntry> sortEntries = SortEntry.createSortEntries(records, path);
 
-		return column.sortRecords(sortEntries, ascending, userContext);
+		return index.sortRecords(sortEntries, ascending, userContext);
 	}
 
 	public int createRecord(int recordId) {
 		int id = 0;
 		if (recordId == 0) {
 			if (keepDeletedRecords) {
-				id = Math.max(records.getNextId(), deletedRecords.getNextId());
+				id = Math.max(records.getNextAvailableId(), deletedRecords.getNextAvailableId());
 			} else {
-				id = records.getNextId();
+				id = records.getNextAvailableId();
 			}
 		} else {
 			id = recordId;
-			if (keepDeletedRecords && deletedRecords.getValue(recordId)) {
-				deletedRecords.setValue(recordId, false);
+			if (keepDeletedRecords && deletedRecords.getBoolean(recordId)) {
+				deletedRecords.setBoolean(recordId, false);
 			}
 		}
-		records.setValue(id, true);
+		records.setBoolean(id, true);
 		return id;
 	}
 
@@ -370,8 +421,8 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
-	private List<Integer> getReferencedRecords(int id, ColumnIndex<?, ?> referenceColumn) {
-		if (referenceColumn.getColumnType() == ColumnType.MULTI_REFERENCE) {
+	private List<Integer> getReferencedRecords(int id, FieldIndex<?, ?> referenceColumn) {
+		if (referenceColumn.getFieldType() == FieldType.MULTI_REFERENCE) {
 			MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) referenceColumn;
 			return multiReferenceIndex.getReferencesAsList(id);
 		} else {
@@ -385,16 +436,16 @@ public class TableIndex implements MappedObject {
 		return deleteRecord(id, null);
 	}
 
-	private List<CyclicReferenceUpdate> deleteRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
-		records.setValue(id, false);
+	private List<CyclicReferenceUpdate> deleteRecord(int id, FieldIndex<?, ?> cascadeOriginIndex) {
+		records.setBoolean(id, false);
 		if (keepDeletedRecords) {
-			if (deletedRecords.getValue(id)) {
+			if (deletedRecords.getBoolean(id)) {
 				return Collections.emptyList();
 			}
-			deletedRecords.setValue(id, true);
+			deletedRecords.setBoolean(id, true);
 		}
 		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
-		for (ColumnIndex<?, ?> referenceColumn : getReferenceColumns()) {
+		for (FieldIndex<?, ?> referenceColumn : getReferenceFields()) {
 			if (referenceColumn == cascadeOriginIndex) {
 				continue;
 			}
@@ -403,9 +454,9 @@ public class TableIndex implements MappedObject {
 			TableIndex referencedTable = referenceIndex.getReferencedTable();
 			boolean isReferenceKeepDeletedRecords = referencedTable.isKeepDeletedRecords();
 			boolean isMultiReference = referenceIndex.isMultiReference();
-			ColumnIndex<?, ?> backReferenceColumn = referenceColumn.getReferencedColumn();
+			FieldIndex<?, ?> backReferenceColumn = referenceColumn.getReferencedColumn();
 			boolean isWithBackReferenceColumn = backReferenceColumn != null;
-			boolean isMultiBackReference = backReferenceColumn != null && backReferenceColumn.getColumnType() == ColumnType.MULTI_REFERENCE;
+			boolean isMultiBackReference = backReferenceColumn != null && backReferenceColumn.getFieldType() == FieldType.MULTI_REFERENCE;
 
 			List<Integer> referencedRecords = getReferencedRecords(id, referenceColumn);
 			if (referencedRecords.isEmpty()) {
@@ -452,8 +503,8 @@ public class TableIndex implements MappedObject {
 		}
 
 		if (!keepDeletedRecords) {
-			for (ColumnIndex<?, ?> columnIndex : columnIndices) {
-				columnIndex.removeValue(id);
+			for (FieldIndex<?, ?> fieldIndex : fieldIndices) {
+				fieldIndex.removeValue(id);
 			}
 			if (collectionTextSearchIndex != null) {
 				collectionTextSearchIndex.delete(id, getFileFieldNames());
@@ -462,7 +513,7 @@ public class TableIndex implements MappedObject {
 		return cyclicReferenceUpdates;
 	}
 
-	private List<CyclicReferenceUpdate> removeBackReferences(int id, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+	private List<CyclicReferenceUpdate> removeBackReferences(int id, FieldIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
 		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (isMultiBackReference) {
 			MultiReferenceIndex multiBackReferenceColumn = (MultiReferenceIndex) backReferenceColumn;
@@ -487,14 +538,14 @@ public class TableIndex implements MappedObject {
 		return restoreRecord(id, null);
 	}
 
-	public List<CyclicReferenceUpdate> restoreRecord(int id, ColumnIndex<?, ?> cascadeOriginIndex) {
-		if (!keepDeletedRecords || !deletedRecords.getValue(id)) {
+	public List<CyclicReferenceUpdate> restoreRecord(int id, FieldIndex<?, ?> cascadeOriginIndex) {
+		if (!keepDeletedRecords || !deletedRecords.getBoolean(id)) {
 			return Collections.emptyList();
 		}
-		deletedRecords.setValue(id, false);
+		deletedRecords.setBoolean(id, false);
 		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 
-		for (ColumnIndex<?, ?> referenceColumn : getReferenceColumns()) {
+		for (FieldIndex<?, ?> referenceColumn : getReferenceFields()) {
 			if (referenceColumn == cascadeOriginIndex) {
 				continue;
 			}
@@ -503,9 +554,9 @@ public class TableIndex implements MappedObject {
 			TableIndex referencedTable = referenceIndex.getReferencedTable();
 			boolean isReferenceKeepDeletedRecords = referencedTable.isKeepDeletedRecords();
 			boolean isMultiReference = referenceIndex.isMultiReference();
-			ColumnIndex<?, ?> backReferenceColumn = referenceColumn.getReferencedColumn();
+			FieldIndex<?, ?> backReferenceColumn = referenceColumn.getReferencedColumn();
 			boolean isWithBackReferenceColumn = backReferenceColumn != null;
-			boolean isMultiBackReference = backReferenceColumn != null && backReferenceColumn.getColumnType() == ColumnType.MULTI_REFERENCE;
+			boolean isMultiBackReference = backReferenceColumn != null && backReferenceColumn.getFieldType().isMultiReference();
 
 			List<Integer> referencedRecords = getReferencedRecords(id, referenceColumn);
 			if (referencedRecords.isEmpty()) {
@@ -536,11 +587,11 @@ public class TableIndex implements MappedObject {
 			}
 		}
 
-		records.setValue(id, true);
+		records.setBoolean(id, true);
 		return cyclicReferenceUpdates;
 	}
 
-	private List<CyclicReferenceUpdate> restoreBackReferences(int id, ColumnIndex<?, ?> referenceColumn, TableIndex referencedTable, boolean isMultiReference, ColumnIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
+	private List<CyclicReferenceUpdate> restoreBackReferences(int id, FieldIndex<?, ?> referenceColumn, TableIndex referencedTable, boolean isMultiReference, FieldIndex<?, ?> backReferenceColumn, boolean isMultiBackReference, List<Integer> referencedRecords) {
 		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 		if (isMultiBackReference) {
 			MultiReferenceIndex multiBackReferenceColumn = (MultiReferenceIndex) backReferenceColumn;
@@ -556,7 +607,7 @@ public class TableIndex implements MappedObject {
 						multiReferenceColumn.removeAllReferences(id, true);
 					} else {
 						SingleReferenceIndex singleReferenceColumn = (SingleReferenceIndex) referenceColumn;
-						singleReferenceColumn.setValue(id, 0,true);
+						singleReferenceColumn.setValue(id, 0, true);
 					}
 				}
 			});
@@ -576,7 +627,7 @@ public class TableIndex implements MappedObject {
 							multiReferenceColumn.removeAllReferences(id, true);
 						} else {
 							SingleReferenceIndex singleReferenceColumn = (SingleReferenceIndex) referenceColumn;
-							singleReferenceColumn.setValue(id, 0,true);
+							singleReferenceColumn.setValue(id, 0, true);
 						}
 					}
 				}
@@ -586,38 +637,11 @@ public class TableIndex implements MappedObject {
 	}
 
 
-	public void setTransactionId(int id, long transactionId) {
-		if (!tableConfig.isCheckpoints()) {
-			return;
-		}
-		if (transactionIndex == null) {
-			transactionIndex = getTransactionIndex();
-		}
-		transactionIndex.setValue(id, transactionId);
-	}
-
-	public long getTransactionId(int id) {
-		if (id == 0 || !tableConfig.isCheckpoints()) {
-			return 0;
-		}
-		if (transactionIndex == null) {
-			transactionIndex = getTransactionIndex();
-		}
-		return transactionIndex.getValue(id);
-	}
-
-	private LongIndex getTransactionIndex() {
-		if (!tableConfig.isCheckpoints()) {
-			return null;
-		}
-		return (LongIndex) getColumnIndex(Table.FIELD_CHECKPOINTS);
-	}
-
 	private List<String> getFileFieldNames() {
 		if (fileFieldNames == null) {
-			fileFieldNames = columnIndices.stream()
+			fileFieldNames = fieldIndices.stream()
 					.filter(index -> index.getType() == IndexType.FILE)
-					.map(ColumnIndex::getName)
+					.map(FieldIndex::getName)
 					.collect(Collectors.toList());
 		}
 		return fileFieldNames;
@@ -625,7 +649,7 @@ public class TableIndex implements MappedObject {
 
 	private List<TextIndex> getTextFields() {
 		if (textFields == null) {
-			textFields = columnIndices.stream()
+			textFields = fieldIndices.stream()
 					.filter(index -> index.getType() == IndexType.TEXT)
 					.map(index -> (TextIndex) index)
 					.collect(Collectors.toList());
@@ -635,7 +659,7 @@ public class TableIndex implements MappedObject {
 
 	private List<TranslatableTextIndex> getTranslatedTextFields() {
 		if (translatedTextFields == null) {
-			translatedTextFields = columnIndices.stream()
+			translatedTextFields = fieldIndices.stream()
 					.filter(index -> index.getType() == IndexType.TRANSLATABLE_TEXT)
 					.map(index -> (TranslatableTextIndex) index)
 					.collect(Collectors.toList());
@@ -654,18 +678,19 @@ public class TableIndex implements MappedObject {
 		return deletedRecords.getBitSet();
 	}
 
-	public List<ColumnIndex> getColumnIndices() {
-		return columnIndices;
+	public List<FieldIndex> getFieldIndices() {
+		return fieldIndices;
 	}
 
-	public List<ColumnIndex> getReferenceColumns() {
-		return columnIndices.stream()
-				.filter(column -> column.getColumnType().isReference())
+	public List<ReferenceIndex<?, ?>> getReferenceFields() {
+		return fieldIndices.stream()
+				.filter(fieldIndex -> fieldIndex.getFieldType().isReference())
+				.map(f -> (ReferenceIndex<?, ?>) f)
 				.collect(Collectors.toList());
 	}
 
-	public ColumnIndex getColumnIndex(String name) {
-		return columnIndexByName.get(name);
+	public FieldIndex getFieldIndex(String name) {
+		return fieldIndexByName.get(name);
 	}
 
 	public boolean isKeepDeletedRecords() {
@@ -673,45 +698,14 @@ public class TableIndex implements MappedObject {
 	}
 
 	public int getMappingId() {
-		return mappingId;
-	}
-
-	@Override
-	public void setMappingId(int id) {
-		if (mappingId > 0 && mappingId != id) {
-			throw new RuntimeException("Error mapping index with different id:" + mappingId + " -> " + id);
-		}
-		if (mappingId > 0) {
-			return;
-		}
-		this.mappingId = id;
-		this.indexMetaData.setMappingId(id);
-	}
-
-	public void merge(Table table) {
-		if (!tableConfig.keepDeleted() && table.getTableConfig().keepDeleted()) {
-			keepDeletedRecords = true;
-			deletedRecords = new BooleanIndex("coll-del-recs", this, ColumnType.BOOLEAN);
-			logger.warn("Updated table {} with keep deleted option", getFQN());
-		}
-		this.tableConfig.merge(table.getTableConfig());
-		for (Column column : table.getColumns()) {
-			ColumnIndex localColumn = getColumnIndex(column.getName());
-			if (localColumn == null) {
-				localColumn = ColumnIndex.createColumn(this, column.getName(), column.getType());
-				addIndex(localColumn);
-			}
-			if (localColumn.getMappingId() == 0) {
-				localColumn.setMappingId(column.getMappingId());
-			}
-		}
+		return tableModel.getTableId();
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("collection: ").append(name).append(", id:").append(mappingId).append("\n");
-		for (ColumnIndex column : columnIndices) {
+		sb.append("collection: ").append(name).append(", id:").append(getMappingId()).append("\n");
+		for (FieldIndex<?, ?> column : fieldIndices) {
 			sb.append("\t").append(column.toString()).append("\n");
 		}
 		return sb.toString();
@@ -723,12 +717,14 @@ public class TableIndex implements MappedObject {
 			if (collectionTextSearchIndex != null) {
 				collectionTextSearchIndex.commit(true);
 			}
-			records.setValue(0, true);
+			records.setBoolean(0, true);
 			records.close();
-			for (ColumnIndex column : columnIndices) {
+			for (FieldIndex<?, ?> column : fieldIndices) {
 				column.close();
 			}
-			recordVersioningIndex.close();
+			if (recordVersioningIndex != null) {
+				recordVersioningIndex.close();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -736,13 +732,13 @@ public class TableIndex implements MappedObject {
 
 	public void drop() {
 		collectionTextSearchIndex.drop();
-		for (ColumnIndex column : columnIndices) {
+		for (FieldIndex column : fieldIndices) {
 			column.drop();
 		}
 	}
 
 	public String getFQN() {
-		return parentFQN + "." + name;
+		return databaseIndex.getName() + "." + name;
 	}
 
 	public String getName() {

@@ -21,7 +21,8 @@ package org.teamapps.universaldb.index.bool;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.index.RecordIndex;
+import org.teamapps.universaldb.model.FieldModel;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -32,38 +33,11 @@ import java.util.List;
 
 public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 
-	private PrimitiveEntryAtomicStore atomicStore;
+	private RecordIndex recordIndex;
 
-	private int maxSetId;
-	private int numberOfSetIds;
-
-	public BooleanIndex(String name, TableIndex tableIndex, ColumnType columnType) {
-		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
-		recalculateMaxSetIndex();
-		recalculateNumberOfSetIds();
-	}
-
-	private void recalculateMaxSetIndex() {
-		int maximumId = (int) (atomicStore.getTotalCapacity() * 8) - 1;
-		int maxId = 0;
-		for (int id = maximumId; id > 0; id--) {
-			if (getValue(id)) {
-				maxId = id;
-				break;
-			}
-		}
-		maxSetId = maxId;
-	}
-
-	private void recalculateNumberOfSetIds() {
-		int count = 0;
-		for (int id = 1; id <= maxSetId; id++) {
-			if (getValue(id)) {
-				count++;
-			}
-		}
-		numberOfSetIds = count;
+	public BooleanIndex(FieldModel fieldModel, TableIndex tableIndex) {
+		super(fieldModel, tableIndex);
+		recordIndex = new RecordIndex(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
 
@@ -95,12 +69,12 @@ public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 
 	@Override
 	public void close() {
-		atomicStore.close();
+		recordIndex.close();
 	}
 
 	@Override
 	public void drop() {
-		atomicStore.drop();
+		recordIndex.drop();
 	}
 
 	@Override
@@ -113,27 +87,11 @@ public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 	}
 
 	public boolean getValue(int id) {
-		return atomicStore.getBoolean(id);
+		return recordIndex.getBoolean(id);
 	}
 
 	public void setValue(int id, boolean value) {
-		if (id > 0 && value != getValue(id)) {
-			if (value) {
-				numberOfSetIds++;
-			} else {
-				numberOfSetIds--;
-			}
-		}
-		atomicStore.setBoolean(id, value);
-		if (value) {
-			if (id > maxSetId) {
-				maxSetId = id;
-			}
-		} else {
-			if (id == maxSetId) {
-				recalculateMaxSetIndex();
-			}
-		}
+		recordIndex.setBoolean(id, value);
 	}
 
 	public List<SortEntry> sortRecords(List<SortEntry> sortEntries, boolean ascending, UserContext userContext) {
@@ -187,25 +145,19 @@ public class BooleanIndex extends AbstractIndex<Boolean, BooleanFilter> {
 	}
 
 	public int getCount() {
-		return numberOfSetIds;
+		return recordIndex.getCount();
 	}
 
 	public BitSet getBitSet() {
-		BitSet bitSet = new BitSet(maxSetId);
-		for (int i = 1; i <= maxSetId; i++) {
-			if (getValue(i)) {
-				bitSet.set(i);
-			}
-		}
-		return bitSet;
+		return recordIndex.getBitSet();
+	}
+
+	public List<Integer> getRecords() {
+		return recordIndex.getRecords();
 	}
 
 	public int getMaxId() {
-		return maxSetId;
-	}
-
-	public int getNextId() {
-		return maxSetId + 1;
+		return recordIndex.getMaxId();
 	}
 
 }

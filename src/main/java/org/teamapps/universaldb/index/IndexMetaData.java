@@ -36,7 +36,7 @@ public class IndexMetaData {
 
 	private final RandomAccessStore randomAccessStore;
 
-	public IndexMetaData(File dataPath, String name, String fqn, int indexType) {
+	public IndexMetaData(File dataPath, String name, String fqn, int indexType, int mappingId) {
 		this.randomAccessStore = new RandomAccessStore(dataPath, name + ".mdx");
 		if (randomAccessStore.getSize() == 0) {
 			try {
@@ -50,9 +50,12 @@ public class IndexMetaData {
 				randomAccessStore.write(NONCE_POS, nonce);
 				randomAccessStore.writeInt(COUNTER_OFFSET_POS, ctrOffset);
 				randomAccessStore.writeString(FQN_POS, fqn);
+				randomAccessStore.writeInt(MAPPING_ID_POS, mappingId);
 			} catch (IOException e) {
 				throw new RuntimeException("Error creating index meta data", e);
 			}
+		} else if (getMappingId() != mappingId) {
+			throw new RuntimeException("Wrong mapping id:" + getMappingId() + ", expected:" + mappingId);
 		}
 	}
 

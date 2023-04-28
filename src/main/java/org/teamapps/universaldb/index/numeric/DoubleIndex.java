@@ -21,7 +21,8 @@ package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.model.FieldModel;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -34,11 +35,11 @@ import java.util.Set;
 
 public class DoubleIndex extends AbstractIndex<Double, NumericFilter> implements NumericIndex {
 
-	private PrimitiveEntryAtomicStore atomicStore;
+	private final PrimitiveEntryAtomicStore atomicStore;
 
-	public DoubleIndex(String name, TableIndex tableIndex, ColumnType columnType) {
-		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
+	public DoubleIndex(FieldModel fieldModel, TableIndex tableIndex) {
+		super(fieldModel, tableIndex);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
 	@Override

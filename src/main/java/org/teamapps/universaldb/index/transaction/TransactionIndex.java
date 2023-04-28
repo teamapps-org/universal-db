@@ -22,13 +22,14 @@ package org.teamapps.universaldb.index.transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.UniversalDB;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.log.DefaultLogIndex;
 import org.teamapps.universaldb.index.log.LogIndex;
 import org.teamapps.universaldb.index.log.LogIterator;
 import org.teamapps.universaldb.index.log.RotatingLogIndex;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransaction;
-import org.teamapps.universaldb.index.transaction.schema.SchemaUpdate;
+import org.teamapps.universaldb.index.transaction.schema.ModelUpdate;
+import org.teamapps.universaldb.model.DatabaseModel;
 import org.teamapps.universaldb.schema.Schema;
 
 import java.io.File;
@@ -54,38 +55,17 @@ public class TransactionIndex {
 
 	private final File path;
 	private LogIndex transactionLog;
-	private LogIndex schemaLog;
+	private LogIndex modelLog;
 	private PrimitiveEntryAtomicStore databaseStats;
 	private volatile boolean active = true;
 
-	private Schema currentSchema;
-
-	public static void exportEmptyIndexWithModel(File baseInputPath, File baseOutputPath) {
-		new TransactionIndex(baseInputPath, baseOutputPath);
-	}
-
-	private TransactionIndex(File basePath, File baseOutputPath) {
-		this.path = new File(basePath, "transactions");
-		this.path.mkdir();
-		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
-		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
-		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
-		List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
-		currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
-
-		try {
-			TransactionIndex newTransactionIndex = new TransactionIndex(baseOutputPath);
-			newTransactionIndex.writeSchemaUpdate(new SchemaUpdate(currentSchema, 0, System.currentTimeMillis()));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+	private DatabaseModel currentModel;
 
 	public TransactionIndex(File basePath) {
 		this.path = new File(basePath, "transactions");
 		this.path.mkdir();
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
-		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
+		this.modelLog = new DefaultLogIndex(this.path, "models");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
 		init();
 		checkIndex();
@@ -99,9 +79,9 @@ public class TransactionIndex {
 			databaseStats.setLong(FIRST_SYSTEM_START, System.currentTimeMillis());
 		}
 		databaseStats.setLong(LAST_SYSTEM_START, System.currentTimeMillis());
-		if (!schemaLog.isEmpty()) {
-			List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
-			currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
+		if (!modelLog.isEmpty()) {
+			List<ModelUpdate> modelUpdates = getSchemaUpdates();
+			currentModel = getSchemaUpdates().get(modelUpdates.size() - 1).getDatabaseModel();
 		}
 		logger.info(UniversalDB.SKIP_DB_LOGGING, "STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -110,7 +90,7 @@ public class TransactionIndex {
 				logger.info(UniversalDB.SKIP_DB_LOGGING, "SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
 				databaseStats.setLong(TIMESTAMP_SHUTDOWN, System.currentTimeMillis());
 				transactionLog.close();
-				schemaLog.close();
+				modelLog.close();
 				databaseStats.flush();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -135,6 +115,7 @@ public class TransactionIndex {
 		if (!ok) {
 			throw new RuntimeException("Error in transaction log!");
 		}
+		logIterator.closeSave();
 		return ok;
 	}
 
@@ -189,39 +170,30 @@ public class TransactionIndex {
 		}
 	}
 
-	public synchronized boolean isValidSchema(Schema schema) {
-		if (currentSchema != null) {
-			if (!currentSchema.isCompatibleWith(schema)) {
-				return false;
-			}
-			Schema schemaCopy = Schema.parse(currentSchema.getSchemaDefinition());
-			schemaCopy.merge(schema);
-			schemaCopy.mapSchema();
-			if (!schemaCopy.checkModel()) {
+	public synchronized boolean isValidSchema(DatabaseModel model) {
+		if (currentModel != null) {
+			if (!currentModel.isCompatible(model)) {
 				return false;
 			}
 		}
 		return true;
 	}
 
-	public synchronized boolean isSchemaUpdate(Schema schema) {
-		if (currentSchema == null) {
+	public synchronized boolean isModelUpdate(DatabaseModel model) {
+		if (currentModel == null) {
 			return true;
 		}
-		Schema schemaCopy = Schema.parse(currentSchema.getSchemaDefinition());
-		schemaCopy.merge(schema);
-		schemaCopy.mapSchema();
-		return !currentSchema.getSchemaDefinition().equals(schemaCopy.getSchemaDefinition());
+		return !currentModel.isSameModel(model);
 	}
 
-	public synchronized void writeSchemaUpdate(SchemaUpdate schemaUpdate) throws IOException {
-		schemaLog.writeLog(schemaUpdate.getBytes());
-		currentSchema = schemaUpdate.getSchema();
+	public synchronized void writeModelUpdate(ModelUpdate modelUpdate) throws IOException {
+		modelLog.writeLog(modelUpdate.getBytes());
+		currentModel = modelUpdate.getDatabaseModel();
 		logger.info(UniversalDB.SKIP_DB_LOGGING, "Updating schema");
 	}
 
-	public synchronized Schema getCurrentSchema() {
-		return currentSchema;
+	public synchronized DatabaseModel getCurrentModel() {
+		return currentModel;
 	}
 
 	public synchronized void writeTransaction(ResolvedTransaction transaction) throws Exception {
@@ -237,13 +209,13 @@ public class TransactionIndex {
 		databaseStats.setLong(TRANSACTIONS_COUNT, getTransactionCount() + 1);
 	}
 
-	public synchronized List<SchemaUpdate> getSchemaUpdates() {
-		if (schemaLog.isEmpty()) {
+	public synchronized List<ModelUpdate> getSchemaUpdates() {
+		if (modelLog.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return schemaLog.readAllLogs()
+		return modelLog.readAllLogs()
 				.stream()
-				.map(SchemaUpdate::new)
+				.map(ModelUpdate::new)
 				.collect(Collectors.toList());
 	}
 

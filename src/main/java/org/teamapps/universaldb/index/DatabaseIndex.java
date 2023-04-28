@@ -19,32 +19,39 @@
  */
 package org.teamapps.universaldb.index;
 
+import org.teamapps.commons.util.collections.ByKeyComparisonResult;
+import org.teamapps.commons.util.collections.CollectionUtil;
 import org.teamapps.universaldb.UniversalDB;
-import org.teamapps.universaldb.schema.Database;
-import org.teamapps.universaldb.schema.Table;
+import org.teamapps.universaldb.model.DatabaseModel;
+import org.teamapps.universaldb.model.ReferenceFieldModel;
+import org.teamapps.universaldb.model.TableModel;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-public class DatabaseIndex implements MappedObject {
+public class DatabaseIndex {
 
-	private final SchemaIndex schemaIndex;
-	private final String name;
+	private final DatabaseModel databaseModel;
 	private final File dataPath;
 	private final File fullTextIndexPath;
+	private final File fileStorePath;
+	private final String name;
 	private final List<TableIndex> tables;
-	private int mappingId;
 
-	public DatabaseIndex(SchemaIndex schema, String name) {
-		this.schemaIndex = schema;
-		this.name = name;
-		this.dataPath = new File(schema.getDataPath(), name);
-		this.fullTextIndexPath = new File(schema.getFullTextIndexPath(), name);
+	public DatabaseIndex(DatabaseModel databaseModel, File basePath) {
+		this(databaseModel, new File(basePath, "db"), new File(basePath, "text"), new File(basePath, "files"));
+	}
+	public DatabaseIndex(DatabaseModel databaseModel, File dataPath, File fullTextIndexPath, File fileStorePath) {
+		this.name = databaseModel.getName();
+		this.databaseModel = databaseModel;
+		this.dataPath = dataPath;
+		this.fullTextIndexPath = fullTextIndexPath;
+		this. fileStorePath = fileStorePath;
 		dataPath.mkdir();
 		fullTextIndexPath.mkdir();
+		fileStorePath.mkdir();
 		this.tables = new ArrayList<>();
 	}
 
@@ -56,48 +63,48 @@ public class DatabaseIndex implements MappedObject {
 		return fullTextIndexPath;
 	}
 
-	public SchemaIndex getSchemaIndex() {
-		return schemaIndex;
-	}
 
-	public void merge(Database database, boolean checkFullTextIndex, UniversalDB universalDB) {
-		Map<String, TableIndex> tableMap = tables.stream().collect(Collectors.toMap(TableIndex::getName, table -> table));
-		for (Table table : database.getTables()) {
-			TableIndex localTable = tableMap.get(table.getName());
-			if (localTable == null) {
-				localTable = new TableIndex(this, table, table.getTableConfig());
-				addTable(localTable);
-			}
-			if (localTable.getMappingId() == 0) {
-				localTable.setMappingId(table.getMappingId());
-			}
-			localTable.merge(table);
+	public void merge(DatabaseModel newModel, boolean checkFullTextIndex, UniversalDB universalDB) {
+		databaseModel.mergeModel(newModel);
+		//todo save updated model...
+
+		ByKeyComparisonResult<TableIndex, TableModel, String> compareResult = CollectionUtil.compareByKey(tables, databaseModel.getTables(), TableIndex::getName, TableModel::getName, true);
+		//unknown table indices for this model
+		if (!compareResult.getAEntriesNotInB().isEmpty()) {
+			throw new RuntimeException("Unknown table indices that are not within the model:" + compareResult.getAEntriesNotInB().stream().map(TableIndex::getName).collect(Collectors.joining(", ")));
 		}
+
+		//existing tables
+		for (TableIndex tableIndex : compareResult.getAEntriesInB()) {
+			TableModel tableModel = compareResult.getB(tableIndex);
+			tableIndex.merge(tableModel);
+		}
+
+		//new tables
+		for (TableModel tableModel : compareResult.getBEntriesNotInA()) {
+			//todo log!
+			addTable(new TableIndex(this, tableModel));
+		}
+
+		tables.stream().flatMap(tableIndex ->  tableIndex.getReferenceFields().stream()).forEach(index -> {
+			ReferenceFieldModel referenceFieldModel = index.getReferenceFieldModel();
+			TableIndex referencedTable = referenceFieldModel.getReferencedTable() != null ? getTable(referenceFieldModel.getReferencedTable().getName()) : null;
+			FieldIndex reverseIndex = referenceFieldModel.getReverseReferenceField() != null ? referencedTable.getFieldIndex(referenceFieldModel.getReverseReferenceField().getName()) : null;
+			index.setReferencedTable(referencedTable, reverseIndex, referenceFieldModel.isCascadeDelete());
+		});
+
 		if (checkFullTextIndex) {
 			for (TableIndex table : tables) {
 				table.getRecordVersioningIndex().checkVersionIndex(universalDB);
 				table.checkFullTextIndex();
 			}
 		}
-
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	@Override
-	public String getFQN() {
-		return name;
-	}
-
-	public int getMappingId() {
-		return mappingId;
-	}
-
-	public void setMappingId(int mappingId) {
-		this.mappingId = mappingId;
-	}
 
 	public TableIndex addTable(TableIndex table) {
 		tables.add(table);

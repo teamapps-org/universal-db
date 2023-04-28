@@ -20,16 +20,14 @@
 package org.teamapps.universaldb.message;
 
 import org.teamapps.message.protocol.file.LocalFileStore;
-import org.teamapps.message.protocol.message.Message;
 import org.teamapps.message.protocol.message.MessageRecord;
 import org.teamapps.message.protocol.model.PojoObjectDecoder;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 
 import java.io.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;

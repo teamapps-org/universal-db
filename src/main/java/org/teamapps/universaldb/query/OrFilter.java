@@ -19,8 +19,8 @@
  */
 package org.teamapps.universaldb.query;
 
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.ColumnIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
@@ -94,25 +94,25 @@ public class OrFilter implements Filter {
                     if (!secondaryFilter.isEmpty()) {
                         BitSet fullTextResult = null;
                         for (IndexFilter filter : secondaryFilter) {
-                            ColumnIndex columnIndex = filter.getColumnIndex();
-                            if (columnIndex instanceof TextIndex) {
-                                TextIndex textIndex = (TextIndex) columnIndex;
+                            FieldIndex fieldIndex = filter.getColumnIndex();
+                            if (fieldIndex instanceof TextIndex) {
+                                TextIndex textIndex = (TextIndex) fieldIndex;
                                 BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
                                 if (fullTextResult == null) {
                                     fullTextResult = fullTextReduced;
                                 } else {
                                     fullTextResult.or(fullTextReduced);
                                 }
-                            } else if (columnIndex instanceof TranslatableTextIndex) {
-                                TranslatableTextIndex textIndex = (TranslatableTextIndex) columnIndex;
+                            } else if (fieldIndex instanceof TranslatableTextIndex) {
+                                TranslatableTextIndex textIndex = (TranslatableTextIndex) fieldIndex;
                                 BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
                                 if (fullTextResult == null) {
                                     fullTextResult = fullTextReduced;
                                 } else {
                                     fullTextResult.or(fullTextReduced);
                                 }
-                            } else if (columnIndex instanceof FileIndex) {
-                                FileIndex fileIndex = (FileIndex) columnIndex;
+                            } else if (fieldIndex instanceof FileIndex) {
+                                FileIndex fileIndex = (FileIndex) fieldIndex;
                                 //currently file index maintains its own index...
                             }
                         }

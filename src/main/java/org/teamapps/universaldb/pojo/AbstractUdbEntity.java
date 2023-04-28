@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.context.UserContext;
-import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.SortEntry;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
@@ -54,7 +54,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private static final Logger log = LoggerFactory.getLogger(AbstractUdbEntity.class);
 	private static final AtomicInteger correlationIdGenerator = new AtomicInteger();
 	private static final int MAX_CORRELATION_ID = 2_000_000_000;
-	private static UniversalDB database;
 
 	private final TableIndex tableIndex;
 	private int id;
@@ -62,10 +61,6 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	private int correlationId;
 	private EntityChangeSet entityChangeSet;
 	private TransactionRequest transactionRequest;
-
-	public static void setDatabase(UniversalDB database) {
-		AbstractUdbEntity.database = database;
-	}
 
 	public static <ENTITY> List<ENTITY> createEntityList(EntityBuilder<ENTITY> entityBuilder, List<Integer> recordIds){
 		List<ENTITY> list = new ArrayList<>();
@@ -78,7 +73,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, List<ENTITY> list, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
-		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
+		FieldIndex column = getSortColumn(table, sortFieldName, referencePath);
 		if (column == null) {
 			return list;
 		}
@@ -89,7 +84,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public static <ENTITY extends Entity> List<ENTITY> sort(TableIndex table, EntityBuilder<ENTITY> builder, BitSet recordIds, String sortFieldName, boolean ascending, UserContext userContext, String ... path) {
 		SingleReferenceIndex[] referencePath = getReferenceIndices(table, path);
-		ColumnIndex column = getSortColumn(table, sortFieldName, referencePath);
+		FieldIndex column = getSortColumn(table, sortFieldName, referencePath);
 		if (column == null) {
 			return createUnsortedList(recordIds, builder);
 		}
@@ -116,19 +111,19 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			referencePath = new SingleReferenceIndex[path.length];
 			TableIndex pathTable = table;
 			for (int i = 0; i < path.length; i++) {
-				referencePath[i] = (SingleReferenceIndex) pathTable.getColumnIndex(path[i]);
+				referencePath[i] = (SingleReferenceIndex) pathTable.getFieldIndex(path[i]);
 				pathTable = referencePath[i].getReferencedTable();
 			}
 		}
 		return referencePath;
 	}
 
-	private static ColumnIndex getSortColumn(TableIndex table, String sortFieldName, SingleReferenceIndex[] referencePath) {
-		ColumnIndex column;
+	private static FieldIndex getSortColumn(TableIndex table, String sortFieldName, SingleReferenceIndex[] referencePath) {
+		FieldIndex column;
 		if (referencePath != null && referencePath.length > 0) {
-			column = referencePath[referencePath.length - 1].getReferencedTable().getColumnIndex(sortFieldName);
+			column = referencePath[referencePath.length - 1].getReferencedTable().getFieldIndex(sortFieldName);
 		} else {
-			column = table.getColumnIndex(sortFieldName);
+			column = table.getFieldIndex(sortFieldName);
 		}
 		return column;
 	}
@@ -167,8 +162,8 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public int createdBy() {
-		ColumnIndex columnIndex = tableIndex.getColumnIndex(Table.FIELD_CREATED_BY);
-		return columnIndex != null ? getIntValue((IntegerIndex) columnIndex) : 0;
+		FieldIndex fieldIndex = tableIndex.getFieldIndex(Table.FIELD_CREATED_BY);
+		return fieldIndex != null ? getIntValue((IntegerIndex) fieldIndex) : 0;
 	}
 
 
@@ -190,7 +185,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		if (Table.FIELD_ID.equals(fieldName)) {
 			return getId();
 		}
-		ColumnIndex index = tableIndex.getColumnIndex(fieldName);
+		FieldIndex index = tableIndex.getFieldIndex(fieldName);
 		if (index != null) {
 			return index.getGenericValue(getId());
 		} else {
@@ -199,13 +194,13 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	}
 
 	public void setEntityValue(String fieldName, Object value) {
-		ColumnIndex index = tableIndex.getColumnIndex(fieldName);
+		FieldIndex index = tableIndex.getFieldIndex(fieldName);
 		if (index != null) {
 			setChangeValue(index, value, null);
 		}
 	}
 
-	protected void setChangeValue(ColumnIndex index, Object value, TableIndex tableIndex) {
+	protected void setChangeValue(FieldIndex index, Object value, TableIndex tableIndex) {
 		checkChangeSet();
 		entityChangeSet.addChangeValue(index, value);
 	}
@@ -224,7 +219,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> createEntityList(ColumnIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
+	protected <OTHER_ENTITY extends Entity> List<OTHER_ENTITY> createEntityList(FieldIndex index, EntityBuilder<OTHER_ENTITY> entityBuilder) {
 		TransactionRequestRecordValue changeValue = getChangeValue(index);
 		MultiReferenceEditValue editValue = (MultiReferenceEditValue) changeValue.getValue();
 		MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) index;
@@ -282,7 +277,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected TransactionRequestRecordValue getChangeValue(ColumnIndex index) {
+	protected TransactionRequestRecordValue getChangeValue(FieldIndex index) {
 		if (entityChangeSet == null) {
 			return null;
 		} else {
@@ -290,7 +285,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected Object getChangedValue(ColumnIndex index) {
+	protected Object getChangedValue(FieldIndex index) {
 		if (entityChangeSet == null) {
 			return null;
 		} else {
@@ -298,7 +293,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	protected AbstractUdbEntity getReferenceChangeValue(ColumnIndex index) {
+	protected AbstractUdbEntity getReferenceChangeValue(FieldIndex index) {
 		if (entityChangeSet == null) {
 			return null;
 		} else {
@@ -680,7 +675,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public boolean isChanged(ColumnIndex index) {
+	public boolean isChanged(FieldIndex index) {
 		return entityChangeSet != null && entityChangeSet.isChanged(index);
 	}
 
@@ -691,13 +686,13 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	@Override
 	public boolean isChanged(String fieldName) {
-		return isChanged(tableIndex.getColumnIndex(fieldName));
+		return isChanged(tableIndex.getFieldIndex(fieldName));
 	}
 
 	@Override
 	public void clearFieldChanges(String fieldName) {
 		if (entityChangeSet != null) {
-			entityChangeSet.removeChange(tableIndex.getColumnIndex(fieldName));
+			entityChangeSet.removeChange(tableIndex.getFieldIndex(fieldName));
 		}
 	}
 
@@ -713,7 +708,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public void saveRecord() {
+	public void saveRecord(UniversalDB database) {
 		if (entityChangeSet != null) {
 			this.transactionRequest = database.createTransactionRequest();
 			saveRecord(transactionRequest);
@@ -749,21 +744,21 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return tableIndex.getFQN();
 	}
 
-	public void deleteRecord() {
+	public void deleteRecord(UniversalDB database) {
 		TransactionRequest transactionRequest = database.createTransactionRequest();
 		transactionRequest.addRecord(TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id));
 		clearChanges();
 		database.executeTransaction(transactionRequest);
 	}
 
-	public void restoreDeletedRecord() {
+	public void restoreDeletedRecord(UniversalDB database) {
 		TransactionRequest transactionRequest = database.createTransactionRequest();
 		transactionRequest.addRecord(TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id));
 		database.executeTransaction(transactionRequest);
 	}
 
 	public boolean isRestorable() {
-		return tableIndex.getTableConfig().keepDeleted();
+		return tableIndex.getTableModel().isRecoverableRecords();
 	}
 
 	@Override
@@ -800,10 +795,10 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(tableIndex.getName()).append(": ").append(getId()).append("\n");
-		List<ColumnIndex> sortedFields = new ArrayList<>();
-		sortedFields.addAll(tableIndex.getColumnIndices().stream().filter(column -> !Table.isReservedMetaName(column.getName())).collect(Collectors.toList()));
-		sortedFields.addAll(tableIndex.getColumnIndices().stream().filter(column -> Table.isReservedMetaName(column.getName())).collect(Collectors.toList()));
-		for (ColumnIndex column : sortedFields) {
+		List<FieldIndex> sortedFields = new ArrayList<>();
+		sortedFields.addAll(tableIndex.getFieldIndices().stream().filter(column -> !Table.isReservedMetaName(column.getName())).toList());
+		sortedFields.addAll(tableIndex.getFieldIndices().stream().filter(column -> Table.isReservedMetaName(column.getName())).toList());
+		for (FieldIndex<?, ?> column : sortedFields) {
 			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
 			if (isChanged(column)) {
 				TransactionRequestRecordValue changeValue = getChangeValue(column);

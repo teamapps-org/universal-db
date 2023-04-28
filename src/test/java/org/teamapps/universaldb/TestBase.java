@@ -20,7 +20,7 @@
 package org.teamapps.universaldb;
 
 import org.apache.commons.io.IOUtils;
-import org.teamapps.datamodel.TestBaseSchema;
+import org.teamapps.datamodel.TestDb1;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.pojo.Entity;
 
@@ -49,7 +49,7 @@ public class TestBase {
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDirectory("temp").toFile();
 		tempDir.deleteOnExit();
-		UniversalDB.createStandalone(tempDir, new TestBaseSchema());
+		UniversalDB.createStandalone(tempDir, new TestDb1());
 	}
 
 	public static File createResourceFile() throws IOException {

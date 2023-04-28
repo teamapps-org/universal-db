@@ -19,8 +19,7 @@
  */
 package org.teamapps.universaldb.index.transaction.request;
 
-import org.teamapps.universaldb.TableConfig;
-import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.schema.Table;
 
@@ -86,36 +85,33 @@ public class TransactionRequestRecord {
 	}
 
 	public void createMetaData(TableIndex tableIndex, int userId) {
-		TableConfig config = tableIndex.getTableConfig();
 		int changeDate = (int) (System.currentTimeMillis() / 1000);
 		switch (recordType) {
 			case CREATE:
 			case CREATE_WITH_ID:
-				if (config.trackCreation()) {
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATION_DATE), changeDate);
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_CREATED_BY), userId);
-				}
-				if (config.trackModification()) {
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), changeDate);
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFIED_BY), userId);
+				if (tableIndex.getTableModel().isTrackModifications()) {
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_CREATION_DATE), changeDate);
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_CREATED_BY), userId);
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_MODIFICATION_DATE), changeDate);
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_MODIFIED_BY), userId);
 				}
 				break;
 			case UPDATE:
-				if (config.trackModification()) {
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFICATION_DATE), changeDate);
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_MODIFIED_BY), userId);
+				if (tableIndex.getTableModel().isTrackModifications()) {
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_MODIFICATION_DATE), changeDate);
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_MODIFIED_BY), userId);
 				}
 				break;
 			case DELETE:
-				if (config.keepDeleted()) {
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_DELETION_DATE), changeDate);
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_DELETED_BY), userId);
+				if (tableIndex.getTableModel().isRecoverableRecords()) {
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_DELETION_DATE), changeDate);
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_DELETED_BY), userId);
 				}
 				break;
 			case RESTORE:
-				if (config.keepDeleted()) {
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_RESTORE_DATE), changeDate);
-					addRecordValue(tableIndex.getColumnIndex(Table.FIELD_RESTORED_BY), userId);
+				if (tableIndex.getTableModel().isRecoverableRecords()) {
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_RESTORE_DATE), changeDate);
+					addRecordValue(tableIndex.getFieldIndex(Table.FIELD_RESTORED_BY), userId);
 				}
 				break;
 		}
@@ -144,8 +140,8 @@ public class TransactionRequestRecord {
 		return correlationId;
 	}
 
-	public void addRecordValue(ColumnIndex columnIndex, Object value) {
-		addRecordValue(new TransactionRequestRecordValue(columnIndex.getMappingId(), columnIndex.getType(), value));
+	public void addRecordValue(FieldIndex fieldIndex, Object value) {
+		addRecordValue(new TransactionRequestRecordValue(fieldIndex.getMappingId(), fieldIndex.getType(), value));
 	}
 
 	public void addRecordValue(TransactionRequestRecordValue recordValue) {

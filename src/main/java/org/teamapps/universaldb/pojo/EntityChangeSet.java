@@ -19,7 +19,7 @@
  */
 package org.teamapps.universaldb.pojo;
 
-import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
@@ -44,7 +44,7 @@ public class EntityChangeSet {
 		entityByReference = new HashMap<>();
 	}
 
-	public void addChangeValue(ColumnIndex column, Object value) {
+	public void addChangeValue(FieldIndex column, Object value) {
 		TransactionRequestRecordValue requestRecordValue = new TransactionRequestRecordValue(column.getMappingId(), column.getType(), value);
 		changeMap.put(requestRecordValue.getColumnId(), requestRecordValue);
 	}
@@ -57,19 +57,19 @@ public class EntityChangeSet {
 		return entityByReference;
 	}
 
-	public TransactionRequestRecordValue getChangeValue2(ColumnIndex index) {
+	public TransactionRequestRecordValue getChangeValue2(FieldIndex index) {
 		return changeMap.get(index.getMappingId());
 	}
 
-	public boolean isChanged(ColumnIndex columnIndex) {
-		return changeMap.containsKey(columnIndex.getMappingId());
+	public boolean isChanged(FieldIndex fieldIndex) {
+		return changeMap.containsKey(fieldIndex.getMappingId());
 	}
 
-	public void removeChange(ColumnIndex columnIndex) {
-		changeMap.remove(columnIndex);
+	public void removeChange(FieldIndex fieldIndex) {
+		changeMap.remove(fieldIndex);
 	}
 
-	public TransactionRequestRecordValue getChangeValue(ColumnIndex index) {
+	public TransactionRequestRecordValue getChangeValue(FieldIndex index) {
 		return changeMap.get(index.getMappingId());
 	}
 
@@ -114,7 +114,7 @@ public class EntityChangeSet {
 		}
 	}
 
-	public void setReferenceChange(ColumnIndex index, AbstractUdbEntity reference) {
+	public void setReferenceChange(FieldIndex index, AbstractUdbEntity reference) {
 		changedReferenceMap.put(index.getMappingId(), reference);
 	}
 

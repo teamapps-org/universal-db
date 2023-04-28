@@ -25,5 +25,5 @@ public interface MappedObject {
 
 	int getMappingId();
 
-	void setMappingId(int mappingId);
+//	void setMappingId(int mappingId);
 }

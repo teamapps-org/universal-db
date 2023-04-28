@@ -58,7 +58,6 @@ public class QueryTest {
 
 	@Test
 	public void testNumericQuery() {
-
 		int size = 1000;
 		long longOffset = 1000_000_000_000L;
 
@@ -74,7 +73,6 @@ public class QueryTest {
 
 		assertEquals(size, FieldTest.getAll().size());
 		assertEquals(size, FieldTest.getCount());
-
 		values = FieldTest.filter().intField(NumericFilter.containsFilter(1, 3, 7)).execute();
 		assertTrue(check(values, 1, 3, 7));
 

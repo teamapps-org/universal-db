@@ -21,8 +21,8 @@ package org.teamapps.universaldb.index.log;
 
 import org.teamapps.message.protocol.message.Message;
 import org.teamapps.message.protocol.model.PojoObjectDecoder;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
-import org.teamapps.universaldb.index.buffer.RecordIndex;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.index.RecordIndex;
 
 import java.io.File;
 import java.io.IOException;

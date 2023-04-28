@@ -22,10 +22,8 @@ package org.teamapps.universaldb.message;
 import org.teamapps.message.protocol.file.LocalFileStore;
 import org.teamapps.message.protocol.message.Message;
 import org.teamapps.message.protocol.message.MessageRecord;
-import org.teamapps.message.protocol.model.ModelCollection;
 import org.teamapps.message.protocol.model.ModelRegistry;
-import org.teamapps.message.protocol.model.PojoObjectDecoder;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 
 import java.io.*;
 import java.time.Instant;

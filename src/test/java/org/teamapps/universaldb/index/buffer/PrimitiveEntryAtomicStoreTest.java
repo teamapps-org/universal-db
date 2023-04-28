@@ -22,6 +22,7 @@ package org.teamapps.universaldb.index.buffer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 
 import java.io.File;
 import java.io.IOException;

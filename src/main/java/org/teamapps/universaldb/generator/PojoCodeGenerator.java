@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,9 +19,8 @@
  */
 package org.teamapps.universaldb.generator;
 
-import org.teamapps.universaldb.index.ColumnType;
+import org.teamapps.universaldb.model.*;
 import org.teamapps.universaldb.pojo.template.PojoTemplate;
-import org.teamapps.universaldb.schema.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,47 +34,180 @@ public class PojoCodeGenerator {
 	public static final String UDB_PREFIX = "Udb";
 	public static final String QUERY_SUFFIX = "Query";
 
-	public void generateCode(Schema schema, File basePath) throws IOException {
-		File baseDir = createBaseDir(basePath, schema.getPojoNamespace());
-		createSchemaInterface(schema, baseDir);
-		for (Database Database : schema.getDatabases()) {
-			createDbPojos(Database, baseDir, schema.getPojoNamespace());
-		}
+	private static String tabs(int count) {
+		return "\t".repeat(count);
 	}
 
-	public void createSchemaInterface(Schema schema, File baseDir) throws IOException {
-		PojoTemplate tpl = PojoTemplate.createSchemaInterface();
-		tpl.setValue("package", schema.getPojoNamespace());
-		String[] lines = schema.getSchemaDefinition().split("\n");
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < lines.length; i++) {
-			String line = lines[i];
-			if (i > 0) {
-				sb.append(tpl.tabs(4));
-			}
-			if (i + 1 == lines.length) {
-				sb.append("\"").append(line).append("\\n\";").append("\n");
-			} else {
-				sb.append("\"").append(line).append("\\n\" + ").append("\n");
-			}
-		}
-		tpl.setValue("type", schema.getSchemaName());
-		tpl.setValue("schema", sb.toString());
-		tpl.writeTemplate(schema.getSchemaName(), baseDir);
+	private static String withQuotes(String value) {
+		return value != null ? "\"" + value + "\"" : "null";
 	}
 
-	private void createDbPojos(Database db, File baseDir, String packageName) throws IOException {
-		File dbPojoDir = new File(baseDir, db.getName().toLowerCase());
+	private static String withQuotes(List<String> values) {
+		return values.stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
+	}
+
+	private static String withBoolean(boolean value) {
+		return value ? "true" : "false";
+	}
+
+	public void generateCode(DatabaseModel databaseModel, File basePath) throws IOException {
+		String namespace = databaseModel.getNamespace();
+		File baseDir = createBaseDir(basePath, namespace);
+		createModelProviderClass(databaseModel, baseDir);
+
+		File dbPojoDir = new File(baseDir, databaseModel.getName().toLowerCase());
 		dbPojoDir.mkdir();
-		for (Table table : db.getAllTables()) {
-			createTablePojo(table, dbPojoDir, packageName + "." + db.getName().toLowerCase());
-			createTableQueryPojo(table, dbPojoDir, packageName + "." + db.getName().toLowerCase());
+		String packageName = namespace + "." + databaseModel.getName().toLowerCase();
+
+		for (EnumModel enumModel : databaseModel.getEnums()) {
+			createEnum(enumModel, dbPojoDir, packageName);
 		}
+
+		for (ViewModel viewModel : databaseModel.getViews()) {
+
+		}
+
+		for (TableModel table : databaseModel.getTables()) {
+			createTablePojo(table, dbPojoDir, packageName);
+			createTableQueryPojo(table, dbPojoDir, packageName);
+		}
+
 	}
 
-	private void createTablePojo(Table table, File dbPojoDir, String packageName) throws IOException {
-		PojoTemplate tpl = table.isView() ? PojoTemplate.createEntityViewInterface() : PojoTemplate.createEntityInterface();
-		PojoTemplate udbTpl = table.isView() ? PojoTemplate.createUdbEntityView() : PojoTemplate.createUdbEntity();
+	public void createModelProviderClass(DatabaseModel model, File baseDir) throws IOException {
+		PojoTemplate tpl = PojoTemplate.createModelProviderClass();
+		tpl.setValue("package", model.getNamespace());
+		String type = tpl.firstUpper(model.getName());
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(tabs(2))
+				.append("DatabaseModel model = new DatabaseModel(")
+				.append(withQuotes(model.getName())).append(", ")
+				.append(withQuotes(model.getTitle())).append(", ")
+				.append(withQuotes(model.getNamespace())).append(");")
+				.append(tpl.nl());
+
+		for (EnumModel enumModel : model.getEnums()) {
+			sb.append(tabs(2))
+					.append("model.createEnum(")
+					.append(withQuotes(enumModel.getName())).append(", ")
+					.append(withQuotes(enumModel.getTitle())).append(", ")
+					.append("Arrays.asList(").append(withQuotes(enumModel.getEnumNames())).append("), ")
+					.append("Arrays.asList(").append(withQuotes(enumModel.getEnumTitles())).append("));")
+					.append(tpl.nl());
+		}
+		sb.append(tpl.nl());
+		for (TableModel table : model.getLocalTables()) {
+			sb.append(tabs(2))
+					.append("TableModel ")
+					.append(table.getName()).append("Table").append(" = ")
+					.append("model.createTable(")
+					.append(withQuotes(table.getName())).append(", ")
+					.append(withQuotes(table.getTitle())).append(", ")
+					.append(withBoolean(table.isTrackModifications())).append(", ")
+					.append(withBoolean(table.isVersioning())).append(", ")
+					.append(withBoolean(table.isRecoverableRecords())).append(");")
+					.append(tpl.nl());
+		}
+
+		for (TableModel table : model.getRemoteTables()) {
+			sb.append(tabs(2))
+					.append("TableModel ")
+					.append(table.getName()).append("Table").append(" = ")
+					.append("model.createRemoteTable(")
+					.append(withQuotes(table.getName())).append(", ")
+					.append(withQuotes(table.getTitle())).append(", ")
+					.append(withQuotes(table.getRemoteDatabase())).append(");")
+					.append(tpl.nl());
+		}
+
+		for (TableModel table : model.getTables()) {
+			sb.append(tpl.nl());
+			for (FieldModel field : table.getFields().stream().filter(f -> !f.isMetaField()).toList()) {
+				sb.append(tabs(2))
+						.append(table.getName()).append("Table.")
+						.append(getAddMethodName(field.getFieldType())).append("(")
+						.append(withQuotes(field.getName())).append(", ")
+						.append(withQuotes(field.getTitle()));
+				if (field.getFieldType().isReference()) {
+					ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) field;
+					sb.append(", ")
+							.append(withQuotes(referenceFieldModel.getReferencedTable().getName())).append(", ")
+							.append(withBoolean(referenceFieldModel.isCascadeDelete()));
+				} else if (field.getFieldType().isEnum()) {
+					EnumFieldModel enumFieldModel = (EnumFieldModel) field;
+					sb.append(", ")
+							.append(withQuotes(enumFieldModel.getEnumModel().getName()));
+				} else if (field.getFieldType().isFile()) {
+					FileFieldModel fileFieldModel = (FileFieldModel) field;
+					sb.append(", ")
+							.append(withBoolean(fileFieldModel.isIndexContent())).append(", ")
+							.append(fileFieldModel.getMaxIndexContentLength()).append(", ")
+							.append(withBoolean(fileFieldModel.isDetectLanguage()));
+				}
+				sb.append(");").append(tpl.nl());
+			}
+		}
+		sb.append(tpl.nl());
+
+		for (TableModel table : model.getTables()) {
+			for (ReferenceFieldModel referenceField : table.getReferenceFields().stream().filter(rf -> rf.getReverseReferenceField() != null).toList()) {
+				sb.append(tabs(2))
+						.append("model.addReverseReferenceField(")
+						.append(table.getName()).append("Table").append(", ")
+						.append(withQuotes(referenceField.getName())).append(", ")
+						.append(referenceField.getReferencedTable().getName()).append("Table").append(", ")
+						.append(withQuotes(referenceField.getReverseReferenceField().getName()))
+						.append(");").append(tpl.nl());
+			}
+		}
+
+		tpl.setValue("type", type);
+		tpl.setValue("model", sb.toString());
+		tpl.writeTemplate(type, baseDir);
+	}
+
+	private String getAddMethodName(FieldType type) {
+		return switch (type) {
+			case BOOLEAN -> "addBoolean";
+			case SHORT -> "addShort";
+			case INT -> "addInteger";
+			case LONG -> "addLong";
+			case FLOAT -> "addFloat";
+			case DOUBLE -> "addDouble";
+			case TEXT -> "addText";
+			case TRANSLATABLE_TEXT -> "addTranslatableText";
+			case FILE -> "addFile";
+			case SINGLE_REFERENCE -> "addReference";
+			case MULTI_REFERENCE -> "addMultiReference";
+			case TIMESTAMP -> "addTimestamp";
+			case DATE -> "addDate";
+			case TIME -> "addTime";
+			case DATE_TIME -> "addDateTime";
+			case LOCAL_DATE -> "addLocalDate";
+			case ENUM -> "addEnum";
+			case BINARY -> "addByteArray";
+			case CURRENCY -> "addCurrency";
+			case DYNAMIC_CURRENCY -> "addDynamicCurrency";
+		};
+	}
+
+	private void createEnum(EnumModel enumModel, File dbPojoDir, String packageName) throws IOException {
+		PojoTemplate enumTpl = PojoTemplate.createEnum();
+		String enumType = enumTpl.firstUpper(enumModel.getName());
+		enumTpl.setValue("package", packageName);
+		enumTpl.setValue("type", enumType);
+		List<String> enumValues = new ArrayList<>();
+		for (String enumValue : enumModel.getEnumNames()) {
+			enumValues.add("\t" + enumTpl.createConstantName(enumValue) + ",");
+		}
+		enumTpl.setValue("enumValues", enumValues.stream().collect(Collectors.joining("\n")));
+		enumTpl.writeTemplate(enumType, dbPojoDir);
+	}
+
+	private void createTablePojo(TableModel table, File dbPojoDir, String packageName) throws IOException {
+		PojoTemplate tpl = table.isRemoteTable() ? PojoTemplate.createEntityViewInterface() : PojoTemplate.createEntityInterface();
+		PojoTemplate udbTpl = table.isRemoteTable() ? PojoTemplate.createUdbEntityView() : PojoTemplate.createUdbEntity();
 		String type = tpl.firstUpper(table.getName());
 		String udbType = UDB_PREFIX + type;
 		String query = type + QUERY_SUFFIX;
@@ -97,12 +229,13 @@ public class PojoCodeGenerator {
 		List<String> staticFields = new ArrayList<>();
 		List<String> staticFieldSetters = new ArrayList<>();
 		staticFields.add("\t" + "protected static TableIndex table;");
+		staticFields.add("\t" + "protected static UniversalDB universalDB;");
 
-		for (Column column : table.getColumns()) {
-			String staticFieldName = "FIELD_" + tpl.createConstantName(column.getName());
-			staticFieldNames.add("\t" + "final static String " + staticFieldName + " = \"" + column.getName() + "\";");
-			staticFields.add("\t" + "protected static " + tpl.getIndexTypeName(column.getType()) + " " + column.getName() + ";");
-			staticFieldSetters.add("\t\t" + column.getName() + " = (" + tpl.getIndexTypeName(column.getType()) + ") tableIndex.getColumnIndex(" + staticFieldName + ");");
+		for (FieldModel fieldModel : table.getFields()) {
+			String staticFieldName = "FIELD_" + tpl.createConstantName(fieldModel.getName());
+			staticFieldNames.add("\t" + "final static String " + staticFieldName + " = \"" + fieldModel.getName() + "\";");
+			staticFields.add("\t" + "protected static " + tpl.getIndexTypeName(fieldModel.getFieldType()) + " " + fieldModel.getName() + ";");
+			staticFieldSetters.add("\t\t" + fieldModel.getName() + " = (" + tpl.getIndexTypeName(fieldModel.getFieldType()) + ") tableIndex.getFieldIndex(" + staticFieldName + ");");
 
 			int version = 0;
 			boolean loop1 = true;
@@ -111,31 +244,18 @@ public class PojoCodeGenerator {
 			boolean loop4 = true;
 			while (loop1 || loop2 || loop3 || loop4) {
 				version++;
-				loop1 = tpl.addInterfaceGetMethod(column, version);
-				if (!table.isView()) {
-					loop2 = tpl.addInterfaceSetMethod(column, table, version);
+				loop1 = tpl.addInterfaceGetMethod(fieldModel, version);
+				if (!table.isRemoteTable()) {
+					loop2 = tpl.addInterfaceSetMethod(fieldModel, table, version);
 				} else {
 					loop2 = false;
 				}
-				loop3 = udbTpl.addUdbEntityGetMethod(column, version);
-				if (!table.isView()) {
-					loop4 = udbTpl.addUdbEntitySetMethod(column, table, version);
+				loop3 = udbTpl.addUdbEntityGetMethod(fieldModel, version);
+				if (!table.isRemoteTable()) {
+					loop4 = udbTpl.addUdbEntitySetMethod(fieldModel, table, version);
 				} else {
 					loop4 = false;
 				}
-			}
-
-			if (column.getType() == ColumnType.ENUM) {
-				PojoTemplate enumTpl = PojoTemplate.createEnum();
-				String enumType = enumTpl.firstUpper(column.getName());
-				enumTpl.setValue("package", packageName);
-				enumTpl.setValue("type", enumType);
-				List<String> enumValues = new ArrayList<>();
-				for (String enumValue : column.getEnumValues()) {
-					enumValues.add("\t" + enumTpl.createConstantName(enumValue) + ",");
-				}
-				enumTpl.setValue("enumValues", enumValues.stream().collect(Collectors.joining("\n")));
-				enumTpl.writeTemplate(enumType, dbPojoDir);
 			}
 		}
 
@@ -147,7 +267,7 @@ public class PojoCodeGenerator {
 		udbTpl.writeTemplate(udbType, dbPojoDir);
 	}
 
-	private void createTableQueryPojo(Table table, File dbPojoDir, String packageName) throws IOException {
+	private void createTableQueryPojo(TableModel table, File dbPojoDir, String packageName) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createQueryInterface();
 		PojoTemplate udbTpl = PojoTemplate.createUdbQuery();
 		String type = tpl.firstUpper(table.getName());
@@ -169,13 +289,13 @@ public class PojoCodeGenerator {
 		udbTpl.setValue("udbQuery", udbQuery);
 		udbTpl.setValue("imports", imports);
 
-		for (Column column : table.getColumns()) {
-			tpl.addSubQueryInterfaceMethod(column, query);
-			tpl.addQueryInterfaceMethod(column, query, false);
-			tpl.addQueryInterfaceMethod(column, query, true);
-			udbTpl.addUdbSubQueryMethod(column, query, type);
-			udbTpl.addUdbQueryMethod(column, query, type, false);
-			udbTpl.addUdbQueryMethod(column, query, type, true);
+		for (FieldModel fieldModel : table.getFields()) {
+			tpl.addSubQueryInterfaceMethod(fieldModel, query);
+			tpl.addQueryInterfaceMethod(fieldModel, query, false);
+			tpl.addQueryInterfaceMethod(fieldModel, query, true);
+			udbTpl.addUdbSubQueryMethod(fieldModel, query, type);
+			udbTpl.addUdbQueryMethod(fieldModel, query, type, false);
+			udbTpl.addUdbQueryMethod(fieldModel, query, type, true);
 		}
 
 		tpl.writeTemplate(query, dbPojoDir);

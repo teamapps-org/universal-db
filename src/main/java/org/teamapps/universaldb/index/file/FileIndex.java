@@ -25,6 +25,7 @@ import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.numeric.LongIndex;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
 import org.teamapps.universaldb.index.text.TextIndex;
+import org.teamapps.universaldb.model.FieldModel;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
@@ -44,13 +45,13 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	private final FileStore fileStore;
 	private final String filePath;
 
-	public FileIndex(String name, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions, CollectionTextSearchIndex collectionSearchIndex, FileStore fileStore) {
-		super(name, table, columnType, fullTextIndexingOptions);
-		this.uuidIndex = new TextIndex(name + "-file-uuid", table, columnType, false);
-		this.hashIndex = new TextIndex(name + "-file-hash", table, columnType, false);
-		this.sizeIndex = new LongIndex(name + "-file-size", table, columnType);
-		this.fileDataIndex = fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getFullTextIndexPath(), name) : null;
-		this.metaDataIndex = fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table, true, columnType) : null;
+	public FileIndex(FieldModel fieldModel, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions, CollectionTextSearchIndex collectionSearchIndex, FileStore fileStore) {
+		super(fieldModel, table);
+		this.uuidIndex = null; //new TextIndex(fieldModel.getName() + "-file-uuid", table, columnType, false);
+		this.hashIndex = null; //new TextIndex(name + "-file-hash", table, columnType, false);
+		this.sizeIndex = null; //new LongIndex(name + "-file-size", table, columnType);
+		this.fileDataIndex = null; //fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getFullTextIndexPath(), name) : null;
+		this.metaDataIndex = null; //fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table, true, columnType) : null;
 		this.fullTextIndexingOptions = fullTextIndexingOptions;
 		this.filePath = getFQN().replace('.', '/');
 		this.fileStore = fileStore;

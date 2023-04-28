@@ -23,8 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.index.file.FileStore;
-import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
-import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.schema.Database;
 import org.teamapps.universaldb.schema.Schema;
@@ -33,7 +31,6 @@ import org.teamapps.universaldb.schema.Table;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SchemaIndex {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -86,84 +83,84 @@ public class SchemaIndex {
 	}
 
 	public void merge(Schema schema, boolean checkFullTextIndex, UniversalDB universalDB) {
-		if (!this.schema.isCompatibleWith(schema)) {
-			throw new RuntimeException("Error: cannot merge incompatible schemas:" + this + " with " + schema);
-		}
-		Map<String, DatabaseIndex> databaseMap = databases.stream().collect(Collectors.toMap(DatabaseIndex::getName, db -> db));
-		for (Database database : schema.getDatabases()) {
-			DatabaseIndex localDatabase = databaseMap.get(database.getName());
-			if (localDatabase == null) {
-				localDatabase = new DatabaseIndex(this, database.getName());
-				databases.add(localDatabase);
-			}
-			if (localDatabase.getMappingId() == 0) {
-				localDatabase.setMappingId(database.getMappingId());
-			}
-			localDatabase.merge(database, checkFullTextIndex, universalDB);
-		}
-		for (Database database : schema.getDatabases()) {
-			for (Table table : database.getTables()) {
-				for (Column column : table.getColumns()) {
-					if (column.getReferencedTable() != null) {
-						ColumnIndex columnIndex = getColumn(column);
-						TableIndex referencedTable = getReferencedTable(column.getReferencedTable());
-						if (referencedTable == null) {
-							logger.warn("Missing referenced table:" + column.getReferencedTable().getFQN() + ", " + column.getReferencedTable().getReferencedTablePath());
-						}
-						ColumnIndex backReference = null;
-						if (column.getBackReference() != null) {
-							backReference = referencedTable.getColumnIndex(column.getBackReference());
-						}
-						if (columnIndex instanceof SingleReferenceIndex) {
-							SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) columnIndex;
-							singleReferenceIndex.setReferencedTable(referencedTable, backReference, column.isCascadeDeleteReferences());
-						} else {
-							MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) columnIndex;
-							multiReferenceIndex.setReferencedTable(referencedTable, backReference, column.isCascadeDeleteReferences());
-						}
-					}
-				}
-			}
-		}
-		this.schema.merge(schema);
+//		if (!this.schema.isCompatibleWith(schema)) {
+//			throw new RuntimeException("Error: cannot merge incompatible schemas:" + this + " with " + schema);
+//		}
+//		Map<String, DatabaseIndex> databaseMap = databases.stream().collect(Collectors.toMap(DatabaseIndex::getName, db -> db));
+//		for (Database database : schema.getDatabases()) {
+//			DatabaseIndex localDatabase = databaseMap.get(database.getName());
+//			if (localDatabase == null) {
+//				localDatabase = new DatabaseIndex(this, database.getName());
+//				databases.add(localDatabase);
+//			}
+//			if (localDatabase.getMappingId() == 0) {
+//				localDatabase.setMappingId(database.getMappingId());
+//			}
+//			localDatabase.merge(database, checkFullTextIndex, universalDB);
+//		}
+//		for (Database database : schema.getDatabases()) {
+//			for (Table table : database.getTables()) {
+//				for (Column column : table.getColumns()) {
+//					if (column.getReferencedTable() != null) {
+//						FieldIndex fieldIndex = getColumn(column);
+//						TableIndex referencedTable = getReferencedTable(column.getReferencedTable());
+//						if (referencedTable == null) {
+//							logger.warn("Missing referenced table:" + column.getReferencedTable().getFQN() + ", " + column.getReferencedTable().getReferencedTablePath());
+//						}
+//						FieldIndex backReference = null;
+//						if (column.getBackReference() != null) {
+//							backReference = referencedTable.getColumnIndex(column.getBackReference());
+//						}
+//						if (fieldIndex instanceof SingleReferenceIndex) {
+//							SingleReferenceIndex singleReferenceIndex = (SingleReferenceIndex) fieldIndex;
+//							singleReferenceIndex.setReferencedTable(referencedTable, backReference, column.isCascadeDeleteReferences());
+//						} else {
+//							MultiReferenceIndex multiReferenceIndex = (MultiReferenceIndex) fieldIndex;
+//							multiReferenceIndex.setReferencedTable(referencedTable, backReference, column.isCascadeDeleteReferences());
+//						}
+//					}
+//				}
+//			}
+//		}
+//		this.schema.merge(schema);
 	}
 
 	public boolean checkModel() {
-		Set<Integer> mappingIds = new HashSet<>();
-		for (DatabaseIndex database : databases) {
-			if (database.getMappingId() == 0) {
-				logger.error("Missing mapping id:" + database.getFQN());
-				return false;
-			} else if (mappingIds.contains(database.getMappingId())) {
-				logger.error("Duplicate mapping id:" + database.getFQN());
-				return false;
-			}
-			mappingIds.add(database.getMappingId());
-			for (TableIndex table : database.getTables()) {
-				if (table.getMappingId() == 0) {
-					logger.error("Missing mapping id:" + table.getFQN());
-					return false;
-				} else if (mappingIds.contains(table.getMappingId())) {
-					logger.error("Duplicate mapping id:" + table.getFQN());
-					return false;
-				}
-				mappingIds.add(table.getMappingId());
-				for (ColumnIndex columnIndex : table.getColumnIndices()) {
-					if (columnIndex.getMappingId() == 0) {
-						logger.error("Missing mapping id:" + columnIndex.getFQN());
-						return false;
-					} else if (mappingIds.contains(columnIndex.getMappingId())) {
-						logger.error("Duplicate mapping id:" + columnIndex.getFQN());
-						return false;
-					}
-					mappingIds.add(columnIndex.getMappingId());
-				}
-			}
-		}
+//		Set<Integer> mappingIds = new HashSet<>();
+//		for (DatabaseIndex database : databases) {
+//			if (database.getMappingId() == 0) {
+//				logger.error("Missing mapping id:" + database.getFQN());
+//				return false;
+//			} else if (mappingIds.contains(database.getMappingId())) {
+//				logger.error("Duplicate mapping id:" + database.getFQN());
+//				return false;
+//			}
+//			mappingIds.add(database.getMappingId());
+//			for (TableIndex table : database.getTables()) {
+//				if (table.getMappingId() == 0) {
+//					logger.error("Missing mapping id:" + table.getFQN());
+//					return false;
+//				} else if (mappingIds.contains(table.getMappingId())) {
+//					logger.error("Duplicate mapping id:" + table.getFQN());
+//					return false;
+//				}
+//				mappingIds.add(table.getMappingId());
+//				for (FieldIndex fieldIndex : table.getFieldIndices()) {
+//					if (fieldIndex.getMappingId() == 0) {
+//						logger.error("Missing mapping id:" + fieldIndex.getFQN());
+//						return false;
+//					} else if (mappingIds.contains(fieldIndex.getMappingId())) {
+//						logger.error("Duplicate mapping id:" + fieldIndex.getFQN());
+//						return false;
+//					}
+//					mappingIds.add(fieldIndex.getMappingId());
+//				}
+//			}
+//		}
 		return true;
 	}
 
-	public Column getColumn(ColumnIndex index) {
+	public Column getColumn(FieldIndex index) {
 		String fqn = index.getFQN();
 		for (Database database : schema.getDatabases()) {
 			for (Table table : database.getTables()) {
@@ -206,10 +203,10 @@ public class SchemaIndex {
 		return null;
 	}
 
-	public ColumnIndex getColumn(Column column) {
+	public FieldIndex getColumn(Column column) {
 		Table table = column.getTable();
 		TableIndex tableIndex = getTable(table);
-		return tableIndex.getColumnIndex(column.getName());
+		return tableIndex.getFieldIndex(column.getName());
 	}
 
 	@Override
