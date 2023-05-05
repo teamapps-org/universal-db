@@ -133,7 +133,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 		if (fileFieldModel.isIndexContent() && fileFieldModel.isDetectLanguage()) {
 			fileValue.getDetectedLanguage();
 		}
-		return new StoreDescriptionFile(fileValue.getFileName(), fileValue.getSize(), fileValue.getHash(), key, contentData);
+		return new StoreDescriptionFile(file, fileName, fileValue.getSize(), fileValue.getHash(), key, contentData);
 	}
 
 	@Override

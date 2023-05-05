@@ -29,7 +29,6 @@ import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.buffer.index.RecordIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
-import org.teamapps.universaldb.index.file.store.FileStore;
 import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;

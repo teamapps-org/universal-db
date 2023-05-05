@@ -461,7 +461,9 @@ public class UniversalDB {
 
 		for (ResolvedTransactionRecord transactionRecord : resolvedTransaction.getTransactionRecords()) {
 			TableIndex tableIndex = getTableIndexById(transactionRecord.getTableId());
-			tableIndex.getRecordVersioningIndex().writeRecordUpdate(resolvedTransaction, transactionRecord);
+			if (tableIndex.getTableModel().isVersioning()) {
+				tableIndex.getRecordVersioningIndex().writeRecordUpdate(resolvedTransaction, transactionRecord);
+			}
 		}
 		resolvedTransaction.setRecordIdByCorrelationId(request.getRecordIdByCorrelationId());
 	}
@@ -534,7 +536,9 @@ public class UniversalDB {
 
 		for (ResolvedTransactionRecord transactionRecord : transaction.getTransactionRecords()) {
 			TableIndex tableIndex = getTableIndexById(transactionRecord.getTableId());
-			tableIndex.getRecordVersioningIndex().writeRecordUpdate(transaction, transactionRecord);
+			if (tableIndex.getTableModel().isVersioning()) {
+				tableIndex.getRecordVersioningIndex().writeRecordUpdate(transaction, transactionRecord);
+			}
 		}
 	}
 

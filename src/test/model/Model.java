@@ -126,7 +126,7 @@ public class Model implements ModelProvider {
 		ReferenceFieldModel t4Ref1 = cascadeTest4.addReference("ref1", cascadeTest1);
 
 		cascadeTest5.addText("name");
-		ReferenceFieldModel t5Ref1 = cascadeTest5.addReference("ref1", cascadeTest1);
+		ReferenceFieldModel t5Ref1 = cascadeTest5.addReference("ref1", cascadeTest1, true);
 
 
 		cascadeTest1.addText("name");
