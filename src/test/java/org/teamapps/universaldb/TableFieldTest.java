@@ -23,7 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.teamapps.datamodel.testdb1.EnumField;
 import org.teamapps.datamodel.testdb1.FieldTest;
-import org.teamapps.universaldb.index.file.FileMetaData;
+import org.teamapps.universaldb.index.filelegacy.FileMetaData;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.pojo.Entity;
 
@@ -226,12 +226,12 @@ public class TableFieldTest {
 		File tempFile = TestBase.createResourceFile();
 		FieldTest table = FieldTest.create();
 		table.setFileField(tempFile);
-		assertEquals(tempFile.length(), table.getFileField().retrieveFile().length());
+		assertEquals(tempFile.length(), table.getFileField().getAsFile().length());
 		table.save();
-		assertEquals(tempFile.length(), table.getFileField().retrieveFile().length());
-		assertTrue(table.getFileField().getMetaData() != null);
-		FileMetaData metaData = table.getFileField().getMetaData();
-		assertTrue(table.getFileField().getMetaData().getMetaDataProperty("dc:creator").equals("Matthias Bernstein"));
+		assertEquals(tempFile.length(), table.getFileField().getAsFile().length());
+		assertTrue(table.getFileField().getFileContentData() != null);
+		assertTrue(table.getFileField().getContentCreatedBy() != null);
+		assertTrue(table.getFileField().getContentCreatedBy().equals("Matthias Bernstein"));
 	}
 
 	@Test

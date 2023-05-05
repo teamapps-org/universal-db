@@ -50,7 +50,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	public MultiReferenceIndex(FieldModel fieldModel, TableIndex tableIndex) {
 		super(fieldModel, tableIndex);
-		this.referenceStore = new BlockChainAtomicStore(tableIndex.getDataPath(), tableIndex.getName());
+		this.referenceStore = new BlockChainAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
 	@Override

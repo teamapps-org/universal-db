@@ -39,16 +39,16 @@ public class TextIndex extends AbstractIndex<String, TextFilter> {
 
 	public TextIndex(FieldModel fieldModel, TableIndex tableIndex, CollectionTextSearchIndex collectionSearchIndex) {
 		super(fieldModel, tableIndex);
-		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), tableIndex.getName());
+		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
 	public TextIndex(FieldModel fieldModel, TableIndex tableIndex, boolean withLocalSearchIndex) {
 		super(fieldModel, tableIndex);
-		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), tableIndex.getName());
+		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 		if (withLocalSearchIndex) {
-			searchIndex = new TextSearchIndex(tableIndex.getFullTextIndexPath(), tableIndex.getName());
+			searchIndex = new TextSearchIndex(tableIndex.getFullTextIndexPath(), fieldModel.getName());
 		} else {
 			searchIndex = null;
 		}

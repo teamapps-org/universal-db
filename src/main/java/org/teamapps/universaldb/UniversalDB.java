@@ -29,9 +29,9 @@ import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
-import org.teamapps.universaldb.index.file.FileStore;
+import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
+import org.teamapps.universaldb.index.file.store.LocalDatabaseFileStore;
 import org.teamapps.universaldb.index.file.FileValue;
-import org.teamapps.universaldb.index.file.LocalFileStore;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
@@ -49,6 +49,7 @@ import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransaction;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRecord;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRecordType;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransactionRecordValue;
+import org.teamapps.universaldb.index.transaction.schema.ModelUpdate;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.model.DatabaseModel;
 import org.teamapps.universaldb.model.TableModel;
@@ -86,43 +87,44 @@ public class UniversalDB {
 	private final Map<Long, CompletableFuture<ResolvedTransaction>> transactionCompletableFutureMap = new ConcurrentHashMap<>();
 	private TransactionIndex transactionIndex;
 
-	private UniversalDB(File storagePath, ModelProvider modelProvider, FileStore fileStore) throws Exception {
+	private UniversalDB(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore) throws Exception {
 		this.storagePath = storagePath;
 		this.transactionIndex = new TransactionIndex(storagePath);
 		createShutdownHook();
 
 
-		DatabaseModel databaseModel = modelProvider.getModel();
-		if (!databaseModel.isValid()) {
-			throw new RuntimeException("Error invalid database model:" + databaseModel.getName());
+		DatabaseModel model = modelProvider.getModel();
+		if (!model.isValid()) {
+			throw new RuntimeException("Error invalid database model:" + model.getName());
 		}
-		databaseIndex = new DatabaseIndex(databaseModel, storagePath);
 
-		//todo file store !!!
-		//databaseIndex.setFileStore(fileStore);
-
-
-		//mapSchema(databaseModel);
-
-		if (!transactionIndex.isValidSchema(databaseModel)) {
-			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + databaseModel);
+		if (!transactionIndex.isValidModel(model)) {
+			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
-		if (transactionIndex.isModelUpdate(databaseModel)) {
-			TransactionRequest modelUpdateTransactionRequest = createModelUpdateTransactionRequest(databaseModel);
-			executeTransaction(modelUpdateTransactionRequest);
+
+		databaseIndex = new DatabaseIndex(model.getName(), storagePath, databaseFileStore);
+
+
+		if (transactionIndex.isModelUpdate(model)) {
+			executeTransaction(createModelUpdateTransactionRequest(model));
 		} else {
-			databaseIndex.merge(transactionIndex.getCurrentModel(), true, this);
-			for (TableIndex table : databaseIndex.getTables()) {
-				tableById.put(table.getMappingId(), table);
-				for (FieldIndex fieldIndex : table.getFieldIndices()) {
-					columnById.put(fieldIndex.getMappingId(), fieldIndex);
-				}
-			}
+			DatabaseModel currentModel = transactionIndex.getCurrentModel();
+			mergeDatabaseIndex(currentModel);
 		}
 
 		//todo class loader - if loaded from app server
-		installLocalTableClasses(transactionIndex.getCurrentModel(), UniversalDB.class.getClassLoader());
-		UniversalDbRegistry.getInstance().registerDatabase(databaseModel.getName(), this, UniversalDB.class.getClassLoader());
+		installLocalTableClasses(UniversalDB.class.getClassLoader());
+		UniversalDbRegistry.getInstance().registerDatabase(model.getName(), this, UniversalDB.class.getClassLoader());
+	}
+
+	private void mergeDatabaseIndex(DatabaseModel currentModel) {
+		databaseIndex.installModel(currentModel, true, this);
+		for (TableIndex table : databaseIndex.getTables()) {
+			tableById.put(table.getMappingId(), table);
+			for (FieldIndex fieldIndex : table.getFieldIndices()) {
+				columnById.put(fieldIndex.getMappingId(), fieldIndex);
+			}
+		}
 	}
 
 	public static int getUserId() {
@@ -134,17 +136,17 @@ public class UniversalDB {
 	}
 
 	public static UniversalDB createStandalone(File storagePath, ModelProvider modelProvider) throws Exception {
-		LocalFileStore fileStore = new LocalFileStore(new File(storagePath, "file-store"));
-		return new UniversalDB(storagePath, modelProvider, fileStore);
+		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(new File(storagePath, "file-store"));
+		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
 	}
 
 	public static UniversalDB createStandalone(File storagePath, File fileStorePath, ModelProvider modelProvider) throws Exception {
-		LocalFileStore fileStore = new LocalFileStore(fileStorePath);
-		return new UniversalDB(storagePath, modelProvider, fileStore);
+		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(fileStorePath);
+		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
 	}
 
-	public static UniversalDB createStandalone(File storagePath, ModelProvider modelProvider, FileStore fileStore) throws Exception {
-		return new UniversalDB(storagePath, modelProvider, fileStore);
+	public static UniversalDB createStandalone(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore) throws Exception {
+		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
 	}
 
 //	public UniversalDB(File storagePath, LogIterator logIterator) throws Exception {
@@ -178,14 +180,11 @@ public class UniversalDB {
 		}));
 	}
 
-//	private void mapSchema(DatabaseModel model) {
-//
-//	}
-
-	private void installLocalTableClasses(DatabaseModel databaseModel, ClassLoader classLoader) throws Exception {
-		for (TableModel tableModel : databaseModel.getLocalTables()) {
+	private void installLocalTableClasses(ClassLoader classLoader) throws Exception {
+		DatabaseModel currentModel = transactionIndex.getCurrentModel();
+		for (TableModel tableModel : currentModel.getLocalTables()) {
 			TableIndex tableIndex = databaseIndex.getTable(tableModel.getName());
-			installTablePojos(classLoader, databaseModel.getFullNameSpace(), tableModel, tableIndex);
+			installTablePojos(classLoader, currentModel.getFullNameSpace(), tableModel, tableIndex);
 		}
 	}
 
@@ -226,14 +225,15 @@ public class UniversalDB {
 
 	public void installModelUpdate(ModelProvider modelProvider, ClassLoader classLoader) throws Exception {
 		DatabaseModel model = modelProvider.getModel();
-		if (!transactionIndex.isValidSchema(model)) {
+		if (!transactionIndex.isValidModel(model)) {
 			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
 		if (transactionIndex.isModelUpdate(model)) {
 			TransactionRequest modelUpdateTransactionRequest = createModelUpdateTransactionRequest(model);
 			executeTransaction(modelUpdateTransactionRequest);
 		}
-		installLocalTableClasses(model, classLoader);
+		installLocalTableClasses(classLoader);
+		installRemoteTableClasses(classLoader);
 	}
 
 	public Class getEntityClass(TableIndex tableIndex) {
@@ -380,29 +380,13 @@ public class UniversalDB {
 
 	private void handleModelUpdateRequest(TransactionRequest request, ResolvedTransaction resolvedTransaction) throws Exception {
 		DatabaseModel model = request.getDatabaseModel();
-		if (!transactionIndex.isValidSchema(model)) {
+		if (!transactionIndex.isValidModel(model)) {
 			throw new RuntimeException("Cannot update incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
-
-		DatabaseModel currentModel = transactionIndex.getCurrentModel();
-		if (currentModel != null) {
-			currentModel.mergeModel(model);
-		} else {
-			currentModel = model;
-		}
-		currentModel.initialize();
-		resolvedTransaction.setDatabaseModel(currentModel);
+		ModelUpdate modelUpdate = resolvedTransaction.getModelUpdate();
 		transactionIndex.writeTransaction(resolvedTransaction);
-
-		transactionIndex.writeModelUpdate(resolvedTransaction.getModelUpdate());
-		databaseIndex.merge(currentModel, true, this);
-
-		for (TableIndex table : databaseIndex.getTables()) {
-			tableById.put(table.getMappingId(), table);
-			for (FieldIndex fieldIndex : table.getFieldIndices()) {
-				columnById.put(fieldIndex.getMappingId(), fieldIndex);
-			}
-		}
+		transactionIndex.writeModelUpdate(modelUpdate);
+		mergeDatabaseIndex(modelUpdate.getMergedModel());
 	}
 
 	private void handleDataUpdateRequest(TransactionRequest request, ResolvedTransaction resolvedTransaction) throws Exception {
@@ -460,12 +444,12 @@ public class UniversalDB {
 					}
 				}
 				case RESTORE -> {
-					List<CyclicReferenceUpdate> cyclicReferenceUpdates2 = tableIndex.restoreRecord(record.getRecordId());
+					List<CyclicReferenceUpdate> cyclicReferenceUpdates = tableIndex.restoreRecord(record.getRecordId());
 					for (TransactionRequestRecordValue recordValue : record.getRecordValues()) {
 						persistColumnValueUpdates(recordId, recordValue, request.getRecordIdByCorrelationId(), resolvedRecord);
 					}
-					if (cyclicReferenceUpdates2 != null && !cyclicReferenceUpdates2.isEmpty()) {
-						for (CyclicReferenceUpdate referenceUpdate : cyclicReferenceUpdates2) {
+					if (cyclicReferenceUpdates != null && !cyclicReferenceUpdates.isEmpty()) {
+						for (CyclicReferenceUpdate referenceUpdate : cyclicReferenceUpdates) {
 							resolvedTransaction.addTransactionRecord(ResolvedTransactionRecord.createCyclicRecord(referenceUpdate));
 						}
 					}
@@ -491,24 +475,17 @@ public class UniversalDB {
 	}
 
 	private void handleModelUpdateTransaction(ResolvedTransaction transaction) throws Exception {
-		DatabaseModel model = transaction.getDatabaseModel();
+		DatabaseModel model = transaction.getModelUpdate().getMergedModel();
 		DatabaseModel currentModel = transactionIndex.getCurrentModel();
 		if (currentModel != null) {
 			currentModel.mergeModel(model);
 		} else {
 			currentModel = model;
 		}
-		currentModel.initialize();
 		transactionIndex.writeTransaction(transaction);
 
 		transactionIndex.writeModelUpdate(transaction.getModelUpdate());
-		databaseIndex.merge(currentModel, true, this);
-		for (TableIndex table : databaseIndex.getTables()) {
-			tableById.put(table.getMappingId(), table);
-			for (FieldIndex fieldIndex : table.getFieldIndices()) {
-				columnById.put(fieldIndex.getMappingId(), fieldIndex);
-			}
-		}
+		mergeDatabaseIndex(currentModel);
 	}
 
 	private void handleDataUpdateTransaction(ResolvedTransaction transaction) throws Exception {

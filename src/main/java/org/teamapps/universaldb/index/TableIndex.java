@@ -28,7 +28,8 @@ import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.buffer.index.RecordIndex;
-import org.teamapps.universaldb.index.file2.FileIndex2;
+import org.teamapps.universaldb.index.file.FileIndex;
+import org.teamapps.universaldb.index.file.store.FileStore;
 import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
@@ -102,7 +103,6 @@ public class TableIndex implements MappedObject {
 	}
 
 	public void merge(TableModel tableModel) {
-
 		ByKeyComparisonResult<FieldIndex, FieldModel, String> compareResult = CollectionUtil.compareByKey(fieldIndices, tableModel.getFields(), FieldIndex::getName, FieldModel::getName, true);
 		//unknown fields for this model
 		if (!compareResult.getAEntriesNotInB().isEmpty()) {
@@ -121,46 +121,45 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
-	private FieldIndex createField(TableIndex table, FieldModel fieldModel) {
+	private FieldIndex createField(TableIndex tableIndex, FieldModel fieldModel) {
 		FieldIndex<?, ?> column = null;
 
-		switch (fieldModel.getFieldType()) {
+		switch (fieldModel.getFieldType().getIndexType()) {
 			case BOOLEAN:
-				column = new BooleanIndex(fieldModel, table);
+				column = new BooleanIndex(fieldModel, tableIndex);
 				break;
 			case SHORT:
-				column = new ShortIndex(fieldModel, table);
+				column = new ShortIndex(fieldModel, tableIndex);
 				break;
 			case INT:
-				column = new IntegerIndex(fieldModel, table);
+				column = new IntegerIndex(fieldModel, tableIndex);
 				break;
 			case LONG:
-				column = new LongIndex(fieldModel, table);
+				column = new LongIndex(fieldModel, tableIndex);
 				break;
 			case FLOAT:
-				column = new FloatIndex(fieldModel, table);
+				column = new FloatIndex(fieldModel, tableIndex);
 				break;
 			case DOUBLE:
-				column = new DoubleIndex(fieldModel, table);
+				column = new DoubleIndex(fieldModel, tableIndex);
 				break;
 			case TEXT:
-				column = new TextIndex(fieldModel, table, table.getCollectionTextSearchIndex());
+				column = new TextIndex(fieldModel, tableIndex, tableIndex.getCollectionTextSearchIndex());
 				break;
 			case TRANSLATABLE_TEXT:
-				column = new TranslatableTextIndex(fieldModel, table, table.getCollectionTextSearchIndex());
+				column = new TranslatableTextIndex(fieldModel, tableIndex, tableIndex.getCollectionTextSearchIndex());
 				break;
-			case SINGLE_REFERENCE:
-				column = new SingleReferenceIndex(fieldModel, table);
+			case REFERENCE:
+				column = new SingleReferenceIndex(fieldModel, tableIndex);
 				break;
 			case MULTI_REFERENCE:
-				column = new MultiReferenceIndex(fieldModel, table);
+				column = new MultiReferenceIndex(fieldModel, tableIndex);
 				break;
 			case FILE:
-//				column = new FileIndex(fieldModel, table, FullTextIndexingOptions.INDEXED, table.getCollectionTextSearchIndex(), table.getFileStore());
-				column = new FileIndex2((FileFieldModel) fieldModel, table, null);
+				column = new FileIndex((FileFieldModel) fieldModel, tableIndex);
 				break;
 			case BINARY:
-				column = new BinaryIndex(name, table, false, fieldModel);
+				column = new BinaryIndex(name, tableIndex, false, fieldModel);
 				break;
 		}
 		return column;
@@ -236,10 +235,6 @@ public class TableIndex implements MappedObject {
 	public TableModel getTableModel() {
 		return tableModel;
 	}
-
-//	public FileStore getFileStore() {
-//		return databaseIndex.getSchemaIndex().getFileStore();
-//	}
 
 	public RecordVersioningIndex getRecordVersioningIndex() {
 		return recordVersioningIndex;

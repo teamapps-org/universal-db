@@ -429,6 +429,9 @@ public class TableModel {
 	}
 
 	protected void setTableId(int tableId) {
+		if (this.tableId != 0) {
+			throw new RuntimeException("Error: table id already set:" + this.tableId + ", new:" + tableId);
+		}
 		this.tableId = tableId;
 	}
 

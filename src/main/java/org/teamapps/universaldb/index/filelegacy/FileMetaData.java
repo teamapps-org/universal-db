@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file;
+package org.teamapps.universaldb.index.filelegacy;
 
 import org.teamapps.universaldb.util.DataStreamUtil;
 import org.teamapps.universaldb.index.text.FullTextIndexValue;

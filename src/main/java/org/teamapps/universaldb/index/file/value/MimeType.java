@@ -1,4 +1,4 @@
-package org.teamapps.universaldb.index.file2;
+package org.teamapps.universaldb.index.file.value;
 
 import java.util.HashMap;
 import java.util.Map;

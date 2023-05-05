@@ -17,11 +17,8 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file2;
+package org.teamapps.universaldb.index.filelegacy;
 
-import org.teamapps.universaldb.index.file.FileDataField;
-import org.teamapps.universaldb.index.file.FileFullTextFilterType;
-import org.teamapps.universaldb.index.file.FileMetaData;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilterType;
 

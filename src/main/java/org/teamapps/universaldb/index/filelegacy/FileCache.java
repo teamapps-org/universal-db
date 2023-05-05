@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file;
+package org.teamapps.universaldb.index.filelegacy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

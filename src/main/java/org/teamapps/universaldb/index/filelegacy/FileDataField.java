@@ -17,15 +17,13 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file2;
+package org.teamapps.universaldb.index.filelegacy;
 
-public enum FileFullTextFilterType {
-	TERM_EQUALS,
-	TERM_NOT_EQUALS,
-	TERM_STARTS_WITH,
-	TERM_STARTS_NOT_WITH,
-	TERM_SIMILAR,
-	TERM_NOT_SIMILAR,
-	TERM_CONTAINS,
-	TERM_CONTAINS_NOT,
+public enum FileDataField {
+	NAME,
+	MIME_TYPE,
+	HASH,
+	META_DATA,
+	CONTENT,
+	CONTENT_LANGUAGE,
 }

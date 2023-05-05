@@ -27,6 +27,7 @@ import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.SortEntry;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
+import org.teamapps.universaldb.index.file.store.FileStore;
 import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;

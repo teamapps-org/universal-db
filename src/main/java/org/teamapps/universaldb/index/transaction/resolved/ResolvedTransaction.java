@@ -39,8 +39,8 @@ public class ResolvedTransaction {
 	private final int userId;
 	private final long timestamp;
 	private final List<ResolvedTransactionRecord> transactionRecords;
-	private DatabaseModel databaseModel;
 	private Map<Integer, Integer> recordIdByCorrelationId;
+	private ModelUpdate modelUpdate;
 
 	public static ResolvedTransaction createResolvedTransaction(byte[] bytes) {
 		try {
@@ -55,13 +55,13 @@ public class ResolvedTransaction {
 		if (request.getTransactionType() == TransactionType.DATA_UPDATE) {
 			return new ResolvedTransaction(request.getNodeId(), request.getRequestId(), transactionId, request.getUserId(), request.getTimestamp());
 		} else {
-			return new ResolvedTransaction(request.getNodeId(), request.getRequestId(), transactionId, request.getUserId(), request.getTimestamp(), null);
+			return new ResolvedTransaction(request.getNodeId(), request.getRequestId(), transactionId, request.getUserId(), request.getTimestamp(), new ModelUpdate(request.getDatabaseModel(), transactionId, request.getTimestamp()));
 		}
 	}
 
-	public static ResolvedTransaction recreateNewId(long transactionId, ResolvedTransaction resolvedTransaction) {
-		return new ResolvedTransaction(transactionId, resolvedTransaction);
-	}
+//	public static ResolvedTransaction recreateNewId(long transactionId, ResolvedTransaction resolvedTransaction) {
+//		return new ResolvedTransaction(transactionId, resolvedTransaction);
+//	}
 
 	public ResolvedTransaction(long nodeId, long requestId, long transactionId, int userId, long timestamp) {
 		this.nodeId = nodeId;
@@ -72,10 +72,10 @@ public class ResolvedTransaction {
 		this.timestamp = timestamp;
 		this.transactionRecords = new ArrayList<>();
 		this.recordIdByCorrelationId = new HashMap<>();
-		this.databaseModel = null;
+		this.modelUpdate = null;
 	}
 
-	public ResolvedTransaction(long nodeId, long requestId,long transactionId, int userId, long timestamp, DatabaseModel model) {
+	public ResolvedTransaction(long nodeId, long requestId,long transactionId, int userId, long timestamp, ModelUpdate modelUpdate) {
 		this.nodeId = nodeId;
 		this.requestId = requestId;
 		this.transactionId = transactionId;
@@ -84,7 +84,7 @@ public class ResolvedTransaction {
 		this.timestamp = timestamp;
 		this.transactionRecords = null;
 		this.recordIdByCorrelationId = null;
-		this.databaseModel = model;
+		this.modelUpdate = modelUpdate;
 	}
 
 	private ResolvedTransaction(long transactionId, ResolvedTransaction transaction) {
@@ -95,7 +95,7 @@ public class ResolvedTransaction {
 		this.userId = transaction.getUserId();
 		this.timestamp = transaction.getTimestamp();
 		this.transactionRecords = transaction.getTransactionRecords();
-		this.databaseModel = transaction.getDatabaseModel();
+		this.modelUpdate = transaction.getModelUpdate();
 		this.recordIdByCorrelationId = transaction.getRecordIdByCorrelationId();
 	}
 
@@ -109,7 +109,7 @@ public class ResolvedTransaction {
 		if (transactionType == TransactionType.DATA_UPDATE) {
 			transactionRecords = new ArrayList<>();
 			recordIdByCorrelationId = new HashMap<>();
-			databaseModel = null;
+			modelUpdate = null;
 			int count = dis.readInt();
 			for (int i = 0; i < count; i++) {
 				transactionRecords.add(new ResolvedTransactionRecord(dis));
@@ -123,7 +123,7 @@ public class ResolvedTransaction {
 		} else {
 			transactionRecords = null;
 			recordIdByCorrelationId = null;
-			databaseModel = new DatabaseModel(dis);
+			modelUpdate = new ModelUpdate(dis);
 		}
 	}
 
@@ -149,7 +149,7 @@ public class ResolvedTransaction {
 				dos.writeInt(0);
 			}
 		} else {
-			databaseModel.write(dos);
+			modelUpdate.write(dos);
 		}
 	}
 
@@ -196,16 +196,21 @@ public class ResolvedTransaction {
 		return transactionRecords;
 	}
 
-	public DatabaseModel getDatabaseModel() {
-		return databaseModel;
-	}
+//	public DatabaseModel getDatabaseModel() {
+//		return databaseModel;
+//	}
+//
+//	public void setDatabaseModel(DatabaseModel databaseModel) {
+//		this.databaseModel = databaseModel;
+//	}
+//
+//	public ModelUpdate getModelUpdate() {
+//		return new ModelUpdate(databaseModel, transactionId, timestamp);
+//	}
 
-	public void setDatabaseModel(DatabaseModel databaseModel) {
-		this.databaseModel = databaseModel;
-	}
 
 	public ModelUpdate getModelUpdate() {
-		return new ModelUpdate(databaseModel, transactionId, timestamp);
+		return modelUpdate;
 	}
 
 	public Map<Integer, Integer> getRecordIdByCorrelationId() {

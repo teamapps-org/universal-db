@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,8 +44,8 @@ public class EntityChangeSet {
 		entityByReference = new HashMap<>();
 	}
 
-	public void addChangeValue(FieldIndex column, Object value) {
-		TransactionRequestRecordValue requestRecordValue = new TransactionRequestRecordValue(column.getMappingId(), column.getType(), value);
+	public void addChangeValue(FieldIndex fieldIndex, Object value) {
+		TransactionRequestRecordValue requestRecordValue = new TransactionRequestRecordValue(fieldIndex.getMappingId(), fieldIndex.getType(), value);
 		changeMap.put(requestRecordValue.getColumnId(), requestRecordValue);
 	}
 
@@ -78,34 +78,38 @@ public class EntityChangeSet {
 		for (TransactionRequestRecordValue recordValue : changeMap.values()) {
 			transactionRequestRecord.addRecordValue(recordValue);
 			IndexType indexType = recordValue.getIndexType();
-			if (recordValue.getValue() == null) {
+			Object value = recordValue.getValue();
+			if (value == null) {
 				continue;
 			}
-			if (indexType == IndexType.MULTI_REFERENCE) {
-				MultiReferenceEditValue editValue = (MultiReferenceEditValue) recordValue.getValue();
-				for (RecordReference recordReference : editValue.getAddReferences()) {
-					Entity entity = entityByReference.get(recordReference);
+			switch (indexType) {
+				case MULTI_REFERENCE -> {
+					MultiReferenceEditValue editValue = (MultiReferenceEditValue) value;
+					for (RecordReference recordReference : editValue.getAddReferences()) {
+						Entity entity = entityByReference.get(recordReference);
+						if (entity.getId() == 0) {
+							uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+						} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
+							recordReference.setRecordId(entity.getId());
+						}
+					}
+					for (RecordReference recordReference : editValue.getSetReferences()) {
+						Entity entity = entityByReference.get(recordReference);
+						if (entity.getId() == 0) {
+							uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+						} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
+							recordReference.setRecordId(entity.getId());
+						}
+					}
+				}
+				case REFERENCE -> {
+					RecordReference recordReference = (RecordReference) value;
+					AbstractUdbEntity entity = getReferenceChange(recordValue.getColumnId());
 					if (entity.getId() == 0) {
-						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
+						uncommittedEntityReferences.add(entity);
 					} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
 						recordReference.setRecordId(entity.getId());
 					}
-				}
-				for (RecordReference recordReference : editValue.getSetReferences()) {
-					Entity entity = entityByReference.get(recordReference);
-					if (entity.getId() == 0) {
-						uncommittedEntityReferences.add((AbstractUdbEntity) entity);
-					} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
-						recordReference.setRecordId(entity.getId());
-					}
-				}
-			} else if (indexType == IndexType.REFERENCE) {
-				RecordReference recordReference = (RecordReference) recordValue.getValue();
-				AbstractUdbEntity entity = getReferenceChange(recordValue.getColumnId());
-				if (entity.getId() == 0) {
-					uncommittedEntityReferences.add(entity);
-				} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
-					recordReference.setRecordId(entity.getId());
 				}
 			}
 		}

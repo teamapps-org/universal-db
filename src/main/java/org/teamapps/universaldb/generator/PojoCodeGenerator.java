@@ -86,6 +86,7 @@ public class PojoCodeGenerator {
 				.append(withQuotes(model.getTitle())).append(", ")
 				.append(withQuotes(model.getNamespace())).append(");")
 				.append(tpl.nl());
+		sb.append(tabs(2)).append("model.setPojoBuildTime(").append(System.currentTimeMillis()).append("L);").append(tpl.nl());
 
 		for (EnumModel enumModel : model.getEnums()) {
 			sb.append(tabs(2))

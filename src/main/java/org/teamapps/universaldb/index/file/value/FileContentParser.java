@@ -1,4 +1,4 @@
-package org.teamapps.universaldb.index.file2;
+package org.teamapps.universaldb.index.file.value;
 
 import com.github.pemistahl.lingua.api.IsoCode639_1;
 import com.github.pemistahl.lingua.api.Language;

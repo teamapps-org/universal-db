@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file;
+package org.teamapps.universaldb.index.filelegacy;
 
 import java.io.File;
 import java.nio.file.Files;

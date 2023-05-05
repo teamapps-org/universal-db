@@ -17,16 +17,23 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file2;
+package org.teamapps.universaldb.index.filelegacy;
 
-public enum FileFilterType {
+public class FileMetaDataEntry {
 
-	FULL_TEXT_FILTER,
+	private final String property;
+	private final String value;
 
-	SIZE_EQUALS,
-	SIZE_NOT_EQUALS,
-	SIZE_GREATER,
-	SIZE_SMALLER,
-	SIZE_BETWEEN,
+	public FileMetaDataEntry(String property, String value) {
+		this.property = property;
+		this.value = value;
+	}
 
+	public String getProperty() {
+		return property;
+	}
+
+	public String getValue() {
+		return value;
+	}
 }

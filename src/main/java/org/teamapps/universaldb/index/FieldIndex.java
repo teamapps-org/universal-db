@@ -27,7 +27,6 @@ import org.teamapps.universaldb.model.FieldModel;
 import org.teamapps.universaldb.model.FieldType;
 import org.teamapps.universaldb.query.IndexFilter;
 import org.teamapps.universaldb.query.IndexPath;
-import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
 import java.util.BitSet;
@@ -88,11 +87,7 @@ public interface FieldIndex<TYPE, FILTER> extends MappedObject {
 					return "(" + referenceIteratorValue.getAsList().stream().limit(100).map(String::valueOf).collect(Collectors.joining(", ")) + ")";
 				case FILE:
 					FileValue fileValue = (FileValue) value;
-					if (fileValue.getMetaData() != null) {
-						return fileValue.getMetaData().getName() + " (" + fileValue.getMetaData().getSize() + ")";
-					} else {
-						return fileValue.getUuid();
-					}
+					return fileValue.getFileName() + "( " + fileValue.getSize() + ")";
 				case BINARY:
 					byte[] byteValue = (byte[]) value;
 					return byteValue.length + " bytes";

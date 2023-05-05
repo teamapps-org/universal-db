@@ -17,9 +17,9 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.teamapps.universaldb.index.file;
+package org.teamapps.universaldb.index.filelegacy;
 
-public enum FileFullTextFilterType {
+public enum  FileFullTextFilterType {
 	TERM_EQUALS,
 	TERM_NOT_EQUALS,
 	TERM_STARTS_WITH,

@@ -22,6 +22,9 @@ package org.teamapps.universaldb.index;
 import org.teamapps.commons.util.collections.ByKeyComparisonResult;
 import org.teamapps.commons.util.collections.CollectionUtil;
 import org.teamapps.universaldb.UniversalDB;
+import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
+import org.teamapps.universaldb.index.file.store.FileStore;
+import org.teamapps.universaldb.index.file.store.LocalFileStore;
 import org.teamapps.universaldb.model.DatabaseModel;
 import org.teamapps.universaldb.model.ReferenceFieldModel;
 import org.teamapps.universaldb.model.TableModel;
@@ -33,22 +36,23 @@ import java.util.stream.Collectors;
 
 public class DatabaseIndex {
 
-	private final DatabaseModel databaseModel;
+	private final String name;
 	private final File dataPath;
 	private final File fullTextIndexPath;
 	private final File fileStorePath;
-	private final String name;
 	private final List<TableIndex> tables;
+	private final DatabaseFileStore databaseFileStore;
+	private DatabaseModel databaseModel;
 
-	public DatabaseIndex(DatabaseModel databaseModel, File basePath) {
-		this(databaseModel, new File(basePath, "db"), new File(basePath, "text"), new File(basePath, "files"));
+	public DatabaseIndex(String name, File basePath, DatabaseFileStore databaseFileStore) {
+		this(name, new File(basePath, "db"), new File(basePath, "text"), new File(basePath, "files"), databaseFileStore);
 	}
-	public DatabaseIndex(DatabaseModel databaseModel, File dataPath, File fullTextIndexPath, File fileStorePath) {
-		this.name = databaseModel.getName();
-		this.databaseModel = databaseModel;
+	public DatabaseIndex(String name, File dataPath, File fullTextIndexPath, File fileStorePath, DatabaseFileStore databaseFileStore) {
+		this.name = name;
 		this.dataPath = dataPath;
 		this.fullTextIndexPath = fullTextIndexPath;
 		this. fileStorePath = fileStorePath;
+		this.databaseFileStore = databaseFileStore;
 		dataPath.mkdir();
 		fullTextIndexPath.mkdir();
 		fileStorePath.mkdir();
@@ -63,10 +67,12 @@ public class DatabaseIndex {
 		return fullTextIndexPath;
 	}
 
+	public DatabaseFileStore getDatabaseFileStore() {
+		return databaseFileStore;
+	}
 
-	public void merge(DatabaseModel newModel, boolean checkFullTextIndex, UniversalDB universalDB) {
-		databaseModel.mergeModel(newModel);
-		//todo save updated model...
+	public void installModel(DatabaseModel model, boolean checkFullTextIndex, UniversalDB universalDB) {
+		this.databaseModel = model;
 
 		ByKeyComparisonResult<TableIndex, TableModel, String> compareResult = CollectionUtil.compareByKey(tables, databaseModel.getTables(), TableIndex::getName, TableModel::getName, true);
 		//unknown table indices for this model
@@ -82,8 +88,9 @@ public class DatabaseIndex {
 
 		//new tables
 		for (TableModel tableModel : compareResult.getBEntriesNotInA()) {
-			//todo log!
-			addTable(new TableIndex(this, tableModel));
+			TableIndex tableIndex = new TableIndex(this, tableModel);
+			tableIndex.merge(tableModel);
+			addTable(tableIndex);
 		}
 
 		tables.stream().flatMap(tableIndex ->  tableIndex.getReferenceFields().stream()).forEach(index -> {
@@ -94,9 +101,11 @@ public class DatabaseIndex {
 		});
 
 		if (checkFullTextIndex) {
-			for (TableIndex table : tables) {
-				table.getRecordVersioningIndex().checkVersionIndex(universalDB);
-				table.checkFullTextIndex();
+			for (TableIndex tableIndex : tables) {
+				if (tableIndex.getTableModel().isVersioning()) {
+					tableIndex.getRecordVersioningIndex().checkVersionIndex(universalDB);
+				}
+				tableIndex.checkFullTextIndex();
 			}
 		}
 	}

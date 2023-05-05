@@ -21,9 +21,7 @@ package org.teamapps.universaldb.index.file;
 
 public enum FileDataField {
 	NAME,
-	MIME_TYPE,
-	HASH,
+	EXTENSION,
 	META_DATA,
 	CONTENT,
-	CONTENT_LANGUAGE,
 }

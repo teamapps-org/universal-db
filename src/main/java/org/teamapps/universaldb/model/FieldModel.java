@@ -82,6 +82,9 @@ public class FieldModel implements BaseFieldModel {
 	}
 
 	protected void setFieldId(int fieldId) {
+		if (this.fieldId != 0) {
+			throw new RuntimeException("Error: field id already set:" + this.fieldId + ", new:" + fieldId);
+		}
 		this.fieldId = fieldId;
 	}
 

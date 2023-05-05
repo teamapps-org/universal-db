@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.transaction.resolved;
 
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.file.FileValue;
+import org.teamapps.universaldb.index.file.value.StoreDescriptionFile;
 import org.teamapps.universaldb.index.reference.value.ResolvedMultiReferenceUpdate;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 import org.teamapps.universaldb.util.DataStreamUtil;
@@ -84,7 +85,7 @@ public class ResolvedTransactionRecordValue {
 			case MULTI_REFERENCE:
 				return new ResolvedMultiReferenceUpdate(dis);
 			case FILE:
-				return new FileValue(dis);
+				return new StoreDescriptionFile(dis);
 			case BINARY:
 				return DataStreamUtil.readByteArrayWithLengthHeader(dis);
 			case FILE_NG:

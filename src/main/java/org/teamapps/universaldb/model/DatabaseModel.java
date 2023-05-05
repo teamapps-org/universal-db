@@ -18,9 +18,11 @@ public class DatabaseModel {
 	private final List<EnumModel> enums = new ArrayList<>();
 	private final List<TableModel> tables = new ArrayList<>();
 	private final List<ViewModel> views = new ArrayList<>(); //todo remove!
+	private long pojoBuildTime;
 	private int version;
 	private int dateCreated;
 	private int dateModified;
+
 
 	public DatabaseModel(String title) {
 		this(title, title, "org.teamapps.model");
@@ -30,6 +32,7 @@ public class DatabaseModel {
 		this.name = NamingUtils.createName(title);
 		this.title = NamingUtils.createTitle(title);
 		this.namespace = namespace;
+		this.pojoBuildTime = System.currentTimeMillis();
 	}
 
 	public DatabaseModel(byte[] bytes) throws IOException {
@@ -40,6 +43,7 @@ public class DatabaseModel {
 		name = MessageUtils.readString(dis);
 		title = MessageUtils.readString(dis);
 		namespace = MessageUtils.readString(dis);
+		pojoBuildTime = dis.readLong();
 		version = dis.readInt();
 		dateCreated = dis.readInt();
 		dateModified = dis.readInt();
@@ -64,6 +68,7 @@ public class DatabaseModel {
 		MessageUtils.writeString(dos, name);
 		MessageUtils.writeString(dos, title);
 		MessageUtils.writeString(dos, namespace);
+		dos.writeLong(pojoBuildTime);
 		dos.writeInt(version);
 		dos.writeInt(dateCreated);
 		dos.writeInt(dateModified);
@@ -172,9 +177,11 @@ public class DatabaseModel {
 			//new fields
 			for (FieldModel field : fieldResult.getBEntriesNotInA()) {
 				table.addFieldModel(field);
-				field.setFieldId(idGenerator.incrementAndGet());
-				field.setVersionCreated(version);
-				field.setDateCreated(timestamp);
+				if (field.getFieldId() == 0) {
+					field.setFieldId(idGenerator.incrementAndGet());
+					field.setVersionCreated(version);
+					field.setDateCreated(timestamp);
+				}
 			}
 
 			//removed fields
@@ -188,9 +195,11 @@ public class DatabaseModel {
 		//new tables
 		for (TableModel table : tableCompare.getBEntriesNotInA()) {
 			addTable(table);
-			table.setTableId(idGenerator.incrementAndGet());
-			table.setVersionCreated(version);
-			table.setDateCreated(timestamp);
+			if (table.getTableId() == 0) {
+				table.setTableId(idGenerator.incrementAndGet());
+				table.setVersionCreated(version);
+				table.setDateCreated(timestamp);
+			}
 		}
 
 		//removed tables
@@ -208,6 +217,9 @@ public class DatabaseModel {
 
 	public List<String> checkCompatibilityErrors(DatabaseModel newModel) {
 		List<String> errors = new ArrayList<>();
+		if (!newModel.isValid()) {
+			errors.add("Model not valid!");
+		}
 		if (!name.equals(newModel.getName())) {
 			errors.add("Wrong model name: " + name + " vs: " + newModel.getName());
 		}
@@ -578,6 +590,14 @@ public class DatabaseModel {
 
 	private void setDateModified(int dateModified) {
 		this.dateModified = dateModified;
+	}
+
+	public long getPojoBuildTime() {
+		return pojoBuildTime;
+	}
+
+	public void setPojoBuildTime(long pojoBuildTime) {
+		this.pojoBuildTime = pojoBuildTime;
 	}
 
 	public byte[] toBytes() throws IOException {

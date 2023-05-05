@@ -30,7 +30,6 @@ import org.teamapps.universaldb.index.log.RotatingLogIndex;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransaction;
 import org.teamapps.universaldb.index.transaction.schema.ModelUpdate;
 import org.teamapps.universaldb.model.DatabaseModel;
-import org.teamapps.universaldb.schema.Schema;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,17 +54,18 @@ public class TransactionIndex {
 
 	private final File path;
 	private LogIndex transactionLog;
-	private LogIndex modelLog;
+	private LogIndex modelsLog;
 	private PrimitiveEntryAtomicStore databaseStats;
 	private volatile boolean active = true;
 
 	private DatabaseModel currentModel;
+	private ModelUpdate currentModelUpdate;
 
 	public TransactionIndex(File basePath) {
 		this.path = new File(basePath, "transactions");
 		this.path.mkdir();
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
-		this.modelLog = new DefaultLogIndex(this.path, "models");
+		this.modelsLog = new DefaultLogIndex(this.path, "models");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
 		init();
 		checkIndex();
@@ -79,18 +79,16 @@ public class TransactionIndex {
 			databaseStats.setLong(FIRST_SYSTEM_START, System.currentTimeMillis());
 		}
 		databaseStats.setLong(LAST_SYSTEM_START, System.currentTimeMillis());
-		if (!modelLog.isEmpty()) {
-			List<ModelUpdate> modelUpdates = getSchemaUpdates();
-			currentModel = getSchemaUpdates().get(modelUpdates.size() - 1).getDatabaseModel();
-		}
-		logger.info(UniversalDB.SKIP_DB_LOGGING, "STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
+		currentModelUpdate = getModelUpdates().stream().reduce((first, second) -> second).orElse(null);
+		currentModel = currentModelUpdate == null ? null : currentModelUpdate.getMergedModel();
+		logger.info(UniversalDB.SKIP_DB_LOGGING, "STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getModelUpdates().size());
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				active = false;
 				logger.info(UniversalDB.SKIP_DB_LOGGING, "SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
 				databaseStats.setLong(TIMESTAMP_SHUTDOWN, System.currentTimeMillis());
 				transactionLog.close();
-				modelLog.close();
+				modelsLog.close();
 				databaseStats.flush();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -170,25 +168,32 @@ public class TransactionIndex {
 		}
 	}
 
-	public synchronized boolean isValidSchema(DatabaseModel model) {
-		if (currentModel != null) {
-			if (!currentModel.isCompatible(model)) {
-				return false;
-			}
-		}
-		return true;
+	public synchronized boolean isValidModel(DatabaseModel model) {
+		return (currentModel == null && model.isValid()) || currentModel.isCompatible(model);
 	}
 
 	public synchronized boolean isModelUpdate(DatabaseModel model) {
-		if (currentModel == null) {
-			return true;
+//		long maxBuildTime = getModelUpdates().stream().mapToLong(update -> update.getDatabaseModel().getPojoBuildTime()).max().orElse(0);
+//		return model.getPojoBuildTime() > maxBuildTime;
+		if (currentModelUpdate != null && currentModelUpdate.getDatabaseModel().isSameModel(model)) {
+			return false;
 		}
-		return !currentModel.isSameModel(model);
+		return getModelUpdates()
+				.stream()
+				.noneMatch(update -> update.getDatabaseModel().getPojoBuildTime() == model.getPojoBuildTime());
 	}
 
 	public synchronized void writeModelUpdate(ModelUpdate modelUpdate) throws IOException {
-		modelLog.writeLog(modelUpdate.getBytes());
-		currentModel = modelUpdate.getDatabaseModel();
+		currentModelUpdate = modelUpdate;
+		DatabaseModel model = modelUpdate.getDatabaseModel();
+		if (currentModel == null) {
+			currentModel = model;
+			currentModel.initialize(); //todo copy!!!
+		} else {
+			currentModel.mergeModel(model);
+		}
+		modelUpdate.setMergedModel(currentModel);
+		modelsLog.writeLog(modelUpdate.getBytes());
 		logger.info(UniversalDB.SKIP_DB_LOGGING, "Updating schema");
 	}
 
@@ -209,15 +214,18 @@ public class TransactionIndex {
 		databaseStats.setLong(TRANSACTIONS_COUNT, getTransactionCount() + 1);
 	}
 
-	public synchronized List<ModelUpdate> getSchemaUpdates() {
-		if (modelLog.isEmpty()) {
+	public synchronized List<ModelUpdate> getModelUpdates() {
+		if (modelsLog.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return modelLog.readAllLogs()
+		return modelsLog.readAllLogs()
 				.stream()
 				.map(ModelUpdate::new)
 				.collect(Collectors.toList());
 	}
+
+
+
 
 	public Stream<ResolvedTransaction> getTransactions(long lastTransactionId) {
 		LogIterator logIterator = transactionLog.readLogs();

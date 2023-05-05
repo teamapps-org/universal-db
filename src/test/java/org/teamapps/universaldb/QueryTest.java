@@ -27,8 +27,8 @@ import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
 import org.teamapps.universaldb.index.enumeration.EnumFilterType;
-import org.teamapps.universaldb.index.file.FileDataField;
 import org.teamapps.universaldb.index.file.FileFilter;
+import org.teamapps.universaldb.index.file.FileDataField;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.translation.TranslatableText;
@@ -296,10 +296,10 @@ public class QueryTest {
 		}
 		List<FieldTest> values;
 
-		values = FieldTest.filter().fileField(FileFilter.sizeEquals(12805l)).execute();
+		values = FieldTest.filter().fileField(FileFilter.sizeEquals(12805)).execute();
 		assertTrue(check(values, 5, 10));
 
-		values = FieldTest.filter().fileField(FileFilter.sizeGreater(12000l)).execute();
+		values = FieldTest.filter().fileField(FileFilter.sizeGreater(12000)).execute();
 		assertTrue(check(values, 5, 10));
 
 		values = FieldTest.filter().fileField(FileFilter.sizeGreater(25000)).execute();
@@ -317,8 +317,8 @@ public class QueryTest {
 		values = FieldTest.filter().fileField(FileFilter.termContains("temp", FileDataField.NAME)).execute();
 		assertTrue(check(values, 5, 10));
 
-		values = FieldTest.filter().fileField(FileFilter.termContains("application/vnd.openxmlformats-officedocument.wordprocessingml.document", FileDataField.MIME_TYPE)).execute();
-		assertTrue(check(values, 5, 10));
+		//values = FieldTest.filter().fileField(FileFilter.termContains("application/vnd.openxmlformats-officedocument.wordprocessingml.document", FileDataField.MIME_TYPE)).execute();
+		//assertTrue(check(values, 5, 10));
 
 	}
 

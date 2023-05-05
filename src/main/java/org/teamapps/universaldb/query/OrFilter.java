@@ -21,7 +21,7 @@ package org.teamapps.universaldb.query;
 
 import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.file.FileIndex;
+import org.teamapps.universaldb.index.filelegacy.FileIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;

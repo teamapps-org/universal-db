@@ -27,6 +27,7 @@ public class ModelUpdate {
 	private final DatabaseModel databaseModel;
 	private final long timestamp;
 	private final long transactionId;
+	private DatabaseModel mergedModel;
 
 
 	public ModelUpdate(DatabaseModel databaseModel, long transactionId, long timestamp) {
@@ -36,11 +37,17 @@ public class ModelUpdate {
 	}
 
 	public ModelUpdate(byte[] data) {
-		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
+		this(new DataInputStream(new ByteArrayInputStream(data)));
+	}
+
+	public ModelUpdate(DataInputStream dis) {
 		try {
 			databaseModel = new DatabaseModel(dis);
 			timestamp = dis.readLong();
 			transactionId = dis.readLong();
+			if (dis.readBoolean()) {
+				mergedModel = new DatabaseModel(dis);
+			}
 		} catch (IOException e) {
 			throw new RuntimeException("Error reading log update", e);
 		}
@@ -49,10 +56,20 @@ public class ModelUpdate {
 	public byte[] getBytes() throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		DataOutputStream dos = new DataOutputStream(bos);
+		write(dos);
+		return bos.toByteArray();
+	}
+
+	public void write(DataOutputStream dos) throws IOException {
 		databaseModel.write(dos);
 		dos.writeLong(timestamp);
 		dos.writeLong(transactionId);
-		return bos.toByteArray();
+		if (mergedModel == null) {
+			dos.writeBoolean(false);
+		} else {
+			dos.writeBoolean(true);
+			mergedModel.write(dos);
+		}
 	}
 
 	public DatabaseModel getDatabaseModel() {
@@ -65,5 +82,13 @@ public class ModelUpdate {
 
 	public long getTransactionId() {
 		return transactionId;
+	}
+
+	public DatabaseModel getMergedModel() {
+		return mergedModel;
+	}
+
+	public void setMergedModel(DatabaseModel mergedModel) {
+		this.mergedModel = mergedModel;
 	}
 }

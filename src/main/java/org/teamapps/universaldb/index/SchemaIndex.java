@@ -22,7 +22,7 @@ package org.teamapps.universaldb.index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.UniversalDB;
-import org.teamapps.universaldb.index.file.FileStore;
+import org.teamapps.universaldb.index.filelegacy.FileStore;
 import org.teamapps.universaldb.schema.Column;
 import org.teamapps.universaldb.schema.Database;
 import org.teamapps.universaldb.schema.Schema;

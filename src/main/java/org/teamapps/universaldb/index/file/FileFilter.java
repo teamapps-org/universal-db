@@ -60,7 +60,7 @@ public class FileFilter {
 		return new FileFilter(FileFullTextFilterType.TERM_NOT_SIMILAR, value, fields);
 	}
 
-	public static FileFilter termContains(String value, FileDataField... fields) {
+	public static FileFilter termContains(String value, FileDataField fields) {
 		return new FileFilter(FileFullTextFilterType.TERM_CONTAINS, value, fields);
 	}
 
@@ -85,7 +85,7 @@ public class FileFilter {
 	}
 
 	public static FileFilter sizeBetween(long size, long size2) {
-		return new FileFilter(size, FileFilterType.SIZE_SMALLER);
+		return new FileFilter(size, size2);
 	}
 
 	private FileFilterType filterType;
@@ -121,7 +121,7 @@ public class FileFilter {
 	public List<TextFieldFilter> getTextFilters() {
 		List<TextFieldFilter> textFieldFilters = new ArrayList<>();
 		for (FileDataField field : fields) {
-			String fieldName = getFieldName(field);
+			String fieldName = field.name();
 			TextFilterType textFilterType = getTextFilterType(fullTextFilterType);
 			TextFieldFilter fieldFilter = new TextFieldFilter(textFilterType, fieldName, value);
 			textFieldFilters.add(fieldFilter);
@@ -130,7 +130,7 @@ public class FileFilter {
 	}
 
 	private TextFilterType getTextFilterType(FileFullTextFilterType fileFullTextFilterType) {
-		switch (fullTextFilterType) {
+		switch (fileFullTextFilterType) {
 			case TERM_EQUALS:
 				return TextFilterType.TERM_EQUALS;
 			case TERM_NOT_EQUALS:
@@ -151,23 +151,6 @@ public class FileFilter {
 		return null;
 	}
 
-	private String getFieldName(FileDataField field) {
-		switch (field) {
-			case NAME:
-				return FileMetaData.FIELD_NAME;
-			case MIME_TYPE:
-				return FileMetaData.FIELD_MIME_TYPE;
-			case HASH:
-				return FileMetaData.FIELD_HASH;
-			case META_DATA:
-				return FileMetaData.FIELD_META;
-			case CONTENT:
-				return FileMetaData.FIELD_CONTENT;
-			case CONTENT_LANGUAGE:
-				return FileMetaData.FIELD_LANGUAGE;
-		}
-		return null;
-	}
 
 	public FileFilterType getFilterType() {
 		return filterType;

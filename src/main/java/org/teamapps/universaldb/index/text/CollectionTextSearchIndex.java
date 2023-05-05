@@ -26,8 +26,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.teamapps.universaldb.index.file.FileUtil;
-import org.teamapps.universaldb.index.translation.TranslatableTextFieldFilter;
+import org.teamapps.universaldb.index.filelegacy.FileUtil;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 
 import java.io.File;
