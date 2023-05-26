@@ -449,7 +449,7 @@ public class DatabaseModel {
 	}
 
 	public TableModel createTable(String name, String title, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
-		TableModel tableModel = new TableModel(this, name, title, false, null, trackModifications, versioning, recoverableRecords);
+		TableModel tableModel = new TableModel(this, name, title, false, null, null, trackModifications, versioning, recoverableRecords);
 		return addTable(tableModel);
 	}
 
@@ -458,7 +458,12 @@ public class DatabaseModel {
 	}
 
 	public TableModel createRemoteTable(String name, String title, String databaseName) {
-		TableModel tableModel = new TableModel(this, name, title, true, databaseName, false, false, false);
+		TableModel tableModel = new TableModel(this, name, title, true, databaseName, null, false, false, false);
+		return addTable(tableModel);
+	}
+
+	public TableModel createRemoteTable(String name, String title, String databaseName, String namespace) {
+		TableModel tableModel = new TableModel(this, name, title, true, databaseName, namespace, false, false, false);
 		return addTable(tableModel);
 	}
 

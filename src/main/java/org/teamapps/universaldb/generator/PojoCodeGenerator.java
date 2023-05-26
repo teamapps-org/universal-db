@@ -68,8 +68,14 @@ public class PojoCodeGenerator {
 		}
 
 		for (TableModel table : databaseModel.getTables()) {
-			createTablePojo(table, dbPojoDir, packageName);
-			createTableQueryPojo(table, dbPojoDir, packageName);
+			File dir = dbPojoDir;
+			String classPackageName = packageName;
+			if (table.isRemoteTable() && table.getRemoteDatabaseNamespace() != null) {
+				classPackageName = table.getRemoteDatabaseNamespace() + "." + table.getRemoteDatabase().toLowerCase();
+				dir = createBaseDir(basePath, classPackageName);
+			}
+			createTablePojo(table, dir, classPackageName);
+			createTableQueryPojo(table, dir, classPackageName);
 		}
 
 	}

@@ -84,20 +84,6 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
     	throw new UnsupportedOperationException();
     }
 
-	@Override
-	public String toString() {
-    	StringBuilder sb = new StringBuilder();
-    	sb.append(table.getName()).append(": ").append(getId()).append("\n");
-		for (ColumnIndex column : table.getColumnIndices()) {
-			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
-			if (isChanged(column)) {
-			    TransactionRequestRecordValue changeValue = getChangeValue(column);
-				sb.append(" -> ").append(changeValue.getValue());
-			}
-			sb.append("\n");
-		}
-		return sb.toString();
-	}
 }
 
 

@@ -40,6 +40,7 @@ public class TableModel {
 	private final String title;
 	private final boolean remoteTable;
 	private final String remoteDatabase;
+	private final String remoteDatabaseNamespace;
 	private final boolean trackModifications;
 	private final boolean versioning;
 	private final boolean recoverableRecords; //else: record id to index pos column
@@ -52,12 +53,13 @@ public class TableModel {
 	private int versionCreated;
 	private int versionModified;
 
-	protected TableModel(DatabaseModel databaseModel, String name, String title, boolean remoteTable, String remoteDatabase, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
+	protected TableModel(DatabaseModel databaseModel, String name, String title, boolean remoteTable, String remoteDatabase, String remoteDatabaseNamespace, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
 		this.databaseModel = databaseModel;
 		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);
 		this.remoteTable = remoteTable;
 		this.remoteDatabase = remoteDatabase;
+		this.remoteDatabaseNamespace = remoteDatabaseNamespace;
 		this.trackModifications = trackModifications;
 		this.versioning = versioning;
 		this.recoverableRecords = recoverableRecords;
@@ -81,6 +83,7 @@ public class TableModel {
 		title = MessageUtils.readString(dis);
 		remoteTable = dis.readBoolean();
 		remoteDatabase = remoteTable ? MessageUtils.readString(dis) : null;
+		remoteDatabaseNamespace = remoteTable ? MessageUtils.readString(dis) : null;
 		trackModifications = dis.readBoolean();
 		versioning = dis.readBoolean();
 		recoverableRecords = dis.readBoolean();
@@ -112,6 +115,7 @@ public class TableModel {
 		dos.writeBoolean(remoteTable);
 		if (remoteTable) {
 			MessageUtils.writeString(dos, remoteDatabase);
+			MessageUtils.writeString(dos, remoteDatabaseNamespace);
 		}
 		dos.writeBoolean(trackModifications);
 		dos.writeBoolean(versioning);
@@ -385,6 +389,10 @@ public class TableModel {
 
 	public String getRemoteDatabase() {
 		return remoteDatabase;
+	}
+
+	public String getRemoteDatabaseNamespace() {
+		return remoteDatabaseNamespace;
 	}
 
 	public boolean isTrackModifications() {

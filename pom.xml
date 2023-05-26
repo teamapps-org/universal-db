@@ -252,6 +252,7 @@
                 <configuration>
                     <modelClasses>
                         <modelClass>Model</modelClass>
+                        <modelClass>Model2</modelClass>
                     </modelClasses>
                 </configuration>
             </plugin>

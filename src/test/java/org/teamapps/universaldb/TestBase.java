@@ -21,6 +21,7 @@ package org.teamapps.universaldb;
 
 import org.apache.commons.io.IOUtils;
 import org.teamapps.datamodel.TestDb1;
+import org.teamapps.datamodel.TestDb2;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.pojo.Entity;
 
@@ -37,6 +38,7 @@ import java.util.Set;
 public class TestBase {
 
 	private static volatile boolean initialized;
+	private static volatile boolean initialize2;
 
 	public synchronized static void init() throws Exception {
 		if (initialized) {
@@ -46,10 +48,27 @@ public class TestBase {
 		initialized = true;
 	}
 
+	public synchronized static void init2() throws Exception {
+		if (initialize2) {
+			return;
+		}
+		startDb2();
+		initialize2 = true;
+	}
+
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDirectory("temp").toFile();
 		tempDir.deleteOnExit();
 		UniversalDB.createStandalone(tempDir, new TestDb1());
+	}
+
+	private static void startDb2() throws Exception {
+		File tempDir1 = Files.createTempDirectory("temp").toFile();
+		tempDir1.deleteOnExit();
+		File tempDir2 = Files.createTempDirectory("temp").toFile();
+		tempDir2.deleteOnExit();
+		UniversalDB.createStandalone(tempDir1, new TestDb1());
+		UniversalDB.createStandalone(tempDir2, new TestDb2());
 	}
 
 	public static File createResourceFile() throws IOException {
