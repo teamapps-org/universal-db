@@ -61,14 +61,16 @@ public class TransactionIndex {
 	private DatabaseModel currentModel;
 	private ModelUpdate currentModelUpdate;
 
-	public TransactionIndex(File basePath) {
+	public TransactionIndex(File basePath, boolean skipIndexCheck) {
 		this.path = new File(basePath, "transactions");
 		this.path.mkdir();
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
 		this.modelsLog = new DefaultLogIndex(this.path, "models");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
 		init();
-		checkIndex();
+		if (!skipIndexCheck) {
+			checkIndex();
+		}
 	}
 
 	private void init() {
