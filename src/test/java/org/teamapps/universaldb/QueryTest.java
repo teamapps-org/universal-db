@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,8 +27,8 @@ import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
 import org.teamapps.universaldb.index.enumeration.EnumFilterType;
-import org.teamapps.universaldb.index.file.FileFilter;
 import org.teamapps.universaldb.index.file.FileDataField;
+import org.teamapps.universaldb.index.file.FileFilter;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.translation.TranslatableText;
@@ -317,8 +317,17 @@ public class QueryTest {
 		values = FieldTest.filter().fileField(FileFilter.termContains("temp", FileDataField.NAME)).execute();
 		assertTrue(check(values, 5, 10));
 
-		//values = FieldTest.filter().fileField(FileFilter.termContains("application/vnd.openxmlformats-officedocument.wordprocessingml.document", FileDataField.MIME_TYPE)).execute();
-		//assertTrue(check(values, 5, 10));
+		values = FieldTest.filter().fileField(FileFilter.termContains("sam.smith@gmail.com", FileDataField.CONTENT)).execute();
+		assertTrue(check(values, 5, 10));
+
+		values = FieldTest.filter().fileField(FileFilter.termContains("diam nonumy eirmod tempor invidunt sedz", FileDataField.CONTENT)).execute();
+		assertTrue(check(values));
+
+		values = FieldTest.filter().fileField(FileFilter.termContains("diam nonumy eirmod tempor invidunt sed", FileDataField.CONTENT)).execute();
+		assertTrue(check(values, 5, 10));
+
+		values = FieldTest.filter().fileField(FileFilter.termContains("application/vnd.openxmlformats-officedocument.wordprocessingml.document", FileDataField.META_DATA)).execute();
+		assertTrue(check(values, 5, 10));
 
 	}
 
