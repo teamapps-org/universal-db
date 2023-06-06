@@ -88,8 +88,12 @@ public class UniversalDB {
 	private TransactionIndex transactionIndex;
 
 	private UniversalDB(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore) throws Exception {
+		this(storagePath, modelProvider, databaseFileStore, false);
+	}
+
+	private UniversalDB(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore, boolean skipTransactionIndexCheck) throws Exception {
 		this.storagePath = storagePath;
-		this.transactionIndex = new TransactionIndex(storagePath);
+		this.transactionIndex = new TransactionIndex(storagePath, skipTransactionIndexCheck);
 		createShutdownHook();
 
 
@@ -138,6 +142,11 @@ public class UniversalDB {
 	public static UniversalDB createStandalone(File storagePath, ModelProvider modelProvider) throws Exception {
 		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(new File(storagePath, "file-store"));
 		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
+	}
+
+	public static UniversalDB createStandaloneSkipTransactionStoreCheck(File storagePath, ModelProvider modelProvider) throws Exception {
+		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(new File(storagePath, "file-store"));
+		return new UniversalDB(storagePath, modelProvider, databaseFileStore, true);
 	}
 
 	public static UniversalDB createStandalone(File storagePath, File fileStorePath, ModelProvider modelProvider) throws Exception {
