@@ -27,6 +27,7 @@ import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.SortEntry;
 import org.teamapps.universaldb.index.TableIndex;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
+import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.file.store.FileStore;
 import org.teamapps.universaldb.index.numeric.*;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
@@ -42,6 +43,7 @@ import org.teamapps.universaldb.index.versioning.RecordUpdate;
 import org.teamapps.universaldb.record.EntityBuilder;
 import org.teamapps.universaldb.schema.Table;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -69,6 +71,14 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			list.add(entityBuilder.build(recordId));
 		}
 		return list;
+	}
+
+	public static FileValue createFileValue(File file) {
+		return createFileValue(file, null);
+	}
+
+	public static FileValue createFileValue(File file, String fileName) {
+		return file != null ? FileValue.create(file, fileName) : null;
 	}
 
 
@@ -712,7 +722,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 	public void saveRecord(UniversalDB database) {
 		if (entityChangeSet != null) {
 			this.transactionRequest = database.createTransactionRequest();
-			saveRecord(transactionRequest);
+			saveRecord(transactionRequest, database);
 			database.executeTransaction(transactionRequest);
 			if (id == 0) {
 				id = transactionRequest.getResolvedRecordIdByCorrelationId(correlationId);
@@ -720,12 +730,12 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
-	public void saveRecord(TransactionRequest transactionRequest) {
+	public void saveRecord(TransactionRequest transactionRequest, UniversalDB database) {
 		if (entityChangeSet != null) {
 			this.transactionRequest = transactionRequest;
 			boolean update = !createEntity;
 			TransactionRequestRecord record = TransactionRequestRecord.createOrUpdateRecord(transactionRequest, tableIndex, id, correlationId, update);
-			entityChangeSet.setTransactionRequestRecordValues(transactionRequest, record);
+			entityChangeSet.setTransactionRequestRecordValues(transactionRequest, record, database);
 			transactionRequest.addRecord(record);
 			clearChanges();
 			createEntity = false;

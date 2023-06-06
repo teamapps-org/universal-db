@@ -19,13 +19,21 @@
  */
 package org.teamapps.universaldb.pojo;
 
+import org.teamapps.udb.model.FileContentData;
+import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.file.FileIndex;
+import org.teamapps.universaldb.index.file.FileValue;
+import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
+import org.teamapps.universaldb.index.file.value.FileValueType;
+import org.teamapps.universaldb.index.file.value.StoreDescriptionFile;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequest;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
+import org.teamapps.universaldb.model.FileFieldModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,13 +81,14 @@ public class EntityChangeSet {
 		return changeMap.get(index.getMappingId());
 	}
 
-	public void setTransactionRequestRecordValues(TransactionRequest transactionRequest, TransactionRequestRecord transactionRequestRecord) {
+	public void setTransactionRequestRecordValues(TransactionRequest transactionRequest, TransactionRequestRecord record, UniversalDB database) {
 		List<AbstractUdbEntity> uncommittedEntityReferences = new ArrayList<>();
-		for (TransactionRequestRecordValue recordValue : changeMap.values()) {
-			transactionRequestRecord.addRecordValue(recordValue);
+		List<TransactionRequestRecordValue> changeValues = new ArrayList<>(changeMap.values());
+		for (TransactionRequestRecordValue recordValue : changeValues) {
 			IndexType indexType = recordValue.getIndexType();
 			Object value = recordValue.getValue();
 			if (value == null) {
+				record.addRecordValue(recordValue);
 				continue;
 			}
 			switch (indexType) {
@@ -101,6 +110,7 @@ public class EntityChangeSet {
 							recordReference.setRecordId(entity.getId());
 						}
 					}
+					record.addRecordValue(recordValue);
 				}
 				case REFERENCE -> {
 					RecordReference recordReference = (RecordReference) value;
@@ -110,11 +120,32 @@ public class EntityChangeSet {
 					} else if (recordReference.getRecordId() == 0 && entity.getId() > 0) {
 						recordReference.setRecordId(entity.getId());
 					}
+					record.addRecordValue(recordValue);
+				}
+				case FILE -> {
+					FileValue fileValue = (FileValue) value;
+					if (fileValue.getType() == FileValueType.UNCOMMITTED_FILE) {
+						FileIndex fileIndex = (FileIndex) database.getColumnById(recordValue.getColumnId());
+						FileFieldModel model = fileIndex.getFileFieldModel();
+						DatabaseFileStore fileStore = database.getDatabaseIndex().getDatabaseFileStore();
+						String key = fileStore.storeFile(fileValue.getAsFile(), fileValue.getHash(), fileValue.getSize());
+						FileContentData contentData = model.isIndexContent() ? fileValue.getFileContentData(model.getMaxIndexContentLength()) : null;
+						if (model.isIndexContent() && model.isDetectLanguage()) {
+							fileValue.getDetectedLanguage();
+						}
+						StoreDescriptionFile storeDescriptionFile = new StoreDescriptionFile(null, fileValue.getFileName(), fileValue.getSize(), fileValue.getHash(), key, contentData);
+						record.addRecordValue(fileIndex, storeDescriptionFile);
+					} else {
+						throw new RuntimeException("Error wrong file value type to save:" + fileValue.getType());
+					}
+				}
+				default -> {
+					record.addRecordValue(recordValue);
 				}
 			}
 		}
 		for (AbstractUdbEntity entity : uncommittedEntityReferences) {
-			entity.saveRecord(transactionRequest);
+			entity.saveRecord(transactionRequest, database);
 		}
 	}
 
