@@ -381,6 +381,14 @@ public class PojoTemplate {
 	}
 
 	public void writeTemplate(String name, File dir) throws IOException {
+		String templateText = writeTemplateCode();
+		File file = new File(dir, TemplateUtil.firstUpperCase(name) + ".java");
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+		writer.write(templateText);
+		writer.close();
+	}
+
+	public String writeTemplateCode() {
 		if (!methods.isEmpty()) {
 			StringBuilder sb = new StringBuilder();
 			for (String method : methods) {
@@ -389,9 +397,6 @@ public class PojoTemplate {
 			setValue("methods", sb.toString());
 			methods.clear();
 		}
-		File file = new File(dir, TemplateUtil.firstUpperCase(name) + ".java");
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
-		writer.write(template);
-		writer.close();
+		return template;
 	}
 }

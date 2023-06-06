@@ -80,8 +80,20 @@ public class PojoCodeGenerator {
 
 	}
 
+	public String createModelProviderClassCode(DatabaseModel model) throws IOException {
+		PojoTemplate tpl = PojoTemplate.createModelProviderClass();
+		createModelProviderClass(tpl, model);
+		return tpl.writeTemplateCode();
+	}
+
 	public void createModelProviderClass(DatabaseModel model, File baseDir) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createModelProviderClass();
+		String type = tpl.firstUpper(model.getName());
+		createModelProviderClass(tpl, model);
+		tpl.writeTemplate(type, baseDir);
+	}
+
+	public void createModelProviderClass(PojoTemplate tpl, DatabaseModel model) throws IOException {
 		tpl.setValue("package", model.getNamespace());
 		String type = tpl.firstUpper(model.getName());
 		StringBuilder sb = new StringBuilder();
@@ -171,7 +183,6 @@ public class PojoCodeGenerator {
 
 		tpl.setValue("type", type);
 		tpl.setValue("model", sb.toString());
-		tpl.writeTemplate(type, baseDir);
 	}
 
 	private String getAddMethodName(FieldType type) {
