@@ -20,7 +20,7 @@
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.5.31-SNAPSHOT</version>
+    <version>0.5.32-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -76,10 +76,9 @@
 
         <dependency>
             <groupId>org.teamapps</groupId>
-            <artifactId>teamapps-cluster</artifactId>
-            <version>0.10</version>
+            <artifactId>teamapps-message-protocol</artifactId>
+            <version>0.12</version>
         </dependency>
-
 
         <dependency>
             <groupId>org.agrona</groupId>

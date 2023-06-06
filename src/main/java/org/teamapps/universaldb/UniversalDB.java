@@ -144,6 +144,9 @@ public class UniversalDB implements DataBaseMapper {
 			ResolvedTransaction transaction = ResolvedTransaction.createResolvedTransaction(bytes);
 			handleTransaction(transaction);
 			count++;
+			if (count % 250_000 == 0) {
+				logger.info("Imported {} transactions...", count);
+			}
 		}
 		logger.info("Imported " + count + " transactions in: " + (System.currentTimeMillis() - time));
 	}
