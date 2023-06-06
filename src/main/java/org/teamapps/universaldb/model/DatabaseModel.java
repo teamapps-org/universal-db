@@ -62,6 +62,7 @@ public class DatabaseModel {
 				throw new RuntimeException("Db model mapping error");
 			}
 		}
+		int views = dis.readInt();
 	}
 
 	public void write(DataOutputStream dos) throws IOException {
@@ -445,7 +446,7 @@ public class DatabaseModel {
 	}
 
 	public TableModel createTable(String name, String title) {
-		return createTable(title, name, true, true, true);
+		return createTable(name, title, true, true, true);
 	}
 
 	public TableModel createTable(String name, String title, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
@@ -508,6 +509,9 @@ public class DatabaseModel {
 	public void addReverseReferenceField(TableModel tableA, String fieldA, TableModel tableB, String fieldB) {
 		ReferenceFieldModel referenceFieldA = tableA.getReferenceField(fieldA);
 		ReferenceFieldModel referenceFieldB = tableB.getReferenceField(fieldB);
+		if (referenceFieldA == null || referenceFieldB == null) {
+			throw new RuntimeException("Error missing reference fields for model:" + fieldA + ", " + fieldB);
+		}
 		referenceFieldA.setReverseReferenceField(referenceFieldB);
 	}
 
