@@ -22,7 +22,7 @@ public class UncommittedFile implements FileValue {
 
 	public UncommittedFile(File file, String fileName) {
 		this.file = file;
-		this.fileName = fileName;
+		this.fileName = fileName != null ? fileName : file.getName();
 		this.size = file.length();
 		this.contentParser = new FileContentParser(file, fileName);
 		this.hash = contentParser.getHash();

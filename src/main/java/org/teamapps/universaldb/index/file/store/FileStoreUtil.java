@@ -136,7 +136,7 @@ public class FileStoreUtil {
 		bis.close();
 		String decryptedFileHash = HexUtil.bytesToHex(digest.digest());
 		if (!keyHash.equalsIgnoreCase(decryptedFileHash)) {
-			throw new RuntimeException("Error - wrong file hash");
+			throw new Exception("Error - wrong file hash");
 		}
 		return outputFile;
 	}
