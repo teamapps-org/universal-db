@@ -24,6 +24,7 @@ public class FieldModel implements BaseFieldModel {
 	}
 
 	protected FieldModel(String name, String title, TableModel tableModel, FieldType fieldType) {
+		NamingUtils.checkName(name, title);
 		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);
 		this.tableModel = tableModel;

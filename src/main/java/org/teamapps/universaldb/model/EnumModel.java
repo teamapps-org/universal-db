@@ -36,6 +36,7 @@ public class EnumModel {
 		this.title = NamingUtils.createTitle(title);
 		this.enumNames = enumNames.stream().map(NamingUtils::createName).collect(Collectors.toList());
 		this.enumTitles = enumTitles.stream().map(NamingUtils::createConstantName).collect(Collectors.toList());
+		NamingUtils.checkName(name, title);
 	}
 
 	protected EnumModel(DataInputStream dis) throws IOException {

@@ -54,6 +54,7 @@ public class TableModel {
 	private int versionModified;
 
 	protected TableModel(DatabaseModel databaseModel, String name, String title, boolean remoteTable, String remoteDatabase, String remoteDatabaseNamespace, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
+		NamingUtils.checkName(name, title);
 		this.databaseModel = databaseModel;
 		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);

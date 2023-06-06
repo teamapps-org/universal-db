@@ -11,6 +11,12 @@ public class NamingUtils {
 	private static Transliterator TRANSLITERATOR = Transliterator.getInstance("Any-Latin; nfd; [:nonspacing mark:] remove; nfc");
 
 
+	public static void checkName(String name, String title) {
+		if (!name.equals(title) && !name.equals(createName(name))) {
+			throw new RuntimeException("Element name with invalid characters:" + name + ", should be:" + createName(name));
+		}
+	}
+
 	public static String createTitle(String s) {
 		if (isConstant(s)) {
 			List<String> tokens = tokenize(s);
@@ -24,12 +30,14 @@ public class NamingUtils {
 	}
 
 	public static String createName(String s) {
+		if (isConstant(s)) {
+			s = s.toLowerCase();
+		}
 		List<String> tokens = tokenize(s);
 		String name = tokens.stream()
 				.map(v -> TRANSLITERATOR.transliterate(v))
 				.map(String::strip)
 				.filter(v -> !v.isBlank())
-//				.map(String::toLowerCase)
 				.map(NamingUtils::firstUpperCase)
 				.collect(Collectors.joining());
 		return firstLowerCase(name);
@@ -113,7 +121,7 @@ public class NamingUtils {
 		if (isConstant(s)) {
 			return s;
 		} else {
-			return s.replaceAll("(.)(\\p{Upper})", "$1_$2").toUpperCase();
+			return s.replace(" ", "_").replaceAll("(.)(\\p{Upper})", "$1_$2").toUpperCase();
 		}
 	}
 
@@ -130,7 +138,7 @@ public class NamingUtils {
 				sb.append(c);
 			}
 		}
-		return firstUpperCase(sb.toString());
+		return firstUpperCase(sb.toString().toLowerCase());
 	}
 
 }
