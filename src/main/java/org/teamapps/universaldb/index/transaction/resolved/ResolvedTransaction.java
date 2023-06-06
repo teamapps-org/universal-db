@@ -59,9 +59,9 @@ public class ResolvedTransaction {
 		}
 	}
 
-//	public static ResolvedTransaction recreateNewId(long transactionId, ResolvedTransaction resolvedTransaction) {
-//		return new ResolvedTransaction(transactionId, resolvedTransaction);
-//	}
+	public static ResolvedTransaction recreateNewId(long transactionId, ResolvedTransaction resolvedTransaction) {
+		return new ResolvedTransaction(transactionId, resolvedTransaction);
+	}
 
 	public ResolvedTransaction(long nodeId, long requestId, long transactionId, int userId, long timestamp) {
 		this.nodeId = nodeId;
