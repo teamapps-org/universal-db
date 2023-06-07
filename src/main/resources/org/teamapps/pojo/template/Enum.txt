@@ -3,6 +3,17 @@ package {package};
 public enum {type}  {
 
 {enumValues}
+	;
+
+	private final String title;
+
+	{type}(String title) {
+		this.title = title;
+	}
+
+	public String getTitle() {
+		return title;
+	}
 
 }
 

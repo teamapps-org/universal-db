@@ -35,7 +35,7 @@ public class EnumModel {
 		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);
 		this.enumNames = enumNames.stream().map(NamingUtils::createName).collect(Collectors.toList());
-		this.enumTitles = enumTitles.stream().map(NamingUtils::createConstantName).collect(Collectors.toList());
+		this.enumTitles = enumTitles.stream().map(NamingUtils::createTitle).collect(Collectors.toList());
 		NamingUtils.checkName(name, title);
 	}
 

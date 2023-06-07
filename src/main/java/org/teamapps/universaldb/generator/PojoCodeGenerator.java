@@ -216,8 +216,10 @@ public class PojoCodeGenerator {
 		enumTpl.setValue("package", packageName);
 		enumTpl.setValue("type", enumType);
 		List<String> enumValues = new ArrayList<>();
-		for (String enumValue : enumModel.getEnumNames()) {
-			enumValues.add("\t" + enumTpl.createConstantName(enumValue) + ",");
+		for (int i = 0; i < enumModel.getEnumNames().size(); i++) {
+			String enumValue = enumModel.getEnumNames().get(i);
+			String enumTitle = enumModel.getEnumTitles().get(i);
+			enumValues.add("\t" + enumTpl.createConstantName(enumValue) + "(\"" + enumTitle + "\"),");
 		}
 		enumTpl.setValue("enumValues", enumValues.stream().collect(Collectors.joining("\n")));
 		enumTpl.writeTemplate(enumType, dbPojoDir);
