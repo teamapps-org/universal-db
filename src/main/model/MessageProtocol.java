@@ -31,6 +31,7 @@ public class MessageProtocol implements ModelCollectionProvider {
 		MessageModelCollection modelCollection = new MessageModelCollection("newTestModel", "org.teamapps.udb.model", 1);
 
 		MessageDefinition fileContentData = modelCollection.createModel("fileContentData", "#udb.fileContentData");
+
 		fileContentData.addString("name", 1);
 		fileContentData.addLong("fileSize", 2);
 		fileContentData.addString("hash", 3);

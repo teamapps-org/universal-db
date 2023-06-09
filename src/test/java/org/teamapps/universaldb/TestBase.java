@@ -20,8 +20,8 @@
 package org.teamapps.universaldb;
 
 import org.apache.commons.io.IOUtils;
-import org.teamapps.datamodel.TestDb1;
-import org.teamapps.datamodel.TestDb2;
+import org.teamapps.datamodel.TestDb1Model;
+import org.teamapps.datamodel.TestDb2Model;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.pojo.Entity;
 
@@ -59,7 +59,7 @@ public class TestBase {
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDirectory("temp").toFile();
 		tempDir.deleteOnExit();
-		UniversalDB.createStandalone(tempDir, new TestDb1());
+		UniversalDbBuilder.create().basePath(tempDir).modelProvider(new TestDb1Model()).build();
 	}
 
 	private static void startDb2() throws Exception {
@@ -67,8 +67,8 @@ public class TestBase {
 		tempDir1.deleteOnExit();
 		File tempDir2 = Files.createTempDirectory("temp").toFile();
 		tempDir2.deleteOnExit();
-		UniversalDB.createStandalone(tempDir1, new TestDb1());
-		UniversalDB.createStandalone(tempDir2, new TestDb2());
+		UniversalDbBuilder.create().basePath(tempDir1).modelProvider(new TestDb1Model()).build();
+		UniversalDbBuilder.create().basePath(tempDir2).modelProvider(new TestDb2Model()).build();
 	}
 
 	public static File createResourceFile() throws IOException {
