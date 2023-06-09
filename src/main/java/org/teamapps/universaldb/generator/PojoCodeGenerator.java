@@ -88,14 +88,14 @@ public class PojoCodeGenerator {
 
 	public void createModelProviderClass(DatabaseModel model, File baseDir) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createModelProviderClass();
-		String type = tpl.firstUpper(model.getName());
+		String type = tpl.firstUpper(model.getName() + "Model");
 		createModelProviderClass(tpl, model);
 		tpl.writeTemplate(type, baseDir);
 	}
 
 	public void createModelProviderClass(PojoTemplate tpl, DatabaseModel model) throws IOException {
 		tpl.setValue("package", model.getNamespace());
-		String type = tpl.firstUpper(model.getName());
+		String type = tpl.firstUpper(model.getName() + "Model");
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(tabs(2))
