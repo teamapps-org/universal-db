@@ -76,27 +76,29 @@ public class UniversalDB {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
 
+	private final DatabaseManager databaseManager;
 	private final DatabaseIndex databaseIndex;
+	private final DatabaseFileStore fileStore;
+	private final File indexPath;
+	private final File fullTextIndexPath;
+	private final File transactionLogPath;
+	private final TransactionIndex transactionIndex;
 
-	private final File storagePath;
 	private final Map<Integer, TableIndex> tableById = new HashMap<>();
 	private final Map<Integer, FieldIndex> columnById = new HashMap<>();
 	private final Map<TableIndex, Class> entityClassByTableIndex = new HashMap<>();
 	private final Map<TableIndex, Class> queryClassByTableIndex = new HashMap<>();
 	private final ArrayBlockingQueue<RecordUpdateEvent> updateEventQueue = new ArrayBlockingQueue<>(25_000);
 	private final Map<Long, CompletableFuture<ResolvedTransaction>> transactionCompletableFutureMap = new ConcurrentHashMap<>();
-	private TransactionIndex transactionIndex;
 
-	private UniversalDB(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore) throws Exception {
-		this(storagePath, modelProvider, databaseFileStore, false);
-	}
-
-	private UniversalDB(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore, boolean skipTransactionIndexCheck) throws Exception {
-		this.storagePath = storagePath;
-		this.transactionIndex = new TransactionIndex(storagePath, skipTransactionIndexCheck);
+	protected UniversalDB(ModelProvider modelProvider, DatabaseManager databaseManager, DatabaseFileStore fileStore, File indexPath, File fullTextIndexPath, File transactionLogPath, ClassLoader classLoader, boolean skipTransactionIndexCheck) throws Exception {
+		this.databaseManager = databaseManager;
+		this.fileStore = fileStore;
+		this.indexPath = indexPath;
+		this.fullTextIndexPath = fullTextIndexPath;
+		this.transactionLogPath = transactionLogPath;
+		this.transactionIndex = new TransactionIndex(transactionLogPath, skipTransactionIndexCheck);
 		createShutdownHook();
-
-
 		DatabaseModel model = modelProvider.getModel();
 		if (!model.isValid()) {
 			throw new RuntimeException("Error invalid database model:" + model.getName());
@@ -106,8 +108,7 @@ public class UniversalDB {
 			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
 
-		databaseIndex = new DatabaseIndex(model.getName(), storagePath, databaseFileStore);
-
+		databaseIndex = new DatabaseIndex(model.getName(), indexPath, fullTextIndexPath, fileStore);
 
 		if (transactionIndex.isModelUpdate(model)) {
 			executeTransaction(createModelUpdateTransactionRequest(model));
@@ -116,10 +117,10 @@ public class UniversalDB {
 			mergeDatabaseIndex(currentModel);
 		}
 
-		//todo class loader - if loaded from app server
-		installLocalTableClasses(UniversalDB.class.getClassLoader());
-		UniversalDbRegistry.getInstance().registerDatabase(model.getName(), this, UniversalDB.class.getClassLoader());
+		installLocalTableClasses(classLoader);
+		databaseManager.registerDatabase(model.getName(), this, UniversalDB.class.getClassLoader());
 	}
+
 
 	private void mergeDatabaseIndex(DatabaseModel currentModel) {
 		databaseIndex.installModel(currentModel, true, this);
@@ -139,24 +140,7 @@ public class UniversalDB {
 		THREAD_LOCAL_USER_ID.set(userId);
 	}
 
-	public static UniversalDB createStandalone(File storagePath, ModelProvider modelProvider) throws Exception {
-		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(new File(storagePath, "file-store"));
-		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
-	}
 
-	public static UniversalDB createStandaloneSkipTransactionStoreCheck(File storagePath, ModelProvider modelProvider) throws Exception {
-		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(new File(storagePath, "file-store"));
-		return new UniversalDB(storagePath, modelProvider, databaseFileStore, true);
-	}
-
-	public static UniversalDB createStandalone(File storagePath, File fileStorePath, ModelProvider modelProvider) throws Exception {
-		LocalDatabaseFileStore databaseFileStore = new LocalDatabaseFileStore(fileStorePath);
-		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
-	}
-
-	public static UniversalDB createStandalone(File storagePath, ModelProvider modelProvider, DatabaseFileStore databaseFileStore) throws Exception {
-		return new UniversalDB(storagePath, modelProvider, databaseFileStore);
-	}
 
 //	public UniversalDB(File storagePath, LogIterator logIterator) throws Exception {
 //		this.storagePath = storagePath;
@@ -201,9 +185,10 @@ public class UniversalDB {
 		try {
 			DatabaseModel currentModel = transactionIndex.getCurrentModel();
 			for (TableModel remoteTable : currentModel.getRemoteTables()) {
-				UniversalDB remoteDb = UniversalDbRegistry.getInstance().getDatabase(remoteTable.getRemoteDatabase());
+				UniversalDB remoteDb = databaseManager.getDatabase(remoteTable.getRemoteDatabase());
 				TableIndex tableIndex = remoteDb.getDatabaseIndex().getTable(remoteTable.getName());
-				installTablePojos(classLoader, currentModel.getFullNameSpace(), remoteTable, tableIndex);
+				String fullNameSpace = remoteTable.getRemoteDatabaseNamespace() != null ? remoteTable.getRemoteDatabaseNamespace() : currentModel.getFullNameSpace();
+				installTablePojos(classLoader, fullNameSpace, remoteTable, tableIndex);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -220,10 +205,10 @@ public class UniversalDB {
 			method.invoke(null, tableIndex, this);
 
 //			if (!tableModel.isRemoteTable()) {
-				entityClassByTableIndex.put(tableIndex, schemaClass);
-				String queryClassName = fullNamespace + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
-				Class<?> queryClass = Class.forName(queryClassName, true, classLoader);
-				queryClassByTableIndex.put(tableIndex, queryClass);
+			String queryClassName = fullNamespace + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
+			Class<?> queryClass = Class.forName(queryClassName, true, classLoader);
+			entityClassByTableIndex.put(tableIndex, schemaClass);
+			queryClassByTableIndex.put(tableIndex, queryClass);
 //			}
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException("Could not load entity class for tableIndex:" + tableIndex.getFQN());
