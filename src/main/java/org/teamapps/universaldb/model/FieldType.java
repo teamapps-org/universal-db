@@ -60,6 +60,13 @@ public enum FieldType {
 		return this == FILE;
 	}
 
+	public boolean isDateBased() {
+		return switch (this) {
+			case DATE, DATE_TIME, LOCAL_DATE, TIMESTAMP -> true;
+			default -> false;
+		};
+	}
+
 	public ColumnType getColumnType() {
 		return switch (this){
 			case BOOLEAN -> ColumnType.BOOLEAN;
