@@ -172,6 +172,16 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return id;
 	}
 
+	@Override
+	public String getTable() {
+		return tableIndex.getName();
+	}
+
+	@Override
+	public String getDatabase() {
+		return tableIndex.getDatabaseIndex().getName();
+	}
+
 	public int createdBy() {
 		FieldIndex fieldIndex = tableIndex.getFieldIndex(Table.FIELD_CREATED_BY);
 		return fieldIndex != null ? getIntValue((IntegerIndex) fieldIndex) : 0;

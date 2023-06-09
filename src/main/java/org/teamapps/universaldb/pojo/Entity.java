@@ -27,6 +27,10 @@ public interface Entity<ENTITY> extends Identifiable {
 
 	int getId();
 
+	String getTable();
+
+	String getDatabase();
+
 	void clearChanges();
 
 	boolean isChanged(String fieldName);

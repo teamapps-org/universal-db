@@ -26,4 +26,9 @@ public interface EntityBuilder<ENTITY> {
 	ENTITY build(int id);
 
 	int getTableId();
+
+	String getTable();
+
+	String getDatabase();
+
 }
