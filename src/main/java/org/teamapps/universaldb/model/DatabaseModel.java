@@ -486,6 +486,9 @@ public class DatabaseModel {
 	}
 
 	private EnumModel addEnum(EnumModel enumModel) {
+		if (enums.stream().anyMatch(e -> e.getName().equalsIgnoreCase(enumModel.getName()))) {
+			throw new RuntimeException("Error: enum with name " + enumModel.getName() + " already exists!");
+		}
 		enums.add(enumModel);
 		return enumModel;
 	}
@@ -502,6 +505,9 @@ public class DatabaseModel {
 	}
 
 	private TableModel addTable(TableModel tableModel) {
+		if (tables.stream().anyMatch(e -> e.getName().equalsIgnoreCase(tableModel.getName()))) {
+			throw new RuntimeException("Error: enum with name " + tableModel.getName() + " already exists!");
+		}
 		tables.add(tableModel);
 		return tableModel;
 	}

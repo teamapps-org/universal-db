@@ -53,17 +53,16 @@ public class TransactionIndex {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final File path;
-	private LogIndex transactionLog;
-	private LogIndex modelsLog;
+	private final LogIndex transactionLog;
+	private final LogIndex modelsLog;
 	private PrimitiveEntryAtomicStore databaseStats;
 	private volatile boolean active = true;
 
 	private DatabaseModel currentModel;
 	private ModelUpdate currentModelUpdate;
 
-	public TransactionIndex(File basePath, boolean skipIndexCheck) {
-		this.path = new File(basePath, "transactions");
-		this.path.mkdir();
+	public TransactionIndex(File path, boolean skipIndexCheck) {
+		this.path = path;
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
 		this.modelsLog = new DefaultLogIndex(this.path, "models");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
