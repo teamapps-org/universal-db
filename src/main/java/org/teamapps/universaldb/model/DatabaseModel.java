@@ -617,5 +617,17 @@ public class DatabaseModel {
 		return bos.toByteArray();
 	}
 
-
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Database model: ").append(name).append(", ").append(title).append(", ns:").append(namespace).append(", build:").append(pojoBuildTime).append(", version:").append(version).append("\n");
+		sb.append("Tables: ").append(tables.size()).append("\n");
+		for (TableModel table : tables) {
+			sb.append("\t").append(table.getName()).append(", ").append(table.getTitle()).append(", (").append(table.getTableId()).append(")").append("\n");
+			for (FieldModel field : table.getFields()) {
+				sb.append("\t").append("\t").append(field.getName()).append(", ").append(field.getTitle()).append(", ").append(field.getFieldType()).append(", (").append(field.getFieldId()).append(")").append("\n");
+			}
+		}
+		return sb.toString();
+	}
 }
