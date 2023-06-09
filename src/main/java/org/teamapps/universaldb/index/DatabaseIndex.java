@@ -39,23 +39,16 @@ public class DatabaseIndex {
 	private final String name;
 	private final File dataPath;
 	private final File fullTextIndexPath;
-	private final File fileStorePath;
 	private final List<TableIndex> tables;
 	private final DatabaseFileStore databaseFileStore;
 	private DatabaseModel databaseModel;
 
-	public DatabaseIndex(String name, File basePath, DatabaseFileStore databaseFileStore) {
-		this(name, new File(basePath, "db"), new File(basePath, "text"), new File(basePath, "files"), databaseFileStore);
-	}
-	public DatabaseIndex(String name, File dataPath, File fullTextIndexPath, File fileStorePath, DatabaseFileStore databaseFileStore) {
+
+	public DatabaseIndex(String name, File dataPath, File fullTextIndexPath, DatabaseFileStore databaseFileStore) {
 		this.name = name;
 		this.dataPath = dataPath;
 		this.fullTextIndexPath = fullTextIndexPath;
-		this. fileStorePath = fileStorePath;
 		this.databaseFileStore = databaseFileStore;
-		dataPath.mkdir();
-		fullTextIndexPath.mkdir();
-		fileStorePath.mkdir();
 		this.tables = new ArrayList<>();
 	}
 
