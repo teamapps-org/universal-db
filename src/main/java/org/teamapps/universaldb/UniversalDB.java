@@ -211,7 +211,7 @@ public class UniversalDB {
 			queryClassByTableIndex.put(tableIndex, queryClass);
 //			}
 		} catch (ClassNotFoundException e) {
-			throw new RuntimeException("Could not load entity class for tableIndex:" + tableIndex.getFQN());
+			throw new RuntimeException("Could not load entity class for tableIndex:" + tableIndex.getFQN() + ", " + e.getMessage());
 		} catch (Exception e) {
 			throw e;
 		}

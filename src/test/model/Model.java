@@ -37,6 +37,11 @@ public class Model implements ModelProvider {
 		TableModel person = model.createTable("person");
 		TableModel company = model.createTable("company");
 		TableModel contract = model.createTable("contract");
+		TableModel enumTestTable = model.createTable("enumTestTable");
+
+		enumTestTable.addEnum(contractEnum);
+		enumTestTable.addEnum("otherEnum", contractEnum);
+		enumTestTable.addEnum("otherEnum2", "Other 2", contractEnum);
 
 		table.addBoolean("booleanField");
 		table.addShort("shortField");

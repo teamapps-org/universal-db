@@ -244,6 +244,9 @@ public class TableModel {
 	}
 
 	public EnumFieldModel addEnum(String name, String title, EnumModel enumModel) {
+		if (enumModel == null) {
+			throw new RuntimeException("Error: missing enum model for field:" + name);
+		}
 		EnumFieldModel enumFieldModel = new EnumFieldModel(name, title, this, enumModel);
 		addFieldModel(enumFieldModel);
 		return enumFieldModel;

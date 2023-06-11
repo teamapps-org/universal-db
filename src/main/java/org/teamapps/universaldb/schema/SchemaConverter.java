@@ -50,9 +50,10 @@ public class SchemaConverter {
 	public static List<DatabaseModel> convertSchema(Schema schema) {
 		List<DatabaseModel> models = new ArrayList<>();
 		String pojoNamespace = schema.getPojoNamespace();
+		String schemaName = schema.getSchemaName();
 
 		for (Database database : schema.getDatabases()) {
-			DatabaseModel model = new DatabaseModel(database.getName(), database.getName(), pojoNamespace);
+			DatabaseModel model = new DatabaseModel(database.getName(), database.getName(), pojoNamespace, schemaName);
 			models.add(model);
 			for (Table table : database.getAllTables()) {
 				if (table.isView()) {
