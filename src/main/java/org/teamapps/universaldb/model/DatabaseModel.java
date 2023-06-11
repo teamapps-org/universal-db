@@ -34,6 +34,7 @@ public class DatabaseModel {
 	private final String name;
 	private final String title;
 	private final String namespace;
+	private final String modelClassName;
 	private final List<EnumModel> enums = new ArrayList<>();
 	private final List<TableModel> tables = new ArrayList<>();
 	private final List<ViewModel> views = new ArrayList<>(); //todo remove!
@@ -48,10 +49,15 @@ public class DatabaseModel {
 	}
 
 	public DatabaseModel(String name, String title, String namespace) {
-		this.name = NamingUtils.createName(title);
+		this(name, title, namespace, NamingUtils.createName(name) + "Model");
+	}
+
+	public DatabaseModel(String name, String title, String namespace, String modelClassName) {
+		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);
 		this.namespace = namespace;
 		this.pojoBuildTime = System.currentTimeMillis();
+		this.modelClassName = NamingUtils.createName(modelClassName);
 	}
 
 	public DatabaseModel(byte[] bytes) throws IOException {
@@ -62,6 +68,7 @@ public class DatabaseModel {
 		name = MessageUtils.readString(dis);
 		title = MessageUtils.readString(dis);
 		namespace = MessageUtils.readString(dis);
+		modelClassName = MessageUtils.readString(dis);
 		pojoBuildTime = dis.readLong();
 		version = dis.readInt();
 		dateCreated = dis.readInt();
@@ -88,6 +95,7 @@ public class DatabaseModel {
 		MessageUtils.writeString(dos, name);
 		MessageUtils.writeString(dos, title);
 		MessageUtils.writeString(dos, namespace);
+		MessageUtils.writeString(dos, modelClassName);
 		dos.writeLong(pojoBuildTime);
 		dos.writeInt(version);
 		dos.writeInt(dateCreated);
@@ -550,6 +558,10 @@ public class DatabaseModel {
 
 	public String getNamespace() {
 		return namespace;
+	}
+
+	public String getModelClassName() {
+		return modelClassName;
 	}
 
 	public String getFullNameSpace() {
