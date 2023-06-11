@@ -25,6 +25,7 @@ import org.teamapps.universaldb.pojo.template.PojoTemplate;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,25 +89,26 @@ public class PojoCodeGenerator {
 
 	public void createModelProviderClass(DatabaseModel model, File baseDir) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createModelProviderClass();
-		String type = tpl.firstUpper(model.getName() + "Model");
+		String type = tpl.firstUpper(model.getModelClassName());
 		createModelProviderClass(tpl, model);
 		tpl.writeTemplate(type, baseDir);
 	}
 
 	public void createModelProviderClass(PojoTemplate tpl, DatabaseModel model) throws IOException {
 		tpl.setValue("package", model.getNamespace());
-		String type = tpl.firstUpper(model.getName() + "Model");
+		String type = tpl.firstUpper(model.getModelClassName());
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(tabs(2))
 				.append("DatabaseModel model = new DatabaseModel(")
 				.append(withQuotes(model.getName())).append(", ")
 				.append(withQuotes(model.getTitle())).append(", ")
-				.append(withQuotes(model.getNamespace())).append(");")
+				.append(withQuotes(model.getNamespace())).append(", ")
+				.append(withQuotes(model.getModelClassName())).append(");")
 				.append(tpl.nl());
 		sb.append(tabs(2)).append("model.setPojoBuildTime(").append(System.currentTimeMillis()).append("L);").append(tpl.nl());
 
-		for (EnumModel enumModel : model.getEnums()) {
+		for (EnumModel enumModel : model.getEnums().stream().sorted(Comparator.comparing(EnumModel::getName)).toList()) {
 			sb.append(tabs(2))
 					.append("model.createEnum(")
 					.append(withQuotes(enumModel.getName())).append(", ")
@@ -116,7 +118,7 @@ public class PojoCodeGenerator {
 					.append(tpl.nl());
 		}
 		sb.append(tpl.nl());
-		for (TableModel table : model.getLocalTables()) {
+		for (TableModel table : model.getLocalTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			sb.append(tabs(2))
 					.append("TableModel ")
 					.append(table.getName()).append("Table").append(" = ")
@@ -129,7 +131,7 @@ public class PojoCodeGenerator {
 					.append(tpl.nl());
 		}
 
-		for (TableModel table : model.getRemoteTables()) {
+		for (TableModel table : model.getRemoteTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			sb.append(tabs(2))
 					.append("TableModel ")
 					.append(table.getName()).append("Table").append(" = ")
@@ -140,7 +142,7 @@ public class PojoCodeGenerator {
 					.append(tpl.nl());
 		}
 
-		for (TableModel table : model.getTables()) {
+		for (TableModel table : model.getTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			sb.append(tpl.nl());
 			for (FieldModel field : table.getFields().stream().filter(f -> !f.isMetaField()).toList()) {
 				sb.append(tabs(2))
@@ -169,7 +171,7 @@ public class PojoCodeGenerator {
 		}
 		sb.append(tpl.nl());
 
-		for (TableModel table : model.getTables()) {
+		for (TableModel table : model.getTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			for (ReferenceFieldModel referenceField : table.getReferenceFields().stream().filter(rf -> rf.getReverseReferenceField() != null).toList()) {
 				sb.append(tabs(2))
 						.append("model.addReverseReferenceField(")
