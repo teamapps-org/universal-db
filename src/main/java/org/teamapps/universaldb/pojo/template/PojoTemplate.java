@@ -25,10 +25,7 @@ import org.teamapps.universaldb.index.binary.BinaryFilter;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.translation.TranslatableTextFilter;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
-import org.teamapps.universaldb.model.FieldModel;
-import org.teamapps.universaldb.model.FieldType;
-import org.teamapps.universaldb.model.ReferenceFieldModel;
-import org.teamapps.universaldb.model.TableModel;
+import org.teamapps.universaldb.model.*;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
@@ -116,7 +113,8 @@ public class PojoTemplate {
 			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
 			tpl = TemplateUtil.setValue(tpl, "reference", firstUpper(referenceFieldModel.getReferencedTable().getName()));
 		} else if (type == ColumnType.ENUM) {
-			String enumType = firstUpper(fieldModel.getName());
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
 			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
@@ -139,7 +137,8 @@ public class PojoTemplate {
 			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
 			tpl = TemplateUtil.setValue(tpl, "reference", firstUpper(referenceFieldModel.getReferencedTable().getName()));
 		} else if (type == ColumnType.ENUM) {
-			String enumType = firstUpper(fieldModel.getName());
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
 			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
@@ -164,7 +163,9 @@ public class PojoTemplate {
 			tpl = TemplateUtil.setValue(tpl, "otherType", firstUpper(referenceFieldModel.getReferencedTable().getName()));
 			tpl = TemplateUtil.setValue(tpl, "name2", fieldModel.getName());
 		} else if (type == ColumnType.ENUM) {
-			//...
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
+			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
 		return true;
@@ -188,7 +189,9 @@ public class PojoTemplate {
 			tpl = TemplateUtil.setValue(tpl, "otherType", firstUpper(referenceFieldModel.getReferencedTable().getName()));
 			tpl = TemplateUtil.setValue(tpl, "name2", fieldModel.getName());
 		} else if (type == ColumnType.ENUM) {
-			//...
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
+			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
 		return true;
@@ -197,7 +200,8 @@ public class PojoTemplate {
 	public void addQueryInterfaceMethod(FieldModel fieldModel, String query, boolean orQuery) {
 		String name = orQuery ? "or" + firstUpper(fieldModel.getName()) : fieldModel.getName();
 		if (fieldModel.getFieldType() == FieldType.ENUM) {
-			String method = "\t" + query + " " + name + "(EnumFilterType filterType, " +  firstUpper(fieldModel.getName()) + " ... enums);";
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String method = "\t" + query + " " + name + "(EnumFilterType filterType, " +  firstUpper(enumFieldModel.getEnumModel().getName()) + " ... enums);";
 			methods.add(method);
 		} else {
 			String method = "\t" + query + " " + name + "(" + getFilterTypeName(fieldModel.getFieldType()) + " filter);";
@@ -271,8 +275,9 @@ public class PojoTemplate {
 		String name = fieldModel.getName();
 		String tpl = orQuery ? blocks.get("QUERY_METHOD_OR") : blocks.get("QUERY_METHOD");
 		if (fieldModel.getFieldType() == FieldType.ENUM) {
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
 			tpl = orQuery ? blocks.get("QUERY_ENUMS_OR") : blocks.get("QUERY_ENUMS");
-			tpl = TemplateUtil.setValue(tpl, "enumType", firstUpper(fieldModel.getName()));
+			tpl = TemplateUtil.setValue(tpl, "enumType", firstUpper(enumFieldModel.getEnumModel().getName()));
 		}
 		tpl = TemplateUtil.setValue(tpl, "query", query);
 		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(name));

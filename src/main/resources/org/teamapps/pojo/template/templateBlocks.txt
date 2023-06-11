@@ -398,8 +398,8 @@ protected static {type} {name};
 #
 {ENTITY_GET_METHOD_ENUM}#
 	@Override
-	public {name} get{name}() {
-	    return getEnumValue({name2}, {name}.values());
+	public {enum} get{name}() {
+	    return getEnumValue({name2}, {enum}.values());
 	}
 #
 
@@ -619,7 +619,7 @@ protected static {type} {name};
 #
 {ENTITY_SET_METHOD_ENUM}#
 	@Override
-	public {type} set{name}({name} value) {
+	public {type} set{name}({enum} value) {
     	setEnumValue(this.{name2}, value);
 		return this;
 	}
