@@ -103,7 +103,10 @@ public class SchemaConverter {
 							case LOCAL_DATE -> tbl.addLocalDate(column.getName());
 							case ENUM -> {
 								List<String> enumValues = column.getEnumValues();
-								EnumModel enumModel = model.createEnum(column.getName(), enumValues);
+								EnumModel enumModel = model.getEnumModel(column.getName());
+								if (enumModel == null) {
+									enumModel = model.createEnum(column.getName(), enumValues);
+								}
 								tbl.addEnum(enumModel);
 							}
 							case BINARY -> tbl.addByteArray(column.getName());
