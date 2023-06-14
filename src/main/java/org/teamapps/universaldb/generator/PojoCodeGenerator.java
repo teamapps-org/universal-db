@@ -110,6 +110,7 @@ public class PojoCodeGenerator {
 
 		for (EnumModel enumModel : model.getEnums().stream().sorted(Comparator.comparing(EnumModel::getName)).toList()) {
 			sb.append(tabs(2))
+					.append("EnumModel ").append(enumModel.getName()).append(" = ")
 					.append("model.createEnum(")
 					.append(withQuotes(enumModel.getName())).append(", ")
 					.append(withQuotes(enumModel.getTitle())).append(", ")
@@ -121,7 +122,7 @@ public class PojoCodeGenerator {
 		for (TableModel table : model.getLocalTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			sb.append(tabs(2))
 					.append("TableModel ")
-					.append(table.getName()).append("Table").append(" = ")
+					.append(table.getName()).append(" = ")
 					.append("model.createTable(")
 					.append(withQuotes(table.getName())).append(", ")
 					.append(withQuotes(table.getTitle())).append(", ")
@@ -134,7 +135,7 @@ public class PojoCodeGenerator {
 		for (TableModel table : model.getRemoteTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			sb.append(tabs(2))
 					.append("TableModel ")
-					.append(table.getName()).append("Table").append(" = ")
+					.append(table.getName()).append(" = ")
 					.append("model.createRemoteTable(")
 					.append(withQuotes(table.getName())).append(", ")
 					.append(withQuotes(table.getTitle())).append(", ")
@@ -146,19 +147,19 @@ public class PojoCodeGenerator {
 			sb.append(tpl.nl());
 			for (FieldModel field : table.getFields().stream().filter(f -> !f.isMetaField()).toList()) {
 				sb.append(tabs(2))
-						.append(table.getName()).append("Table.")
+						.append(table.getName()).append(".")
 						.append(getAddMethodName(field.getFieldType())).append("(")
 						.append(withQuotes(field.getName())).append(", ")
 						.append(withQuotes(field.getTitle()));
 				if (field.getFieldType().isReference()) {
 					ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) field;
 					sb.append(", ")
-							.append(withQuotes(referenceFieldModel.getReferencedTable().getName())).append(", ")
+							.append(referenceFieldModel.getReferencedTable().getName()).append(", ")
 							.append(withBoolean(referenceFieldModel.isCascadeDelete()));
 				} else if (field.getFieldType().isEnum()) {
 					EnumFieldModel enumFieldModel = (EnumFieldModel) field;
 					sb.append(", ")
-							.append(withQuotes(enumFieldModel.getEnumModel().getName()));
+							.append(enumFieldModel.getEnumModel().getName());
 				} else if (field.getFieldType().isFile()) {
 					FileFieldModel fileFieldModel = (FileFieldModel) field;
 					sb.append(", ")
@@ -175,9 +176,9 @@ public class PojoCodeGenerator {
 			for (ReferenceFieldModel referenceField : table.getReferenceFields().stream().filter(rf -> rf.getReverseReferenceField() != null).toList()) {
 				sb.append(tabs(2))
 						.append("model.addReverseReferenceField(")
-						.append(table.getName()).append("Table").append(", ")
+						.append(table.getName()).append(", ")
 						.append(withQuotes(referenceField.getName())).append(", ")
-						.append(referenceField.getReferencedTable().getName()).append("Table").append(", ")
+						.append(referenceField.getReferencedTable().getName()).append(", ")
 						.append(withQuotes(referenceField.getReverseReferenceField().getName()))
 						.append(");").append(tpl.nl());
 			}

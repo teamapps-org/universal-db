@@ -524,7 +524,7 @@ public class DatabaseModel {
 		return enums.stream()
 				.filter(e -> e.getName().equals(enumModelName))
 				.findAny()
-				.orElseThrow();
+				.orElse(null);
 	}
 
 	public List<EnumModel> getEnums() {
