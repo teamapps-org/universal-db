@@ -767,14 +767,23 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 
 	public void deleteRecord(UniversalDB database) {
 		TransactionRequest transactionRequest = database.createTransactionRequest();
-		transactionRequest.addRecord(TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id));
+		TransactionRequestRecord deleteRecord = TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id);
+		transactionRequest.addRecord(deleteRecord);
+		if (entityChangeSet != null) {
+			entityChangeSet.setTransactionRecordMetaValues(deleteRecord, database);
+		}
 		clearChanges();
 		database.executeTransaction(transactionRequest);
 	}
 
 	public void restoreDeletedRecord(UniversalDB database) {
 		TransactionRequest transactionRequest = database.createTransactionRequest();
-		transactionRequest.addRecord(TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id));
+		TransactionRequestRecord restoreRecord = TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id);
+		transactionRequest.addRecord(restoreRecord);
+		if (entityChangeSet != null) {
+			entityChangeSet.setTransactionRecordMetaValues(restoreRecord, database);
+		}
+		clearChanges();
 		database.executeTransaction(transactionRequest);
 	}
 

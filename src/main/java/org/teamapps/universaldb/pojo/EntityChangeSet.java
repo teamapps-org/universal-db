@@ -34,6 +34,7 @@ import org.teamapps.universaldb.index.transaction.request.TransactionRequest;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecord;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequestRecordValue;
 import org.teamapps.universaldb.model.FileFieldModel;
+import org.teamapps.universaldb.model.TableModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,6 +80,18 @@ public class EntityChangeSet {
 
 	public TransactionRequestRecordValue getChangeValue(FieldIndex index) {
 		return changeMap.get(index.getMappingId());
+	}
+
+	public void setTransactionRecordMetaValues(TransactionRequestRecord record, UniversalDB database) {
+		List<TransactionRequestRecordValue> changeValues = new ArrayList<>(changeMap.values());
+		for (TransactionRequestRecordValue recordValue : changeValues) {
+			if (recordValue.getValue() != null) {
+				FieldIndex fieldIndex = database.getColumnById(recordValue.getColumnId());
+				if (fieldIndex.getFieldModel().isMetaField()) {
+					record.addRecordValue(recordValue);
+				}
+			}
+		}
 	}
 
 	public void setTransactionRequestRecordValues(TransactionRequest transactionRequest, TransactionRequestRecord record, UniversalDB database) {
