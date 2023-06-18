@@ -26,6 +26,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class FieldModel implements BaseFieldModel {
+	private final static int FIELD_MODEL_VERSION = 1;
+
 	private final String name;
 	private String title;
 	private final TableModel tableModel;
@@ -51,6 +53,7 @@ public class FieldModel implements BaseFieldModel {
 	}
 
 	protected FieldModel(DataInputStream dis, TableModel model) throws IOException {
+		int modelVersion = dis.readInt();
 		name = MessageUtils.readString(dis);
 		title = MessageUtils.readString(dis);
 		tableModel = model;
@@ -65,6 +68,7 @@ public class FieldModel implements BaseFieldModel {
 	}
 
 	public void write(DataOutputStream dos) throws IOException {
+		dos.writeInt(FIELD_MODEL_VERSION);
 		MessageUtils.writeString(dos, name);
 		MessageUtils.writeString(dos, title);
 		dos.writeInt(fieldType.getId());

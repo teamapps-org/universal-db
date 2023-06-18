@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TableModel {
-
 	public final static String FIELD_CREATION_DATE = "metaCreationDate";
 	public final static String FIELD_CREATED_BY = "metaCreatedBy";
 	public final static String FIELD_MODIFICATION_DATE = "metaModificationDate";
@@ -39,25 +38,14 @@ public class TableModel {
 	public final static String FIELD_DELETED_BY = "metaDeletedBy";
 	public final static String FIELD_RESTORE_DATE = "metaRestoreDate";
 	public final static String FIELD_RESTORED_BY = "metaRestoredBy";
-
 	public final static String FIELD_ID = "id";
-
 	public static final String[] FORBIDDEN_COLUMN_NAMES = new String[]{FIELD_CREATION_DATE, FIELD_CREATED_BY, FIELD_MODIFICATION_DATE, FIELD_MODIFIED_BY, FIELD_DELETION_DATE, FIELD_DELETED_BY, FIELD_RESTORE_DATE, FIELD_RESTORED_BY, FIELD_ID, "coll-recs", "coll-del-recs", "versioning-pos", "matches"};
-
-	public static boolean isReservedMetaName(String name) {
-		for (String columnName : FORBIDDEN_COLUMN_NAMES) {
-			if (name.equals(columnName)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-
+	private final static int TABLE_MODEL_VERSION = 1;
 	private final DatabaseModel databaseModel;
 	private final String name;
 	private final String title;
 	private final boolean remoteTable;
+	private final String remoteTableName;
 	private final String remoteDatabase;
 	private final String remoteDatabaseNamespace;
 	private final boolean trackModifications;
@@ -71,13 +59,17 @@ public class TableModel {
 	private int dateModified;
 	private int versionCreated;
 	private int versionModified;
-
 	protected TableModel(DatabaseModel databaseModel, String name, String title, boolean remoteTable, String remoteDatabase, String remoteDatabaseNamespace, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
+		this(databaseModel, name, title, remoteTable, null, remoteDatabase, remoteDatabaseNamespace, trackModifications, versioning, recoverableRecords);
+	}
+
+	protected TableModel(DatabaseModel databaseModel, String name, String title, boolean remoteTable, String remoteTableName, String remoteDatabase, String remoteDatabaseNamespace, boolean trackModifications, boolean versioning, boolean recoverableRecords) {
 		NamingUtils.checkName(name, title);
 		this.databaseModel = databaseModel;
 		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);
 		this.remoteTable = remoteTable;
+		this.remoteTableName = remoteTableName != null ? remoteTableName : name;
 		this.remoteDatabase = remoteDatabase;
 		this.remoteDatabaseNamespace = remoteDatabaseNamespace;
 		this.trackModifications = trackModifications;
@@ -99,9 +91,11 @@ public class TableModel {
 
 	protected TableModel(DataInputStream dis, List<Function<DatabaseModel, Boolean>> resolveFunctions, DatabaseModel databaseModel) throws IOException {
 		this.databaseModel = databaseModel;
+		int modelVersion = dis.readInt();
 		name = MessageUtils.readString(dis);
 		title = MessageUtils.readString(dis);
 		remoteTable = dis.readBoolean();
+		remoteTableName = remoteTable ? MessageUtils.readString(dis) : null;
 		remoteDatabase = remoteTable ? MessageUtils.readString(dis) : null;
 		remoteDatabaseNamespace = remoteTable ? MessageUtils.readString(dis) : null;
 		trackModifications = dis.readBoolean();
@@ -129,11 +123,22 @@ public class TableModel {
 		}
 	}
 
+	public static boolean isReservedMetaName(String name) {
+		for (String columnName : FORBIDDEN_COLUMN_NAMES) {
+			if (name.equals(columnName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void write(DataOutputStream dos) throws IOException {
+		dos.writeInt(TABLE_MODEL_VERSION);
 		MessageUtils.writeString(dos, name);
 		MessageUtils.writeString(dos, title);
 		dos.writeBoolean(remoteTable);
 		if (remoteTable) {
+			MessageUtils.writeString(dos, remoteTableName);
 			MessageUtils.writeString(dos, remoteDatabase);
 			MessageUtils.writeString(dos, remoteDatabaseNamespace);
 		}
@@ -152,7 +157,6 @@ public class TableModel {
 			dos.writeInt(field.getFieldType().getId());
 			field.write(dos);
 		}
-
 	}
 
 	public FieldModel getField(String fieldName) {
@@ -164,12 +168,12 @@ public class TableModel {
 		return fieldModel != null && fieldModel.getFieldType().isReference() ? (ReferenceFieldModel) fieldModel : null;
 	}
 
-	public ReferenceFieldModel addReference(String title, TableModel referencedTable) {
-		return addReference(title, referencedTable, false);
+	public ReferenceFieldModel addReference(String name, TableModel referencedTable) {
+		return addReference(name, referencedTable, false);
 	}
 
-	public ReferenceFieldModel addReference(String title, TableModel referencedTable, boolean cascadeDelete) {
-		return addReference(title, title, referencedTable, cascadeDelete);
+	public ReferenceFieldModel addReference(String name, TableModel referencedTable, boolean cascadeDelete) {
+		return addReference(name, name, referencedTable, cascadeDelete);
 	}
 
 	public ReferenceFieldModel addReference(String name, String title, String referencedTable, boolean cascadeDelete) {
@@ -183,12 +187,12 @@ public class TableModel {
 		return referenceFieldModel;
 	}
 
-	public ReferenceFieldModel addReference(String title, ReferenceFieldModel reverseReference) {
-		return addReference(title, reverseReference, false);
+	public ReferenceFieldModel addReference(String name, ReferenceFieldModel reverseReference) {
+		return addReference(name, reverseReference, false);
 	}
 
-	public ReferenceFieldModel addReference(String title, ReferenceFieldModel reverseReference, boolean cascadeDelete) {
-		return addReference(title, title, reverseReference, cascadeDelete);
+	public ReferenceFieldModel addReference(String name, ReferenceFieldModel reverseReference, boolean cascadeDelete) {
+		return addReference(name, name, reverseReference, cascadeDelete);
 	}
 
 	public ReferenceFieldModel addReference(String name, String title, ReferenceFieldModel reverseReference, boolean cascadeDelete) {
@@ -197,12 +201,12 @@ public class TableModel {
 		return referenceFieldModel;
 	}
 
-	public ReferenceFieldModel addMultiReference(String title, TableModel referencedTable) {
-		return addMultiReference(title, referencedTable, false);
+	public ReferenceFieldModel addMultiReference(String name, TableModel referencedTable) {
+		return addMultiReference(name, referencedTable, false);
 	}
 
-	public ReferenceFieldModel addMultiReference(String title, TableModel referencedTable, boolean cascadeDelete) {
-		return addMultiReference(title, title, referencedTable, cascadeDelete);
+	public ReferenceFieldModel addMultiReference(String name, TableModel referencedTable, boolean cascadeDelete) {
+		return addMultiReference(name, name, referencedTable, cascadeDelete);
 	}
 
 	public ReferenceFieldModel addMultiReference(String name, String title, String referencedTable, boolean cascadeDelete) {
@@ -216,12 +220,12 @@ public class TableModel {
 		return referenceFieldModel;
 	}
 
-	public ReferenceFieldModel addMultiReference(String title, ReferenceFieldModel reverseReference) {
-		return addMultiReference(title, reverseReference, false);
+	public ReferenceFieldModel addMultiReference(String name, ReferenceFieldModel reverseReference) {
+		return addMultiReference(name, reverseReference, false);
 	}
 
-	public ReferenceFieldModel addMultiReference(String title, ReferenceFieldModel reverseReference, boolean cascadeDelete) {
-		return addMultiReference(title, title, reverseReference, cascadeDelete);
+	public ReferenceFieldModel addMultiReference(String name, ReferenceFieldModel reverseReference, boolean cascadeDelete) {
+		return addMultiReference(name, name, reverseReference, cascadeDelete);
 	}
 
 	public ReferenceFieldModel addMultiReference(String name, String title, ReferenceFieldModel reverseReference, boolean cascadeDelete) {
@@ -234,8 +238,8 @@ public class TableModel {
 		return addEnum(enumModel.getName(), enumModel.getTitle(), enumModel);
 	}
 
-	public EnumFieldModel addEnum(String title, EnumModel enumModel) {
-		return addEnum(title, title, enumModel);
+	public EnumFieldModel addEnum(String name, EnumModel enumModel) {
+		return addEnum(name, name, enumModel);
 	}
 
 	public EnumFieldModel addEnum(String name, String title, String enumName) {
@@ -252,8 +256,8 @@ public class TableModel {
 		return enumFieldModel;
 	}
 
-	public FileFieldModel addFile(String title) {
-		return addFile(title, title, true, true);
+	public FileFieldModel addFile(String name) {
+		return addFile(name, name, true, true);
 	}
 
 	public FileFieldModel addFile(String name, String title) {
@@ -270,60 +274,60 @@ public class TableModel {
 		return fileFieldModel;
 	}
 
-	public FieldModel addBoolean(String title) {
-		return addFieldModel(title, FieldType.BOOLEAN);
+	public FieldModel addBoolean(String name) {
+		return addFieldModel(name, FieldType.BOOLEAN);
 	}
 
-	public FieldModel addShort(String title) {
-		return addFieldModel(title, FieldType.SHORT);
+	public FieldModel addShort(String name) {
+		return addFieldModel(name, FieldType.SHORT);
 	}
 
-	public FieldModel addInteger(String title) {
-		return addFieldModel(title, FieldType.INT);
+	public FieldModel addInteger(String name) {
+		return addFieldModel(name, FieldType.INT);
 	}
 
-	public FieldModel addLong(String title) {
-		return addFieldModel(title, FieldType.LONG);
+	public FieldModel addLong(String name) {
+		return addFieldModel(name, FieldType.LONG);
 	}
 
-	public FieldModel addFloat(String title) {
-		return addFieldModel(title, FieldType.FLOAT);
+	public FieldModel addFloat(String name) {
+		return addFieldModel(name, FieldType.FLOAT);
 	}
 
-	public FieldModel addDouble(String title) {
-		return addFieldModel(title, FieldType.DOUBLE);
+	public FieldModel addDouble(String name) {
+		return addFieldModel(name, FieldType.DOUBLE);
 	}
 
-	public FieldModel addText(String title) {
-		return addFieldModel(title, FieldType.TEXT);
+	public FieldModel addText(String name) {
+		return addFieldModel(name, FieldType.TEXT);
 	}
 
-	public FieldModel addTranslatableText(String title) {
-		return addFieldModel(title, FieldType.TRANSLATABLE_TEXT);
+	public FieldModel addTranslatableText(String name) {
+		return addFieldModel(name, FieldType.TRANSLATABLE_TEXT);
 	}
 
-	public FieldModel addByteArray(String title) {
-		return addFieldModel(title, FieldType.BINARY);
+	public FieldModel addByteArray(String name) {
+		return addFieldModel(name, FieldType.BINARY);
 	}
 
-	public FieldModel addTimestamp(String title) {
-		return addFieldModel(title, FieldType.TIMESTAMP);
+	public FieldModel addTimestamp(String name) {
+		return addFieldModel(name, FieldType.TIMESTAMP);
 	}
 
-	public FieldModel addLocalDate(String title) {
-		return addFieldModel(title, FieldType.LOCAL_DATE);
+	public FieldModel addLocalDate(String name) {
+		return addFieldModel(name, FieldType.LOCAL_DATE);
 	}
 
-	public FieldModel addDateTime(String title) {
-		return addFieldModel(title, FieldType.DATE_TIME);
+	public FieldModel addDateTime(String name) {
+		return addFieldModel(name, FieldType.DATE_TIME);
 	}
 
-	public FieldModel addDate(String title) {
-		return addFieldModel(title, FieldType.DATE);
+	public FieldModel addDate(String name) {
+		return addFieldModel(name, FieldType.DATE);
 	}
 
-	public FieldModel addTime(String title) {
-		return addFieldModel(title, FieldType.TIME);
+	public FieldModel addTime(String name) {
+		return addFieldModel(name, FieldType.TIME);
 	}
 
 	public FieldModel addBoolean(String name, String title) {
@@ -404,6 +408,10 @@ public class TableModel {
 
 	public String getTitle() {
 		return title;
+	}
+
+	public String getRemoteTableName() {
+		return remoteTableName;
 	}
 
 	public boolean isRemoteTable() {

@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DatabaseModel {
+	private final static int DATABASE_MODEL_VERSION = 1;
 
 	private final String name;
 	private final String title;
@@ -65,6 +66,7 @@ public class DatabaseModel {
 	}
 
 	public DatabaseModel(DataInputStream dis) throws IOException {
+		int modelVersion = dis.readInt();
 		name = MessageUtils.readString(dis);
 		title = MessageUtils.readString(dis);
 		namespace = MessageUtils.readString(dis);
@@ -92,6 +94,7 @@ public class DatabaseModel {
 	}
 
 	public void write(DataOutputStream dos) throws IOException {
+		dos.writeInt(DATABASE_MODEL_VERSION);
 		MessageUtils.writeString(dos, name);
 		MessageUtils.writeString(dos, title);
 		MessageUtils.writeString(dos, namespace);
@@ -495,6 +498,12 @@ public class DatabaseModel {
 		return addTable(tableModel);
 	}
 
+	public TableModel createRemoteTable(String name, String title, String tableName, String databaseName, String namespace) {
+		TableModel tableModel = new TableModel(this, name, title, true, tableName, databaseName, namespace, false, false, false);
+		return addTable(tableModel);
+	}
+
+
 	public EnumModel createEnum(String title, String... values) {
 		return createEnum(title, Arrays.asList(values));
 	}
@@ -533,7 +542,7 @@ public class DatabaseModel {
 
 	private TableModel addTable(TableModel tableModel) {
 		if (tables.stream().anyMatch(e -> e.getName().equalsIgnoreCase(tableModel.getName()))) {
-			throw new RuntimeException("Error: enum with name " + tableModel.getName() + " already exists!");
+			throw new RuntimeException("Error: table with name " + tableModel.getName() + " already exists!");
 		}
 		tables.add(tableModel);
 		return tableModel;
