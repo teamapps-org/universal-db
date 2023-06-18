@@ -67,7 +67,7 @@ public class DatabaseIndex {
 	public void installModel(DatabaseModel model, boolean checkFullTextIndex, UniversalDB universalDB) {
 		this.databaseModel = model;
 
-		ByKeyComparisonResult<TableIndex, TableModel, String> compareResult = CollectionUtil.compareByKey(tables, databaseModel.getTables(), TableIndex::getName, TableModel::getName, true);
+		ByKeyComparisonResult<TableIndex, TableModel, String> compareResult = CollectionUtil.compareByKey(tables, databaseModel.getLocalTables(), TableIndex::getName, TableModel::getName, true);
 		//unknown table indices for this model
 		if (!compareResult.getAEntriesNotInB().isEmpty()) {
 			throw new RuntimeException("Unknown table indices that are not within the model:" + compareResult.getAEntriesNotInB().stream().map(TableIndex::getName).collect(Collectors.joining(", ")));
