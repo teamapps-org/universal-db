@@ -66,6 +66,7 @@ public class TransactionIndex {
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
 		this.modelsLog = new DefaultLogIndex(this.path, "models");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
+		logger.info("Open transaction index on: {}", path.getAbsolutePath());
 		init();
 		if (!skipIndexCheck) {
 			checkIndex();

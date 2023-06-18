@@ -139,7 +139,9 @@ public class PojoCodeGenerator {
 					.append("model.createRemoteTable(")
 					.append(withQuotes(table.getName())).append(", ")
 					.append(withQuotes(table.getTitle())).append(", ")
-					.append(withQuotes(table.getRemoteDatabase())).append(");")
+					.append(withQuotes(table.getRemoteTableName())).append(", ")
+					.append(withQuotes(table.getRemoteDatabase())).append(", ")
+					.append(withQuotes(table.getRemoteDatabaseNamespace())).append(");")
 					.append(tpl.nl());
 		}
 
