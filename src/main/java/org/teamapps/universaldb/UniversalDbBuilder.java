@@ -28,6 +28,7 @@ import java.io.File;
 public class UniversalDbBuilder {
 	private ModelProvider modelProvider;
 	private File basePath;
+	private String basePathSuffix;
 	private File indexPath;
 	private File fullTextIndexPath;
 	private File transactionLogPath;
@@ -46,6 +47,11 @@ public class UniversalDbBuilder {
 
 	public UniversalDbBuilder basePath(File basePath) {
 		this.basePath = basePath;
+		return this;
+	}
+
+	public UniversalDbBuilder basePathSuffix(String basePathSuffix) {
+		this.basePathSuffix = basePathSuffix;
 		return this;
 	}
 
@@ -99,18 +105,34 @@ public class UniversalDbBuilder {
 			if (indexPath == null) {
 				indexPath = new File(basePath, "index");
 				indexPath.mkdir();
+				if (basePathSuffix != null) {
+					indexPath = new File(indexPath, basePathSuffix);
+					indexPath.mkdir();
+				}
 			}
 			if (fullTextIndexPath == null) {
 				fullTextIndexPath = new File(basePath, "text");
 				fullTextIndexPath.mkdir();
+				if (basePathSuffix != null) {
+					fullTextIndexPath = new File(fullTextIndexPath, basePathSuffix);
+					fullTextIndexPath.mkdir();
+				}
 			}
 			if (transactionLogPath == null) {
 				transactionLogPath = new File(basePath, "transactions");
 				transactionLogPath.mkdir();
+				if (basePathSuffix != null) {
+					transactionLogPath = new File(transactionLogPath, basePathSuffix);
+					transactionLogPath.mkdir();
+				}
 			}
 			if (fileStorePath == null && fileStore == null) {
 				fileStorePath = new File(basePath, "files");
 				fileStorePath.mkdir();
+				if (basePathSuffix != null) {
+					fileStorePath = new File(fileStorePath, basePathSuffix);
+					fileStorePath.mkdir();
+				}
 			}
 		}
 		if (fileStore == null) {
