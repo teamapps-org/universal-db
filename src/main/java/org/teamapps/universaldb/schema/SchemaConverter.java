@@ -35,7 +35,7 @@ public class SchemaConverter {
 		try {
 			Schema schema = Schema.parse(schemaData);
 			List<DatabaseModel> models = convertSchema(schema);
-			if (models.size() == 1) {
+			if (models.size() > 0) {
 				DatabaseModel model = models.get(0);
 				String classCode = new PojoCodeGenerator().createModelProviderClassCode(model);
 				System.out.println(classCode);
