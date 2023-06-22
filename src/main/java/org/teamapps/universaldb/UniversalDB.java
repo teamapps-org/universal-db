@@ -187,7 +187,7 @@ public class UniversalDB {
 			for (TableModel remoteTable : currentModel.getRemoteTables()) {
 				UniversalDB remoteDb = databaseManager.getDatabase(remoteTable.getRemoteDatabase());
 				TableIndex tableIndex = remoteDb.getDatabaseIndex().getTable(remoteTable.getRemoteTableName());
-				String fullNameSpace = remoteTable.getRemoteDatabaseNamespace() != null ? remoteTable.getRemoteDatabaseNamespace() : currentModel.getFullNameSpace();
+				String fullNameSpace = remoteTable.getRemoteDatabaseNamespace() != null ? remoteTable.getRemoteDatabaseNamespace() + "." + remoteTable.getRemoteDatabase().toLowerCase() : currentModel.getFullNameSpace();
 				installTablePojos(classLoader, fullNameSpace, remoteTable, tableIndex);
 			}
 		} catch (Exception e) {

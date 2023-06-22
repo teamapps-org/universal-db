@@ -24,9 +24,7 @@ import org.teamapps.universaldb.pojo.template.PojoTemplate;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class PojoCodeGenerator {
@@ -71,12 +69,13 @@ public class PojoCodeGenerator {
 		for (TableModel table : databaseModel.getTables()) {
 			File dir = dbPojoDir;
 			String classPackageName = packageName;
+			List<String> remoteTableNamespaces = databaseModel.getRemoteTableNamespaces();
 			if (table.isRemoteTable() && table.getRemoteDatabaseNamespace() != null) {
 				classPackageName = table.getRemoteDatabaseNamespace() + "." + table.getRemoteDatabase().toLowerCase();
 				dir = createBaseDir(basePath, classPackageName);
 			}
-			createTablePojo(table, dir, classPackageName);
-			createTableQueryPojo(table, dir, classPackageName);
+			createTablePojo(table, dir, classPackageName, remoteTableNamespaces);
+			createTableQueryPojo(table, dir, classPackageName, remoteTableNamespaces);
 		}
 
 	}
@@ -230,14 +229,14 @@ public class PojoCodeGenerator {
 		enumTpl.writeTemplate(enumType, dbPojoDir);
 	}
 
-	private void createTablePojo(TableModel table, File dbPojoDir, String packageName) throws IOException {
+	private void createTablePojo(TableModel table, File dbPojoDir, String packageName, List<String> importNamespaces) throws IOException {
 		PojoTemplate tpl = table.isRemoteTable() ? PojoTemplate.createEntityViewInterface() : PojoTemplate.createEntityInterface();
 		PojoTemplate udbTpl = table.isRemoteTable() ? PojoTemplate.createUdbEntityView() : PojoTemplate.createUdbEntity();
 		String type = tpl.firstUpper(table.getName());
 		String udbType = UDB_PREFIX + type;
 		String query = type + QUERY_SUFFIX;
 		String udbQuery = UDB_PREFIX + query;
-		String imports = "";
+		String imports = importNamespaces.stream().map(s -> "import " + s + ".*;").collect(Collectors.joining("\n"));
 		tpl.setValue("package", packageName);
 		tpl.setValue("type", type);
 		tpl.setValue("udbType", udbType);
@@ -292,14 +291,14 @@ public class PojoCodeGenerator {
 		udbTpl.writeTemplate(udbType, dbPojoDir);
 	}
 
-	private void createTableQueryPojo(TableModel table, File dbPojoDir, String packageName) throws IOException {
+	private void createTableQueryPojo(TableModel table, File dbPojoDir, String packageName, List<String> importNamespaces) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createQueryInterface();
 		PojoTemplate udbTpl = PojoTemplate.createUdbQuery();
 		String type = tpl.firstUpper(table.getName());
 		String udbType = UDB_PREFIX + type;
 		String query = type + QUERY_SUFFIX;
 		String udbQuery = UDB_PREFIX + query;
-		String imports = "";
+		String imports = importNamespaces.stream().map(s -> "import " + s + ".*;").collect(Collectors.joining("\n"));
 		tpl.setValue("package", packageName);
 		tpl.setValue("type", type);
 		tpl.setValue("udbType", udbType);

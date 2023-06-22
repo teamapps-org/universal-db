@@ -23,8 +23,6 @@ import org.teamapps.commons.util.collections.ByKeyComparisonResult;
 import org.teamapps.commons.util.collections.CollectionUtil;
 import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
-import org.teamapps.universaldb.index.file.store.FileStore;
-import org.teamapps.universaldb.index.file.store.LocalFileStore;
 import org.teamapps.universaldb.model.DatabaseModel;
 import org.teamapps.universaldb.model.ReferenceFieldModel;
 import org.teamapps.universaldb.model.TableModel;
@@ -76,13 +74,13 @@ public class DatabaseIndex {
 		//existing tables
 		for (TableIndex tableIndex : compareResult.getAEntriesInB()) {
 			TableModel tableModel = compareResult.getB(tableIndex);
-			tableIndex.merge(tableModel);
+			tableIndex.installOrMerge(tableModel);
 		}
 
 		//new tables
 		for (TableModel tableModel : compareResult.getBEntriesNotInA()) {
 			TableIndex tableIndex = new TableIndex(this, tableModel);
-			tableIndex.merge(tableModel);
+			tableIndex.installOrMerge(tableModel);
 			addTable(tableIndex);
 		}
 
@@ -119,6 +117,10 @@ public class DatabaseIndex {
 
 	public TableIndex getTable(String name) {
 		return tables.stream().filter(table -> table.getName().equals(name)).findAny().orElse(null);
+	}
+
+	public DatabaseModel getDatabaseModel() {
+		return databaseModel;
 	}
 
 	@Override

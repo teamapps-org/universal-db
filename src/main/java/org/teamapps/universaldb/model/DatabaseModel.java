@@ -189,6 +189,12 @@ public class DatabaseModel {
 		//existing tables
 		for (TableModel table : tableCompare.getBEntriesInA()) {
 			TableModel existingTable = tableCompare.getA(table);
+			if (existingTable.isRemoteTable()) {
+				if ((existingTable.getRemoteDatabaseNamespace() == null && table.getRemoteDatabaseNamespace() != null) || (existingTable.getRemoteDatabaseNamespace() != null && !existingTable.getRemoteDatabaseNamespace().equals(table.getRemoteDatabaseNamespace()))) {
+					//todo table change
+					//todo set table namespace
+				}
+			}
 
 			ByKeyComparisonResult<FieldModel, FieldModel, String> fieldResult = CollectionUtil.compareByKey(existingTable.getFields(), table.getFields(), FieldModel::getName, FieldModel::getName, true);
 			//existing fields
@@ -432,6 +438,8 @@ public class DatabaseModel {
 			if (!existingModel.getName().equals(tableModel.getName())) return false;
 			if (!existingModel.getTitle().equals(tableModel.getTitle())) return false;
 			if (existingModel.isRemoteTable() != tableModel.isRemoteTable()) return false;
+			if (existingModel.getRemoteDatabaseNamespace() == null && tableModel.getRemoteDatabaseNamespace() != null) return true;
+			if (existingModel.getRemoteDatabaseNamespace() != null && !existingModel.getRemoteDatabaseNamespace().equals(tableModel.getRemoteDatabaseNamespace())) return true;
 			if (existingModel.isTrackModifications() != tableModel.isTrackModifications()) return false;
 			if (existingModel.isVersioning() != tableModel.isVersioning()) return false;
 			if (existingModel.isRecoverableRecords() != tableModel.isRecoverableRecords()) return false;
@@ -587,6 +595,14 @@ public class DatabaseModel {
 
 	public List<TableModel> getRemoteTables() {
 		return tables.stream().filter(TableModel::isRemoteTable).toList();
+	}
+
+	public List<String> getRemoteTableNamespaces() {
+		return getRemoteTables().stream()
+				.filter(t -> t.getRemoteDatabaseNamespace() != null)
+				.map(t -> t.getRemoteDatabaseNamespace() + "." + t.getRemoteDatabase().toLowerCase())
+				.distinct()
+				.toList();
 	}
 
 	public TableModel getTable(String name) {
