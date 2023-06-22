@@ -101,7 +101,7 @@ public class TableIndex implements MappedObject {
 		Runtime.getRuntime().addShutdownHook(new Thread(this::close));
 	}
 
-	public void merge(TableModel tableModel) {
+	public void installOrMerge(TableModel tableModel) {
 		ByKeyComparisonResult<FieldIndex, FieldModel, String> compareResult = CollectionUtil.compareByKey(fieldIndices, tableModel.getFields(), FieldIndex::getName, FieldModel::getName, true);
 		//unknown fields for this model
 		if (!compareResult.getAEntriesNotInB().isEmpty()) {
@@ -158,7 +158,7 @@ public class TableIndex implements MappedObject {
 				column = new FileIndex((FileFieldModel) fieldModel, tableIndex);
 				break;
 			case BINARY:
-				column = new BinaryIndex(name, tableIndex, false, fieldModel);
+				column = new BinaryIndex(fieldModel, tableIndex);
 				break;
 		}
 		return column;

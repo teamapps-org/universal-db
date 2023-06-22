@@ -37,9 +37,9 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 
 	private BlockEntryAtomicStore atomicStore;
 
-	public BinaryIndex(String name, TableIndex tableIndex, boolean compressContent, FieldModel fieldModel) {
+	public BinaryIndex(FieldModel fieldModel, TableIndex tableIndex) {
 		super(fieldModel, tableIndex);
-		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), name);
+		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
 	@Override
