@@ -19,7 +19,6 @@
  */
 package org.teamapps.universaldb.index.file.store;
 
-import org.teamapps.cluster.crypto.HexUtil;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;

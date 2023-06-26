@@ -76,8 +76,14 @@
 
         <dependency>
             <groupId>org.teamapps</groupId>
-            <artifactId>teamapps-cluster</artifactId>
-            <version>0.11</version>
+            <artifactId>teamapps-message-protocol</artifactId>
+            <version>0.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.teamapps</groupId>
+            <artifactId>teamapps-commons</artifactId>
+            <version>0.1.2</version>
         </dependency>
 
 
