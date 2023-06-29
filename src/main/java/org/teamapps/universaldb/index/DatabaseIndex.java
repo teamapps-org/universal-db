@@ -88,6 +88,9 @@ public class DatabaseIndex {
 			ReferenceFieldModel referenceFieldModel = index.getReferenceFieldModel();
 			TableIndex referencedTable = referenceFieldModel.getReferencedTable() != null ? getTable(referenceFieldModel.getReferencedTable().getName()) : null;
 			FieldIndex reverseIndex = referenceFieldModel.getReverseReferenceField() != null ? referencedTable.getFieldIndex(referenceFieldModel.getReverseReferenceField().getName()) : null;
+			if (referencedTable == null && !referenceFieldModel.getReferencedTable().isRemoteTable()) {
+				throw new RuntimeException("Error missing reference table:" + index.getName() + " -> " + index.getReferenceFieldModel().getReferencedTable().getName());
+			}
 			index.setReferencedTable(referencedTable, reverseIndex, referenceFieldModel.isCascadeDelete());
 		});
 
