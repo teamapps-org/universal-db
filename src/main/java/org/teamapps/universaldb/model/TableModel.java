@@ -397,6 +397,9 @@ public class TableModel {
 	}
 
 	protected FieldModel addFieldModel(FieldModel fieldModel) {
+		if (fields.stream().anyMatch(f -> f.getName().equals(fieldModel.getName()))) {
+			throw  new RuntimeException("Adding duplicate field names not allowed, table:" + getName() + ", field-name:" + fieldModel.getName());
+		}
 		fields.add(fieldModel);
 		return fieldModel;
 	}
@@ -439,7 +442,7 @@ public class TableModel {
 	}
 
 	public List<FieldModel> getFields() {
-		return fields;
+		return new ArrayList<>(fields);
 	}
 
 	public List<ReferenceFieldModel> getReferenceFields() {

@@ -213,7 +213,7 @@ public class DatabaseModel {
 
 			//new fields
 			for (FieldModel field : fieldResult.getBEntriesNotInA()) {
-				table.addFieldModel(field);
+				existingTable.addFieldModel(field);
 				if (field.getFieldId() == 0) {
 					field.setFieldId(idGenerator.incrementAndGet());
 					field.setVersionCreated(version);

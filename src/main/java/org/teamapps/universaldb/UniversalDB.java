@@ -227,7 +227,7 @@ public class UniversalDB {
 			executeTransaction(modelUpdateTransactionRequest);
 		}
 		installLocalTableClasses(classLoader);
-		installRemoteTableClasses(classLoader);
+		databaseManager.updateDatabase(getName());
 	}
 
 	public Class getEntityClass(TableIndex tableIndex) {

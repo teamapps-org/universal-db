@@ -71,6 +71,23 @@ public class DatabaseModelTest {
 		Assert.assertFalse(model.isSameModel(model3));
 		model.initialize();
 		Assert.assertTrue(model.isSameModel(model2));
+
+		model = new DatabaseModel("model", "Model", "org.teamapps.model");
+		TableModel table = model.createTable("test");
+		table.addText("test1");
+		table.addText("test2");
+		model.initialize();
+
+		model2 = new DatabaseModel("model", "Model", "org.teamapps.model");
+		table = model2.createTable("test");
+		table.addText("test0");
+		table.addText("test1");
+		table.addText("test2");
+
+		assertFalse(model.isSameModel(model2));
+
+
+
 	}
 
 	@Test
