@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,9 @@ import org.teamapps.universaldb.model.TableModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SchemaConverter {
 
@@ -52,18 +54,35 @@ public class SchemaConverter {
 		String pojoNamespace = schema.getPojoNamespace();
 		String schemaName = schema.getSchemaName();
 
+		Map<Table, TableModel> tableModelByTable = new HashMap<>();
+		Map<TableModel, Table> tableByTableModel = new HashMap<>();
+		//Map<FieldModel, Column> columnByFieldModel =new HashMap<>();
+
 		for (Database database : schema.getDatabases()) {
 			DatabaseModel model = new DatabaseModel(database.getName(), database.getName(), pojoNamespace, schemaName);
 			models.add(model);
 			for (Table table : database.getAllTables()) {
 				if (table.isView()) {
-					model.createRemoteTable(table.getName(), table.getName(), table.getDatabase().getName(), null);
+					String[] parts = table.getReferencedTablePath().split("\\.");
+					String remoteDatabaseName = parts[0];
+					String remoteTableName = parts[1];
+					if (model.getTable(remoteTableName) == null) {
+						TableModel remoteTable = model.createRemoteTable(remoteTableName, remoteTableName, remoteTableName, remoteDatabaseName, schema.getPojoNamespace());
+						tableModelByTable.put(table, remoteTable);
+						tableByTableModel.put(remoteTable, table);
+					} else {
+						TableModel remoteTable = model.createRemoteTable(table.getName(), table.getName(), remoteTableName, remoteDatabaseName, schema.getPojoNamespace());
+						tableModelByTable.put(table, remoteTable);
+						tableByTableModel.put(remoteTable, table);
+					}
 				} else {
-					model.createTable(table.getName(), table.getName(), table.getTableConfig().trackModification(), table.getTableConfig().isVersioning(), table.getTableConfig().keepDeleted());
+					TableModel tableModel = model.createTable(table.getName(), table.getName(), table.getTableConfig().trackModification(), table.getTableConfig().keepDeleted(), table.getTableConfig().keepDeleted());
+					tableModelByTable.put(table, tableModel);
+					tableByTableModel.put(tableModel, table);
 				}
 			}
 			for (Table table : database.getAllTables()) {
-				TableModel tbl = model.getTable(table.getName());
+				TableModel tbl = tableModelByTable.get(table);
 				for (Column column : table.getColumns()) {
 					if (!Table.isReservedMetaName(column.getName())) {
 						ColumnType columnType = column.getType();
@@ -71,7 +90,8 @@ public class SchemaConverter {
 							case BOOLEAN -> {
 								tbl.addBoolean(column.getName());
 							}
-							case BITSET_BOOLEAN -> { }
+							case BITSET_BOOLEAN -> {
+							}
 							case SHORT -> tbl.addShort(column.getName());
 							case INT -> tbl.addInteger(column.getName());
 							case LONG -> tbl.addLong(column.getName());
@@ -83,15 +103,15 @@ public class SchemaConverter {
 								tbl.addFile(column.getName(), column.getName(), true, false);
 							}
 							case SINGLE_REFERENCE -> {
-								TableModel referencedTable = model.getTable(column.getReferencedTable().getName());
-								if (referencedTable ==null) {
+								TableModel referencedTable = tableModelByTable.get(column.getReferencedTable());
+								if (referencedTable == null) {
 									System.out.println("Missing table:" + column.getReferencedTable().getName());
 								}
 								tbl.addReference(column.getName(), column.getName(), referencedTable, column.isCascadeDeleteReferences());
 							}
 							case MULTI_REFERENCE -> {
-								TableModel referencedTable = model.getTable(column.getReferencedTable().getName());
-								if (referencedTable ==null) {
+								TableModel referencedTable = tableModelByTable.get(column.getReferencedTable());
+								if (referencedTable == null) {
 									System.out.println("Missing table:" + column.getReferencedTable().getName());
 								}
 								tbl.addMultiReference(column.getName(), column.getName(), referencedTable, column.isCascadeDeleteReferences());
@@ -110,21 +130,44 @@ public class SchemaConverter {
 								tbl.addEnum(enumModel);
 							}
 							case BINARY -> tbl.addByteArray(column.getName());
-							case CURRENCY -> { }
-							case DYNAMIC_CURRENCY -> { }
+							case CURRENCY -> {
+							}
+							case DYNAMIC_CURRENCY -> {
+							}
 						}
 					}
 				}
 			}
 			for (Table table : database.getTables()) {
-				TableModel tbl = model.getTable(table.getName());
+				TableModel tbl = tableModelByTable.get(table);
 				for (Column column : table.getColumns()) {
 					if (column.getReferencedTable() != null && column.getBackReference() != null) {
-						TableModel refTable = model.getTable(column.getReferencedTable().getName());
+						Table referencedTable = column.getReferencedTable();
+						Column backReferenceColumn = referencedTable.getColumn(column.getBackReference());
+						if (backReferenceColumn.getBackReference() == null) {
+							System.out.println("Error: missing backreference old model:" + column.getFQN() + " -> " + backReferenceColumn.getFQN() + ", back-ref:" + backReferenceColumn.getBackReference());
+							continue;
+						} else if (!backReferenceColumn.getBackReference().equals(column.getName())) {
+							System.out.println("Error: wrong back reference name in old model:" + column.getFQN() + " -> " + backReferenceColumn.getFQN() + ", back-ref:" + backReferenceColumn.getBackReference());
+							continue;
+						} else if (!backReferenceColumn.getReferencedTable().getName().equals(table.getName())) {
+							System.out.println("Error: wrong back reference table in old model:" + column.getFQN() + " -> " + backReferenceColumn.getFQN() + ", back-ref:" + backReferenceColumn.getBackReference());
+							continue;
+						}
+						TableModel refTable = model.getTable(referencedTable.getName());
+
 						model.addReverseReferenceField(tbl, column.getName(), refTable, column.getBackReference());
 					}
 				}
 			}
+			model.initialize(tableModel -> {
+				Table table = tableByTableModel.get(tableModel);
+				return table.getMappingId();
+			}, (tableModel, fieldModel) -> {
+				Table table = tableByTableModel.get(tableModel);
+				Column column = table.getColumns().stream().filter(c -> c.getName().equalsIgnoreCase(fieldModel.getName())).findFirst().orElse(null);
+				return column.getMappingId();
+			});
 		}
 		return models;
 	}
