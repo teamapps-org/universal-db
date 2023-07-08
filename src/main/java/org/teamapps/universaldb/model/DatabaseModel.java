@@ -26,6 +26,7 @@ import org.teamapps.message.protocol.utils.MessageUtils;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -147,6 +148,77 @@ public class DatabaseModel {
 		}
 	}
 
+	public void initialize(Function<TableModel, Integer> tableIdProvider, BiFunction<TableModel, FieldModel, Integer> fieldIdProvider) {
+		if (version != 0) {
+			return;
+		}
+		version = 1;
+		int timestamp = (int) (System.currentTimeMillis() / 1000);
+		dateCreated = timestamp;
+		for (EnumModel enumModel : enums) {
+			enumModel.setVersionCreated(version);
+			enumModel.setDateCreated(timestamp);
+		}
+		for (TableModel table : tables) {
+			table.setTableId(tableIdProvider.apply(table));
+			table.setVersionCreated(version);
+			table.setDateCreated(timestamp);
+			for (FieldModel field : table.getFields()) {
+				field.setFieldId(fieldIdProvider.apply(table, field));
+				field.setVersionCreated(version);
+				field.setDateCreated(timestamp);
+			}
+		}
+	}
+
+	public void initializeWithForeignModel(DatabaseModel model) {
+		if (version != 0) {
+			return;
+		}
+		version = model.getVersion();
+		dateCreated = model.getDateCreated();
+		dateModified = model.getDateModified();
+		for (EnumModel enumModel : enums) {
+			EnumModel referenceModel = model.getEnumModel(enumModel.getName());
+			if (referenceModel != null) {
+				enumModel.setVersionCreated(referenceModel.getVersionCreated());
+				enumModel.setDateCreated(referenceModel.getDateCreated());
+				enumModel.setDeprecated(referenceModel.isDeprecated());
+			} else {
+				System.out.println("Missing enum:" + enumModel.getName());
+			}
+		}
+		for (TableModel table : tables) {
+			TableModel referenceTable = model.getTable(table.getName());
+			if (referenceTable != null) {
+				table.setTableId(referenceTable.getTableId());
+				table.setVersionCreated(referenceTable.getVersionCreated());
+				table.setVersionModified(referenceTable.getVersionModified());
+				table.setDateModified(referenceTable.getDateModified());
+				table.setDateCreated(referenceTable.getDateCreated());
+				table.setDeprecated(referenceTable.isDeprecated());
+				table.setDeleted(referenceTable.isDeleted());
+
+				for (FieldModel field : table.getFields()) {
+					FieldModel referenceField = referenceTable.getField(field.getName());
+					if (referenceField != null) {
+						field.setFieldId(referenceField.getFieldId());
+						field.setVersionCreated(referenceField.getVersionCreated());
+						field.setVersionModified(referenceField.getVersionModified());
+						field.setDateModified(referenceField.getDateModified());
+						field.setDateCreated(referenceField.getDateCreated());
+						field.setDeprecated(referenceField.isDeprecated());
+						field.setDeleted(referenceField.isDeleted());
+					} else {
+						System.out.println("Missing field:" + table.getName() + "." + field.getName());
+					}
+				}
+			} else {
+				System.out.println("Missing table:" + table.getName());
+			}
+		}
+	}
+
 	public void mergeModel(DatabaseModel model) {
 		if (!model.isValid()) {
 			throw new RuntimeException("Invalid model for merge");
@@ -265,11 +337,11 @@ public class DatabaseModel {
 		for (EnumModel enumModel : enumCompare.getBEntriesInA()) {
 			EnumModel existingEnum = enumCompare.getA(enumModel);
 			if (existingEnum.getEnumNames().size() > enumModel.getEnumNames().size()) {
-				errors.add("Wrong config for enum " + enumModel.getName());
+				errors.add("Wrong config for enum " + enumModel.getName() + ", size:" + existingEnum.getEnumNames().size() + "->" + enumModel.getEnumNames().size());
 			} else {
 				for (int i = 0; i < existingEnum.getEnumNames().size(); i++) {
 					if (!existingEnum.getEnumNames().get(i).equals(enumModel.getEnumNames().get(i))) {
-						errors.add("Wrong config for enum " + enumModel.getName());
+						errors.add("Wrong config for enum " + enumModel.getName() + ", " + existingEnum.getEnumNames().get(i) + "->" + enumModel.getEnumNames().get(i));
 					}
 				}
 			}
@@ -284,13 +356,17 @@ public class DatabaseModel {
 						existingTable.isRemoteTable() != table.isRemoteTable() ||
 						(existingTable.isRemoteTable() && !existingTable.getRemoteDatabase().equals(table.getRemoteDatabase()))
 				) {
-					errors.add("Wrong config for table " + table.getName());
+					errors.add("Wrong config for table " + table.getName() + "." + table.getName() + ", versioning/recoverable/modifications/remoteTable: " +
+							existingTable.isVersioning() + "/" + existingTable.isRecoverableRecords() + "/" + existingTable.isTrackModifications() + "/" + existingTable.isRemoteTable() + "->" +
+							table.isVersioning() + "/" + table.isRecoverableRecords() + "/" + table.isTrackModifications() + "/" + table.isRemoteTable()
+
+					);
 				}
 				for (FieldModel field : table.getFields()) {
 					FieldModel existingField = existingTable.getField(field.getName());
 					if (existingField != null) {
 						if (existingField.getFieldType() != field.getFieldType()) {
-							errors.add("Wrong config for field " + field.getName());
+							errors.add("Wrong config for field " + table.getName() + "." + field.getName() + ", type:" + existingField.getFieldType() + "->" + field.getFieldType());
 						} else {
 							if (existingField.getFieldType().isReference()) {
 								ReferenceFieldModel existingReference = (ReferenceFieldModel) existingField;
@@ -301,7 +377,10 @@ public class DatabaseModel {
 										Objects.isNull(existingReference.getReverseReferenceField()) != Objects.isNull(referenceField.getReverseReferenceField()) ||
 										(existingReference.getReverseReferenceField() != null && !existingReference.getReverseReferenceField().getName().equals(referenceField.getReverseReferenceField().getName()))
 								) {
-									errors.add("Wrong config for field " + field.getName());
+									errors.add("Wrong config for field " + table.getName() + "." + field.getName() + ", multi-ref/cascade/ref-table/ref-field: " +
+											existingReference.isMultiReference() + "/" + existingReference.isCascadeDelete() + "/" + existingReference.getReferencedTable().getName() + "/" + getRefFieldPathOrNull(existingReference.getReverseReferenceField()) + "->" +
+											referenceField.isMultiReference() + "/" + referenceField.isCascadeDelete() + "/" + referenceField.getReferencedTable().getName() + "/" + getRefFieldPathOrNull(referenceField.getReverseReferenceField())
+									);
 								}
 							} else if (existingField.getFieldType() == FieldType.ENUM) {
 								EnumFieldModel existingEnum = (EnumFieldModel) existingField;
@@ -324,6 +403,14 @@ public class DatabaseModel {
 			}
 		}
 		return errors;
+	}
+
+	private String getRefFieldPathOrNull(ReferenceFieldModel field) {
+		if (field == null) {
+			return "null";
+		} else {
+			return field.getTableModel().getName() + "." + field.getName();
+		}
 	}
 
 	public boolean isValid() {
@@ -685,7 +772,8 @@ public class DatabaseModel {
 		sb.append("Database model: ").append(name).append(", ").append(title).append(", ns:").append(namespace).append(", build:").append(pojoBuildTime).append(", version:").append(version).append("\n");
 		sb.append("Tables: ").append(tables.size()).append("\n");
 		for (TableModel table : tables) {
-			sb.append("\t").append(table.getName()).append(", ").append(table.getTitle()).append(", (").append(table.getTableId()).append(")").append("\n");
+			String remoteTable = table.isRemoteTable() ? ", [REMOTE]" : "";
+			sb.append("\t").append(table.getName()).append(", ").append(table.getTitle()).append(remoteTable).append(", (").append(table.getTableId()).append(")").append("\n");
 			for (FieldModel field : table.getFields()) {
 				sb.append("\t").append("\t").append(field.getName()).append(", ").append(field.getTitle()).append(", ").append(field.getFieldType()).append(", (").append(field.getFieldId()).append(")").append("\n");
 			}
