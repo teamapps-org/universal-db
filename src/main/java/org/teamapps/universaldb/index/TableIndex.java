@@ -540,10 +540,10 @@ public class TableIndex implements MappedObject {
 		List<CyclicReferenceUpdate> cyclicReferenceUpdates = new ArrayList<>();
 
 		for (FieldIndex<?, ?> referenceColumn : getReferenceFields()) {
-			if (referenceColumn == cascadeOriginIndex) {
+			ReferenceIndex referenceIndex = (ReferenceIndex) referenceColumn;
+			if (referenceColumn == cascadeOriginIndex  || referenceIndex.getReferenceFieldModel().getReferencedTable().isRemoteTable()) {
 				continue;
 			}
-			ReferenceIndex referenceIndex = (ReferenceIndex) referenceColumn;
 			boolean isCascadeDelete = referenceIndex.isCascadeDeleteReferences();
 			TableIndex referencedTable = referenceIndex.getReferencedTable();
 			boolean isReferenceKeepDeletedRecords = referencedTable.isKeepDeletedRecords();
