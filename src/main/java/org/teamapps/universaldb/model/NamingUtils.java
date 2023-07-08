@@ -44,7 +44,7 @@ public class NamingUtils {
 			return createTitleFromCamelCase(s);
 		} else {
 			s = s.replace("\n", " ").replace("\r", " ").replace("\t", " ").trim().replaceAll(" +", " ");
-			return s;
+			return firstUpperCase(s);
 		}
 	}
 
@@ -146,13 +146,19 @@ public class NamingUtils {
 
 	public static String createTitleFromCamelCase(String s) {
 		StringBuilder sb = new StringBuilder();
+		boolean lastUpperCase = false;
 		for (int i = 0; i < s.length(); i++) {
 			char c = s.charAt(i);
 			if (i < 3) {
 				sb.append(c);
 			} else {
 				if (Character.isUpperCase(c)) {
-					sb.append(" ");
+					if (!lastUpperCase) {
+						sb.append(" ");
+					}
+					lastUpperCase = true;
+				} else {
+					lastUpperCase = false;
 				}
 				sb.append(c);
 			}
