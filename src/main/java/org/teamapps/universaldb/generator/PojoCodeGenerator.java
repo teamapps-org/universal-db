@@ -131,6 +131,7 @@ public class PojoCodeGenerator {
 					.append(tpl.nl());
 		}
 
+		sb.append("\n");
 		for (TableModel table : model.getRemoteTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {
 			sb.append(tabs(2))
 					.append("TableModel ")
