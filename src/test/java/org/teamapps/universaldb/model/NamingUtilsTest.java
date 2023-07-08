@@ -30,6 +30,8 @@ public class NamingUtilsTest {
 	public void createTitle() {
 		Assert.assertEquals("This is the title", NamingUtils.createTitle("thisIsTheTitle"));
 		Assert.assertEquals("This is the title", NamingUtils.createTitle("THIS_IS_THE_TITLE"));
+
+		assertEquals("User id", NamingUtils.createTitle("userID"));
 	}
 
 	@Test
