@@ -105,6 +105,10 @@ public class UniversalDB {
 		}
 
 		if (!transactionIndex.isValidModel(model)) {
+			if (transactionIndex.getCurrentModel() != null) {
+				List<String> errors = transactionIndex.getCurrentModel().checkCompatibilityErrors(model);
+				logger.error("Model errors: " + String.join("\n", errors));
+			}
 			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
 
