@@ -738,8 +738,17 @@ public enum MimeType {
 	}
 
 	public static MimeType getMimeType(String fileName) {
-		String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : fileName.toLowerCase();
-		return byExtension.get(extension);
+		if (fileName == null || !fileName.contains(".")) {
+			return null;
+		} else {
+			String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : fileName.toLowerCase();
+			return byExtension.get(extension);
+		}
+	}
+
+	public static String getMimeTypeString(String fileName) {
+		MimeType type = getMimeType(fileName);
+		return type != null ? type.getMimeType() : null;
 	}
 
 	public static MimeType getMimeTypeByMime(String mimeType) {

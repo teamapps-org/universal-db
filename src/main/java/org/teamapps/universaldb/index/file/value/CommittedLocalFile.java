@@ -93,7 +93,7 @@ public class CommittedLocalFile implements FileValue {
 
 	@Override
 	public FileContentData getFileContentData() {
-		if (contentData == null) {
+		if (contentData == null && contentDataSupplier != null) {
 			contentData = contentDataSupplier.get();
 		}
 		return contentData;

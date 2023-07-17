@@ -145,7 +145,7 @@ public interface FileValue {
 
 
 	default String getMimeType() {
-		return getFileContentData() == null ? null : getFileContentData().getMimeType();
+		return getFileContentData() == null ? MimeType.getMimeTypeString(getFileName()) : getFileContentData().getMimeType();
 	}
 
 	default String getTextContent() {
