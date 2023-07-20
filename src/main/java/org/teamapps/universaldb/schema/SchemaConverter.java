@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,8 +66,9 @@ public class SchemaConverter {
 					String[] parts = table.getReferencedTablePath().split("\\.");
 					String remoteDatabaseName = parts[0];
 					String remoteTableName = parts[1];
+					String remoteView = remoteTableName.endsWith("View") ? remoteTableName :  remoteTableName + "View";
 					if (model.getTable(remoteTableName) == null) {
-						TableModel remoteTable = model.createRemoteTable(remoteTableName, remoteTableName, remoteTableName, remoteDatabaseName, schema.getPojoNamespace());
+						TableModel remoteTable = model.createRemoteTable(remoteView, remoteView, remoteTableName, remoteDatabaseName, schema.getPojoNamespace());
 						tableModelByTable.put(table, remoteTable);
 						tableByTableModel.put(remoteTable, table);
 					} else {
