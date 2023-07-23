@@ -40,11 +40,15 @@ public class TransactionRequest {
 
 
 	public TransactionRequest(long nodeId, long requestId, int userId) {
+		this(nodeId, requestId, userId, System.currentTimeMillis());
+	}
+
+	public TransactionRequest(long nodeId, long requestId, int userId, long timestamp) {
 		this.nodeId = nodeId;
 		this.requestId = requestId;
 		this.transactionType = TransactionType.DATA_UPDATE;
 		this.userId = userId;
-		this.timestamp = System.currentTimeMillis();
+		this.timestamp = timestamp;
 	}
 
 	public TransactionRequest(long nodeId, long requestId, int userId, DatabaseModel databaseModel) {
