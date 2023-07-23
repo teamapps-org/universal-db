@@ -729,6 +729,19 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		}
 	}
 
+
+
+	public void saveRecord(UniversalDB database, int userId, long timestamp) {
+		if (entityChangeSet != null) {
+			this.transactionRequest = database.createTransactionRequest(userId, timestamp);
+			saveRecord(transactionRequest, database);
+			database.executeTransaction(transactionRequest);
+			if (id == 0) {
+				id = transactionRequest.getResolvedRecordIdByCorrelationId(correlationId);
+			}
+		}
+	}
+
 	public void saveRecord(UniversalDB database) {
 		if (entityChangeSet != null) {
 			this.transactionRequest = database.createTransactionRequest();
@@ -744,7 +757,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		if (entityChangeSet != null) {
 			this.transactionRequest = transactionRequest;
 			boolean update = !createEntity;
-			TransactionRequestRecord record = TransactionRequestRecord.createOrUpdateRecord(transactionRequest, tableIndex, id, correlationId, update);
+			TransactionRequestRecord record = TransactionRequestRecord.createOrUpdateRecord(transactionRequest, tableIndex, id, correlationId, update, entityChangeSet);
 			entityChangeSet.setTransactionRequestRecordValues(transactionRequest, record, database);
 			transactionRequest.addRecord(record);
 			clearChanges();
@@ -765,9 +778,9 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		return tableIndex.getFQN();
 	}
 
-	public void deleteRecord(UniversalDB database) {
-		TransactionRequest transactionRequest = database.createTransactionRequest();
-		TransactionRequestRecord deleteRecord = TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id);
+	public void deleteRecord(UniversalDB database, int userId, long timestamp) {
+		TransactionRequest transactionRequest = database.createTransactionRequest(userId, timestamp);
+		TransactionRequestRecord deleteRecord = TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id, entityChangeSet);
 		transactionRequest.addRecord(deleteRecord);
 		if (entityChangeSet != null) {
 			entityChangeSet.setTransactionRecordMetaValues(deleteRecord, database);
@@ -776,9 +789,31 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 		database.executeTransaction(transactionRequest);
 	}
 
+	public void deleteRecord(UniversalDB database) {
+		TransactionRequest transactionRequest = database.createTransactionRequest();
+		TransactionRequestRecord deleteRecord = TransactionRequestRecord.createDeleteRecord(transactionRequest, tableIndex, id, entityChangeSet);
+		transactionRequest.addRecord(deleteRecord);
+		if (entityChangeSet != null) {
+			entityChangeSet.setTransactionRecordMetaValues(deleteRecord, database);
+		}
+		clearChanges();
+		database.executeTransaction(transactionRequest);
+	}
+
+	public void restoreDeletedRecord(UniversalDB database, int userId, long timestamp) {
+		TransactionRequest transactionRequest = database.createTransactionRequest(userId, timestamp);
+		TransactionRequestRecord restoreRecord = TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id, entityChangeSet);
+		transactionRequest.addRecord(restoreRecord);
+		if (entityChangeSet != null) {
+			entityChangeSet.setTransactionRecordMetaValues(restoreRecord, database);
+		}
+		clearChanges();
+		database.executeTransaction(transactionRequest);
+	}
+
 	public void restoreDeletedRecord(UniversalDB database) {
 		TransactionRequest transactionRequest = database.createTransactionRequest();
-		TransactionRequestRecord restoreRecord = TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id);
+		TransactionRequestRecord restoreRecord = TransactionRequestRecord.createRestoreRecord(transactionRequest, tableIndex, id, entityChangeSet);
 		transactionRequest.addRecord(restoreRecord);
 		if (entityChangeSet != null) {
 			entityChangeSet.setTransactionRecordMetaValues(restoreRecord, database);

@@ -112,7 +112,7 @@ public class UniversalDB {
 			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
 
-		databaseIndex = new DatabaseIndex(model.getName(), indexPath, fullTextIndexPath, fileStore);
+		databaseIndex = new DatabaseIndex(this, model.getName(), indexPath, fullTextIndexPath, fileStore);
 
 		if (transactionIndex.isModelUpdate(model)) {
 			executeTransaction(createModelUpdateTransactionRequest(model));
@@ -244,6 +244,10 @@ public class UniversalDB {
 
 	public synchronized TransactionRequest createTransactionRequest() {
 		return new TransactionRequest(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), getUserId());
+	}
+
+	public synchronized TransactionRequest createTransactionRequest(int userId, long timestamp) {
+		return new TransactionRequest(transactionIndex.getNodeId(), transactionIndex.createTransactionRequestId(), userId, timestamp);
 	}
 
 	public synchronized TransactionRequest createModelUpdateTransactionRequest(DatabaseModel databaseModel) {

@@ -77,14 +77,30 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
         return this;
     }
 
+   @Override
+    public {udbType} save(int userId, long timestamp) {
+        saveRecord(universalDB, userId, timestamp);
+        return this;
+    }
+
     @Override
     public void delete() {
         deleteRecord(universalDB);
     }
 
     @Override
+    public void delete(int userId, long timestamp) {
+        deleteRecord(universalDB, userId, timestamp);
+    }
+
+    @Override
     public void restoreDeleted() {
         restoreDeletedRecord(universalDB);
+    }
+
+    @Override
+    public void restoreDeleted(int userId, long timestamp) {
+        restoreDeletedRecord(universalDB, userId, timestamp);
     }
 }
 

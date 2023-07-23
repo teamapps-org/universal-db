@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 public class DatabaseIndex {
 
+	private final UniversalDB universalDB;
 	private final String name;
 	private final File dataPath;
 	private final File fullTextIndexPath;
@@ -42,7 +43,8 @@ public class DatabaseIndex {
 	private DatabaseModel databaseModel;
 
 
-	public DatabaseIndex(String name, File dataPath, File fullTextIndexPath, DatabaseFileStore databaseFileStore) {
+	public DatabaseIndex(UniversalDB universalDB, String name, File dataPath, File fullTextIndexPath, DatabaseFileStore databaseFileStore) {
+		this.universalDB = universalDB;
 		this.name = name;
 		this.dataPath = dataPath;
 		this.fullTextIndexPath = fullTextIndexPath;
@@ -124,6 +126,10 @@ public class DatabaseIndex {
 
 	public DatabaseModel getDatabaseModel() {
 		return databaseModel;
+	}
+
+	public UniversalDB getUniversalDB() {
+		return universalDB;
 	}
 
 	@Override

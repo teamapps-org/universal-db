@@ -84,6 +84,21 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
     	throw new UnsupportedOperationException();
     }
 
+    @Override
+    public {udbType} save(int userId, long timestamp) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void delete(int userId, long timestamp) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void restoreDeleted(int userId, long timestamp) {
+        throw new UnsupportedOperationException();
+    }
+
 }
 
 

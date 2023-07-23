@@ -41,9 +41,15 @@ public interface Entity<ENTITY> extends Identifiable {
 
 	ENTITY save();
 
+	ENTITY save(int userId, long timestamp);
+
 	void delete();
 
+	void delete(int userId, long timestamp);
+
 	void restoreDeleted();
+
+	void restoreDeleted(int userId, long timestamp);
 
 	boolean isRestorable();
 
