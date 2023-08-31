@@ -188,6 +188,7 @@ public class UniversalDB {
 	public void installRemoteTableClasses(ClassLoader classLoader) {
 		try {
 			DatabaseModel currentModel = transactionIndex.getCurrentModel();
+			databaseIndex.installRemoteReferencedTables(databaseManager);
 			for (TableModel remoteTable : currentModel.getRemoteTables()) {
 				UniversalDB remoteDb = databaseManager.getDatabase(remoteTable.getRemoteDatabase());
 				TableIndex tableIndex = remoteDb.getDatabaseIndex().getTable(remoteTable.getRemoteTableName());
