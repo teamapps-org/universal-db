@@ -30,17 +30,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class TableModel {
-	public final static String FIELD_CREATION_DATE = "metaCreationDate";
-	public final static String FIELD_CREATED_BY = "metaCreatedBy";
-	public final static String FIELD_MODIFICATION_DATE = "metaModificationDate";
-	public final static String FIELD_MODIFIED_BY = "metaModifiedBy";
-	public final static String FIELD_DELETION_DATE = "metaDeletionDate";
-	public final static String FIELD_DELETED_BY = "metaDeletedBy";
-	public final static String FIELD_RESTORE_DATE = "metaRestoreDate";
-	public final static String FIELD_RESTORED_BY = "metaRestoredBy";
-	public final static String FIELD_ID = "id";
+	private static final int TABLE_MODEL_VERSION = 1;
+
+	public static final String FIELD_CREATION_DATE = "metaCreationDate";
+	public static final String FIELD_CREATED_BY = "metaCreatedBy";
+	public static final String FIELD_MODIFICATION_DATE = "metaModificationDate";
+	public static final String FIELD_MODIFIED_BY = "metaModifiedBy";
+	public static final String FIELD_DELETION_DATE = "metaDeletionDate";
+	public static final String FIELD_DELETED_BY = "metaDeletedBy";
+	public static final String FIELD_RESTORE_DATE = "metaRestoreDate";
+	public static final String FIELD_RESTORED_BY = "metaRestoredBy";
+	public static final String FIELD_ID = "id";
 	public static final String[] FORBIDDEN_COLUMN_NAMES = new String[]{FIELD_CREATION_DATE, FIELD_CREATED_BY, FIELD_MODIFICATION_DATE, FIELD_MODIFIED_BY, FIELD_DELETION_DATE, FIELD_DELETED_BY, FIELD_RESTORE_DATE, FIELD_RESTORED_BY, FIELD_ID, "coll-recs", "coll-del-recs", "versioning-pos", "matches"};
-	private final static int TABLE_MODEL_VERSION = 1;
 	private final DatabaseModel databaseModel;
 	private final String name;
 	private final String title;

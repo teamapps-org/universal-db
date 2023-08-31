@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,9 @@ import org.teamapps.universaldb.pojo.template.PojoTemplate;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class PojoCodeGenerator {
@@ -59,7 +61,13 @@ public class PojoCodeGenerator {
 		String packageName = namespace + "." + databaseModel.getName().toLowerCase();
 
 		for (EnumModel enumModel : databaseModel.getEnums()) {
-			createEnum(enumModel, dbPojoDir, packageName);
+			File dir = dbPojoDir;
+			String classPackageName = packageName;
+			if (enumModel.isRemoteEnum()) {
+				classPackageName = enumModel.getRemoteDatabaseNamespace() + "." + enumModel.getRemoteDatabase().toLowerCase();
+				dir = createBaseDir(basePath, classPackageName);
+			}
+			createEnum(enumModel, dir, classPackageName);
 		}
 
 		for (ViewModel viewModel : databaseModel.getViews()) {
@@ -108,14 +116,19 @@ public class PojoCodeGenerator {
 		sb.append(tabs(2)).append("model.setPojoBuildTime(").append(System.currentTimeMillis()).append("L);").append(tpl.nl());
 
 		for (EnumModel enumModel : model.getEnums().stream().sorted(Comparator.comparing(EnumModel::getName)).toList()) {
+			String enumCreateMethod = enumModel.isRemoteEnum() ? "createRemoteEnum" : "createEnum";
 			sb.append(tabs(2))
 					.append("EnumModel ").append(enumModel.getName()).append(" = ")
-					.append("model.createEnum(")
+					.append("model.").append(enumCreateMethod).append("(")
 					.append(withQuotes(enumModel.getName())).append(", ")
 					.append(withQuotes(enumModel.getTitle())).append(", ")
 					.append("Arrays.asList(").append(withQuotes(enumModel.getEnumNames())).append("), ")
-					.append("Arrays.asList(").append(withQuotes(enumModel.getEnumTitles())).append("));")
-					.append(tpl.nl());
+					.append("Arrays.asList(").append(withQuotes(enumModel.getEnumTitles())).append(")");
+			if (enumModel.isRemoteEnum()) {
+				sb.append(withQuotes(enumModel.getRemoteDatabase())).append(", ");
+				sb.append(withQuotes(enumModel.getRemoteDatabaseNamespace()));
+			}
+			sb.append(");").append(tpl.nl());
 		}
 		sb.append(tpl.nl());
 		for (TableModel table : model.getLocalTables().stream().sorted(Comparator.comparing(TableModel::getName)).toList()) {

@@ -37,6 +37,9 @@ public class IndexMetaData {
 	private final RandomAccessStore randomAccessStore;
 
 	public IndexMetaData(File dataPath, String name, String fqn, int indexType, int mappingId) {
+		if (mappingId == 0) {
+			throw new RuntimeException("Error: cannot create index without mappingId:" + name + ", " + fqn);
+		}
 		this.randomAccessStore = new RandomAccessStore(dataPath, name + ".mdx");
 		if (randomAccessStore.getSize() == 0) {
 			try {

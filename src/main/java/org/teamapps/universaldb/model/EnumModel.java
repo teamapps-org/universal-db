@@ -29,11 +29,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class EnumModel {
+	private static final int ENUM_MODEL_VERSION = 1;
 	private final String name;
 	private String title;
 
 	private List<String> enumNames;
 	private List<String> enumTitles;
+
+	private final boolean remoteEnum;
+	private final String remoteDatabase;
+	private final String remoteDatabaseNamespace;
+
+
 	private boolean deprecated;
 	private boolean deleted;
 	private int dateCreated;
@@ -41,28 +48,30 @@ public class EnumModel {
 	private int versionCreated;
 	private int versionModified;
 
-
-	protected EnumModel(String title, List<String> enumTitles) {
-		this(title, title, enumTitles, enumTitles);
-	}
-
-	protected EnumModel(String name, String title, List<String> enumTitles) {
-		this(name, title, enumTitles, enumTitles);
-	}
-
 	protected EnumModel(String name, String title, List<String> enumNames, List<String> enumTitles) {
+		this(name, title, enumNames, enumTitles, false, null, null);
+	}
+
+	protected EnumModel(String name, String title, List<String> enumNames, List<String> enumTitles, boolean remoteEnum, String  remoteDatabase, String remoteDatabaseNamespace) {
 		this.name = NamingUtils.createName(name);
 		this.title = NamingUtils.createTitle(title);
 		this.enumNames = enumNames.stream().map(NamingUtils::createName).collect(Collectors.toList());
 		this.enumTitles = enumTitles.stream().map(NamingUtils::createTitle).collect(Collectors.toList());
 		NamingUtils.checkName(name, title);
+		this.remoteEnum = remoteEnum;
+		this.remoteDatabase = remoteDatabase;
+		this.remoteDatabaseNamespace = remoteDatabaseNamespace;
 	}
 
 	protected EnumModel(DataInputStream dis) throws IOException {
+		//int modelVersion = dis.readInt(); //todo
 		name = MessageUtils.readString(dis);
 		title = MessageUtils.readString(dis);
 		enumNames = MessageUtils.readStringList(dis);
 		enumTitles = MessageUtils.readStringList(dis);
+		remoteEnum = false; //dis.readBoolean(); //todo
+		remoteDatabase = remoteEnum ? MessageUtils.readString(dis) : null;
+		remoteDatabaseNamespace = remoteEnum ? MessageUtils.readString(dis) : null;
 		deprecated = dis.readBoolean();
 		deleted = dis.readBoolean();
 		dateCreated = dis.readInt();
@@ -72,10 +81,16 @@ public class EnumModel {
 	}
 
 	public void write(DataOutputStream dos) throws IOException {
+		//dos.writeInt(ENUM_MODEL_VERSION); //todo
 		MessageUtils.writeString(dos, name);
 		MessageUtils.writeString(dos, title);
 		MessageUtils.writeStringList(dos, enumNames);
 		MessageUtils.writeStringList(dos, enumTitles);
+		//dos.writeBoolean(remoteEnum); //todo
+		if (remoteEnum) {
+			MessageUtils.writeString(dos, remoteDatabase);
+			MessageUtils.writeString(dos, remoteDatabaseNamespace);
+		}
 		dos.writeBoolean(deprecated);
 		dos.writeBoolean(deleted);
 		dos.writeInt(dateCreated);
@@ -107,6 +122,18 @@ public class EnumModel {
 	protected void updateValues(List<String> enumNames, List<String> enumTitles) {
 		this.enumNames = enumNames;
 		this.enumTitles = enumTitles;
+	}
+
+	public boolean isRemoteEnum() {
+		return remoteEnum;
+	}
+
+	public String getRemoteDatabase() {
+		return remoteDatabase;
+	}
+
+	public String getRemoteDatabaseNamespace() {
+		return remoteDatabaseNamespace;
 	}
 
 	public boolean isDeprecated() {

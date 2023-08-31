@@ -309,6 +309,14 @@ public class DatabaseModel {
 				table.setVersionCreated(version);
 				table.setDateCreated(timestamp);
 			}
+
+			for (FieldModel field : table.getFields()) {
+				if (field.getFieldId() == 0) {
+					field.setFieldId(idGenerator.incrementAndGet());
+					field.setVersionCreated(version);
+					field.setDateCreated(timestamp);
+				}
+			}
 		}
 
 		//removed tables
@@ -316,6 +324,21 @@ public class DatabaseModel {
 			existingTable.setDeprecated(true);
 			existingTable.setVersionModified(version);
 			existingTable.setDateModified(timestamp);
+		}
+
+		//sanity check
+		for (TableModel table : getTables()) {
+			if (table.getTableId() == 0) {
+				throw new RuntimeException("Error: table without id:" + table.getName());
+			}
+			for (FieldModel field : table.getFields()) {
+				if (field.getFieldId() == 0) {
+					System.out.println("WARNING: fields without id on sanity check - create id:" + table.getName() + ", field:" + field.getName());
+					field.setFieldId(idGenerator.incrementAndGet());
+					field.setVersionCreated(version);
+					field.setDateCreated(timestamp);
+				}
+			}
 		}
 
 	}
@@ -343,6 +366,15 @@ public class DatabaseModel {
 					if (!existingEnum.getEnumNames().get(i).equals(enumModel.getEnumNames().get(i))) {
 						errors.add("Wrong config for enum " + enumModel.getName() + ", " + existingEnum.getEnumNames().get(i) + "->" + enumModel.getEnumNames().get(i));
 					}
+				}
+				if (existingEnum.isRemoteEnum() != enumModel.isRemoteEnum()) {
+					errors.add("Incompatible enum locality (local vs. remote):" + existingEnum.getName());
+				}
+				if (existingEnum.isRemoteEnum() && !existingEnum.getRemoteDatabase().equals(enumModel.getRemoteDatabase())) {
+					errors.add("Wrong database for enum " + existingEnum.getName() + ", " + existingEnum.getRemoteDatabase() + "->" + enumModel.getRemoteDatabase());
+				}
+				if (existingEnum.isRemoteEnum() && !existingEnum.getRemoteDatabaseNamespace().equals(enumModel.getRemoteDatabaseNamespace())) {
+					errors.add("Wrong namespace for enum " + existingEnum.getName() + ", " + existingEnum.getRemoteDatabaseNamespace() + "->" + enumModel.getRemoteDatabaseNamespace());
 				}
 			}
 		}
@@ -517,6 +549,9 @@ public class DatabaseModel {
 			if (!existingModel.getTitle().equals(enumModel.getTitle())) return false;
 			if (CollectionUtil.compareByKey(existingModel.getEnumNames(), enumModel.getEnumNames(), s -> s, s -> s).isDifferent()) return true;
 			if (CollectionUtil.compareByKey(existingModel.getEnumTitles(), enumModel.getEnumTitles(), s -> s, s -> s).isDifferent()) return true;
+			if (existingModel.isRemoteEnum() != enumModel.isRemoteEnum()) return false;
+			if (existingModel.isRemoteEnum() && !existingModel.getRemoteDatabase().equals(enumModel.getRemoteDatabase())) return false;
+			if (existingModel.isRemoteEnum() && !existingModel.getRemoteDatabaseNamespace().equals(enumModel.getRemoteDatabaseNamespace())) return false;
 		}
 		ByKeyComparisonResult<TableModel, TableModel, String> tableCompare = CollectionUtil.compareByKey(tables, model.getTables(), TableModel::getName, TableModel::getName, true);
 		if (tableCompare.isDifferent()) return false;
@@ -613,6 +648,11 @@ public class DatabaseModel {
 
 	public EnumModel createEnum(String name, String title, List<String> enumNames, List<String> enumTitles) {
 		EnumModel enumModel = new EnumModel(name, title, enumNames, enumTitles);
+		return addEnum(enumModel);
+	}
+
+	public EnumModel createRemoteEnum(String name, String title, List<String> enumNames, List<String> enumTitles,  String  remoteDatabase, String remoteDatabaseNamespace) {
+		EnumModel enumModel = new EnumModel(name, title, enumNames, enumTitles, true, remoteDatabase, remoteDatabaseNamespace);
 		return addEnum(enumModel);
 	}
 
