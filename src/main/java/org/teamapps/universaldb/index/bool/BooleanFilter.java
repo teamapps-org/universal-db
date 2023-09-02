@@ -29,6 +29,10 @@ public class BooleanFilter {
 		return new BooleanFilter(false);
 	}
 
+	public static BooleanFilter create(boolean filter) {
+		return new BooleanFilter(filter);
+	}
+
 	private final boolean filter;
 
 	protected BooleanFilter(boolean filter) {
