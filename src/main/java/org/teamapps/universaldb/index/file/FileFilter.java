@@ -60,7 +60,7 @@ public class FileFilter {
 		return new FileFilter(FileFullTextFilterType.TERM_NOT_SIMILAR, value, fields);
 	}
 
-	public static FileFilter termContains(String value, FileDataField fields) {
+	public static FileFilter termContains(String value, FileDataField... fields) {
 		return new FileFilter(FileFullTextFilterType.TERM_CONTAINS, value, fields);
 	}
 
