@@ -58,7 +58,7 @@ public class IndexMetaData {
 				throw new RuntimeException("Error creating index meta data", e);
 			}
 		} else if (getMappingId() != mappingId) {
-			throw new RuntimeException("Wrong mapping id:" + getMappingId() + ", expected:" + mappingId);
+			throw new RuntimeException("Wrong mapping id:" + getMappingId() + ", expected:" + mappingId + ", path:" + dataPath + "/" + name);
 		}
 	}
 

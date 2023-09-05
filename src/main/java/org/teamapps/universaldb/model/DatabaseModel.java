@@ -19,11 +19,14 @@
  */
 package org.teamapps.universaldb.model;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.teamapps.commons.util.collections.ByKeyComparisonResult;
 import org.teamapps.commons.util.collections.CollectionUtil;
 import org.teamapps.message.protocol.utils.MessageUtils;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -31,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DatabaseModel {
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	private final static int DATABASE_MODEL_VERSION = 1;
 
 	private final String name;
@@ -185,7 +190,7 @@ public class DatabaseModel {
 				enumModel.setDateCreated(referenceModel.getDateCreated());
 				enumModel.setDeprecated(referenceModel.isDeprecated());
 			} else {
-				System.out.println("Missing enum:" + enumModel.getName());
+				logger.warn("Missing enum:" + enumModel.getName());
 			}
 		}
 		for (TableModel table : tables) {
@@ -210,11 +215,11 @@ public class DatabaseModel {
 						field.setDeprecated(referenceField.isDeprecated());
 						field.setDeleted(referenceField.isDeleted());
 					} else {
-						System.out.println("Missing field:" + table.getName() + "." + field.getName());
+						logger.warn("Missing field:" + table.getName() + "." + field.getName());
 					}
 				}
 			} else {
-				System.out.println("Missing table:" + table.getName());
+				logger.warn("Missing table:" + table.getName());
 			}
 		}
 	}
@@ -329,7 +334,10 @@ public class DatabaseModel {
 		//sanity check
 		for (TableModel table : getTables()) {
 			if (table.getTableId() == 0) {
-				throw new RuntimeException("Error: table without id:" + table.getName());
+				table.setTableId(idGenerator.incrementAndGet());
+				table.setVersionCreated(version);
+				table.setDateCreated(timestamp);
+				logger.warn("WARNING: table without id on sanity check - create id:" + table.getName());
 			}
 			for (FieldModel field : table.getFields()) {
 				if (field.getFieldId() == 0) {
@@ -338,6 +346,21 @@ public class DatabaseModel {
 					field.setVersionCreated(version);
 					field.setDateCreated(timestamp);
 				}
+			}
+		}
+
+		//id duplicates check:
+		Set<Integer> existingIdSet = new HashSet<>();
+		for (TableModel table : getTables()) {
+			if (existingIdSet.contains(table.getTableId())) {
+				throw new RuntimeException("Error: duplicate table id:" + table.getName());
+			}
+			existingIdSet.add(table.getTableId());
+			for (FieldModel field : table.getFields()) {
+				if (existingIdSet.contains(field.getFieldId())) {
+					throw new RuntimeException("Error: duplicate field id:" + table.getName() + "." + field.getFieldId());
+				}
+				existingIdSet.add(field.getFieldId());
 			}
 		}
 
@@ -547,8 +570,8 @@ public class DatabaseModel {
 			EnumModel existingModel = enumCompare.getA(enumModel);
 			if (!existingModel.getName().equals(enumModel.getName())) return false;
 			if (!existingModel.getTitle().equals(enumModel.getTitle())) return false;
-			if (CollectionUtil.compareByKey(existingModel.getEnumNames(), enumModel.getEnumNames(), s -> s, s -> s).isDifferent()) return true;
-			if (CollectionUtil.compareByKey(existingModel.getEnumTitles(), enumModel.getEnumTitles(), s -> s, s -> s).isDifferent()) return true;
+			if (CollectionUtil.compareByKey(existingModel.getEnumNames(), enumModel.getEnumNames(), s -> s, s -> s).isDifferent()) return false;
+			if (CollectionUtil.compareByKey(existingModel.getEnumTitles(), enumModel.getEnumTitles(), s -> s, s -> s).isDifferent()) return false;
 			if (existingModel.isRemoteEnum() != enumModel.isRemoteEnum()) return false;
 			if (existingModel.isRemoteEnum() && !existingModel.getRemoteDatabase().equals(enumModel.getRemoteDatabase())) return false;
 			if (existingModel.isRemoteEnum() && !existingModel.getRemoteDatabaseNamespace().equals(enumModel.getRemoteDatabaseNamespace())) return false;
@@ -560,8 +583,8 @@ public class DatabaseModel {
 			if (!existingModel.getName().equals(tableModel.getName())) return false;
 			if (!existingModel.getTitle().equals(tableModel.getTitle())) return false;
 			if (existingModel.isRemoteTable() != tableModel.isRemoteTable()) return false;
-			if (existingModel.getRemoteDatabaseNamespace() == null && tableModel.getRemoteDatabaseNamespace() != null) return true;
-			if (existingModel.getRemoteDatabaseNamespace() != null && !existingModel.getRemoteDatabaseNamespace().equals(tableModel.getRemoteDatabaseNamespace())) return true;
+			if (existingModel.getRemoteDatabaseNamespace() == null && tableModel.getRemoteDatabaseNamespace() != null) return false;
+			if (existingModel.getRemoteDatabaseNamespace() != null && !existingModel.getRemoteDatabaseNamespace().equals(tableModel.getRemoteDatabaseNamespace())) return false;
 			if (existingModel.isTrackModifications() != tableModel.isTrackModifications()) return false;
 			if (existingModel.isVersioning() != tableModel.isVersioning()) return false;
 			if (existingModel.isRecoverableRecords() != tableModel.isRecoverableRecords()) return false;
