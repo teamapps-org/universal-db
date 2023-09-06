@@ -209,14 +209,12 @@ public class UniversalDB {
 			method.setAccessible(true);
 			method.invoke(null, tableIndex, this);
 
-//			if (!tableModel.isRemoteTable()) {
 			String queryClassName = fullNamespace + ".Udb" + tableName.substring(0, 1).toUpperCase() + tableName.substring(1) + "Query";
 			Class<?> queryClass = Class.forName(queryClassName, true, classLoader);
 			entityClassByTableIndex.put(tableIndex, schemaClass);
 			queryClassByTableIndex.put(tableIndex, queryClass);
-//			}
 		} catch (ClassNotFoundException e) {
-			throw new RuntimeException("Could not load entity class for tableIndex:" + tableIndex.getFQN() + ", " + e.getMessage());
+			logger.warn("Could not load entity class for tableIndex:" + tableIndex.getFQN() + ", " + e.getMessage());
 		} catch (Exception e) {
 			throw e;
 		}
@@ -225,6 +223,10 @@ public class UniversalDB {
 	public void installModelUpdate(ModelProvider modelProvider, ClassLoader classLoader) throws Exception {
 		DatabaseModel model = modelProvider.getModel();
 		if (!transactionIndex.isValidModel(model)) {
+			if (transactionIndex.getCurrentModel() != null) {
+				List<String> errors = transactionIndex.getCurrentModel().checkCompatibilityErrors(model);
+				logger.error("Model errors: " + String.join("\n", errors));
+			}
 			throw new RuntimeException("Cannot load incompatible model. Current model is:\n" + transactionIndex.getCurrentModel() + "\nNew model is:\n" + model);
 		}
 		if (transactionIndex.isModelUpdate(model)) {

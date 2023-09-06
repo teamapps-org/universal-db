@@ -740,11 +740,17 @@ public class DatabaseModel {
 	}
 
 	public List<TableModel> getLocalTables() {
-		return tables.stream().filter(t -> !t.isRemoteTable()).toList();
+		return tables.stream()
+				.filter(t -> !t.isRemoteTable())
+				//.filter(t -> !t.isDeleted())
+				.toList();
 	}
 
 	public List<TableModel> getRemoteTables() {
-		return tables.stream().filter(TableModel::isRemoteTable).toList();
+		return tables.stream()
+				.filter(TableModel::isRemoteTable)
+				//.filter(t -> !t.isDeleted())
+				.toList();
 	}
 
 	public List<String> getRemoteTableNamespaces() {
