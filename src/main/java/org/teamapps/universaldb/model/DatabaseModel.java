@@ -222,6 +222,43 @@ public class DatabaseModel {
 				logger.warn("Missing table:" + table.getName());
 			}
 		}
+
+		AtomicInteger idGenerator = new AtomicInteger(getMaxId());
+		int timestamp = (int) (System.currentTimeMillis() / 1000);
+
+		//sanity check
+		for (TableModel table : getTables()) {
+			if (table.getTableId() == 0) {
+				table.setTableId(idGenerator.incrementAndGet());
+				table.setVersionCreated(version);
+				table.setDateCreated(timestamp);
+				logger.warn("WARNING: table without id on sanity check - create id:" + table.getName());
+			}
+			for (FieldModel field : table.getFields()) {
+				if (field.getFieldId() == 0) {
+					System.out.println("WARNING: fields without id on sanity check - create id:" + table.getName() + ", field:" + field.getName());
+					field.setFieldId(idGenerator.incrementAndGet());
+					field.setVersionCreated(version);
+					field.setDateCreated(timestamp);
+				}
+			}
+		}
+
+		//id duplicates check:
+		Set<Integer> existingIdSet = new HashSet<>();
+		for (TableModel table : getTables()) {
+			if (existingIdSet.contains(table.getTableId())) {
+				throw new RuntimeException("Error: duplicate table id:" + table.getName());
+			}
+			existingIdSet.add(table.getTableId());
+			for (FieldModel field : table.getFields()) {
+				if (existingIdSet.contains(field.getFieldId())) {
+					throw new RuntimeException("Error: duplicate field id:" + table.getName() + "." + field.getFieldId());
+				}
+				existingIdSet.add(field.getFieldId());
+			}
+		}
+
 	}
 
 	public void mergeModel(DatabaseModel model) {
