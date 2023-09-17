@@ -116,6 +116,10 @@ public class TransactionIndex {
 			throw new RuntimeException("Error in transaction log!");
 		}
 		logIterator.closeSave();
+		if (getLastTransactionId() != (expectedTransactionId - 1)) {
+			logger.error("Wrong transaction id in stats file, expected: {}, actual: {}, probably system was not shut down properly", (expectedTransactionId - 1), getLastTransaction());
+			throw new RuntimeException("Error last transaction id not matching transaction log!");
+		}
 		return ok;
 	}
 
