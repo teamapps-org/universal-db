@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -70,6 +73,16 @@ public class TransactionIndex {
 		init();
 		if (!skipIndexCheck) {
 			checkIndex();
+		}
+	}
+
+	private static long createId() {
+		SecureRandom secureRandom = new SecureRandom();
+		while (true) {
+			long id = Math.abs(secureRandom.nextLong());
+			if (Long.toHexString(id).length() == 16) {
+				return id;
+			}
 		}
 	}
 
@@ -112,13 +125,21 @@ public class TransactionIndex {
 			expectedTransactionId = transaction.getTransactionId() + 1;
 		}
 		logger.info(UniversalDB.SKIP_DB_LOGGING, "Transaction index check result: {}", ok);
+		logIterator.closeSave();
 		if (!ok) {
 			throw new RuntimeException("Error in transaction log!");
 		}
-		logIterator.closeSave();
 		if (getLastTransactionId() != (expectedTransactionId - 1)) {
-			logger.error("Wrong transaction id in stats file, expected: {}, actual: {}, probably system was not shut down properly", (expectedTransactionId - 1), getLastTransaction());
-			throw new RuntimeException("Error last transaction id not matching transaction log!");
+			logger.error("Wrong transaction id in stats file, expected: {}, actual: {}, probably system was not shut down properly", (expectedTransactionId - 1), getLastTransactionId());
+			if (new File(path, "transaction-log.repair").exists()) {
+				logger.warn("Fixing transaction stats file...");
+				databaseStats.setLong(LAST_TRANSACTION_ID, expectedTransactionId - 1);
+				new File(path, "transaction-log.repair").delete();
+				logger.warn("Transaction stats file fixed, repair-file removed");
+			} else {
+				logger.warn("To fix the transaction id: create a file 'transaction-log.repair' and put it into the directory: {} and restart", path.getPath());
+				throw new RuntimeException("Error last transaction id not matching transaction log!");
+			}
 		}
 		return ok;
 	}
@@ -218,6 +239,7 @@ public class TransactionIndex {
 		databaseStats.setLong(LAST_TRANSACTION_ID, transaction.getTransactionId());
 		databaseStats.setLong(LAST_TRANSACTION_STORE_ID, transactionLog.getPosition());
 		databaseStats.setLong(TRANSACTIONS_COUNT, getTransactionCount() + 1);
+		databaseStats.flush();
 	}
 
 	public synchronized List<ModelUpdate> getModelUpdates() {
@@ -230,9 +252,6 @@ public class TransactionIndex {
 				.collect(Collectors.toList());
 	}
 
-
-
-
 	public Stream<ResolvedTransaction> getTransactions(long lastTransactionId) {
 		LogIterator logIterator = transactionLog.readLogs();
 		Stream<byte[]> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(logIterator, Spliterator.ORDERED), false);
@@ -244,16 +263,6 @@ public class TransactionIndex {
 
 	public LogIterator getLogIterator() {
 		return transactionLog.readLogs();
-	}
-
-	private static long createId() {
-		SecureRandom secureRandom = new SecureRandom();
-		while (true) {
-			long id = Math.abs(secureRandom.nextLong());
-			if (Long.toHexString(id).length() == 16) {
-				return id;
-			}
-		}
 	}
 
 
