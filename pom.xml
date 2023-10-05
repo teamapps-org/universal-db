@@ -50,7 +50,7 @@
         <apache-commons-io>2.11.0</apache-commons-io>
         <junit.version>4.13.2</junit.version>
         <tika-version>2.9.0</tika-version>
-        <lucene-version>9.7.0</lucene-version>
+        <lucene-version>9.8.0</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.teamapps</groupId>
             <artifactId>teamapps-message-protocol</artifactId>
-            <version>0.13</version>
+            <version>0.14</version>
         </dependency>
 
         <dependency>
