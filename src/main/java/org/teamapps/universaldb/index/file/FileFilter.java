@@ -105,6 +105,9 @@ public class FileFilter {
 		this.fullTextFilterType = fullTextFilterType;
 		this.fields = Arrays.asList(fields);
 		this.value = value;
+		if (this.fields.isEmpty()) {
+			this.fields = List.of(FileDataField.CONTENT, FileDataField.NAME);
+		}
 	}
 
 	protected FileFilter(long size, FileFilterType filterType) {
