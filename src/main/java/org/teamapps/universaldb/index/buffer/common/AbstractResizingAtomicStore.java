@@ -49,7 +49,7 @@ public class AbstractResizingAtomicStore {
 	public AbstractResizingAtomicStore(File path, String name) {
 		this.path = path;
 		this.name = name;
-		this.maxTotalSize = MAX_FILE_SIZE * 8L;
+		this.maxTotalSize = MAX_FILE_SIZE * 64L;
 		init();
 	}
 
