@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,26 @@ public class Model implements ModelProvider {
 		TableModel company = model.createTable("company");
 		TableModel contract = model.createTable("contract");
 		TableModel enumTestTable = model.createTable("enumTestTable");
+
+		TableModel project = model.createTable("project");
+		TableModel milestone = model.createTable("milestone");
+		TableModel member = model.createTable("member");
+		TableModel companyCar = model.createTable("companyCar");
+
+
+		project.addText("projectName");
+		ReferenceFieldModel milestonesRef = project.addMultiReference("milestones", milestone);
+		ReferenceFieldModel membersRef = project.addMultiReference("members", member);
+		milestone.addText("milestoneName");
+		milestone.addReference("project", milestonesRef);
+		member.addText("memberName");
+		member.addMultiReference("projects", membersRef);
+		ReferenceFieldModel supervisorRef = member.addReference("supervisor", member);
+		member.addMultiReference("subordinates", supervisorRef);
+		ReferenceFieldModel carRef = member.addReference("car", companyCar);
+		companyCar.addText("companyCarName");
+		companyCar.addReference("owner", carRef);
+
 
 		enumTestTable.addEnum(contractEnum);
 		enumTestTable.addEnum("otherEnum", contractEnum);
@@ -70,7 +90,7 @@ public class Model implements ModelProvider {
 
 		person.addText("firstName");
 		person.addText("lastName");
-		ReferenceFieldModel companyRef = person.addReference("company", company);//, false, "employees"
+		ReferenceFieldModel companyRef = person.addReference("company", company);
 
 		company.addText("name");
 		company.addMultiReference("employees", companyRef);
@@ -79,39 +99,6 @@ public class Model implements ModelProvider {
 		contract.addEnum("contractType", contractEnum);
 		contract.addText("title");
 		contract.addMultiReference("companies", companyContracts);
-
-//		return model;
-
-//		Schema schema = Schema.create();
-//		schema.setSchemaName("TestBaseSchema");
-//		Database database = schema.addDatabase("testDb1");
-//
-//		Table fieldTestView = database.addView("fieldTestView", table);
-//
-//		Table personView = database.addView("personView", person);
-//		Table personView2 = database.addView("personView2", person);
-//		Table companyView = database.addView("companyView", company);
-//		personView
-//				.addText("firstName")
-//				.addText("lastName")
-//				.addReference("company", companyView, false)
-//		;
-//		personView2
-//				.addText("lastName")
-//				.addReference("company", companyView, false)
-//		;
-//		companyView
-//				.addText("name")
-//				.addReference("employees", personView, true)
-//		;
-//
-//		Table personWithViewRef = database.addTable("personWithViewRef");
-//		personWithViewRef
-//				.addText("name")
-//				.addInteger("value")
-//				.addReference("companyView", companyView, false)
-//		;
-//
 
 
 		TableModel cascadeTest1 = model.createTable("cascadeTest1");

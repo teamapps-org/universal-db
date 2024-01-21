@@ -152,12 +152,16 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 		int previousValue = getValue(id);
 		if (previousValue != value) {
 			if (reverseSingleIndex != null) {
+				if (value > 0) {
+					int previousReverseValue = reverseSingleIndex.getValue(value);
+					if (previousReverseValue > 0) {
+						setIndexValue(previousReverseValue, 0);
+						cyclicReferenceUpdates.add(new CyclicReferenceUpdate(this, true, previousReverseValue, value));
+					}
+				}
 				if (previousValue > 0) {
-					int orphanedReference = reverseSingleIndex.getValue(previousValue);
-					assert orphanedReference > 0;
-					setIndexValue(orphanedReference, 0);
 					reverseSingleIndex.setIndexValue(previousValue, 0);
-					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, orphanedReference));
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, id));
 				}
 				if (value > 0) {
 					reverseSingleIndex.setIndexValue(value, id);
