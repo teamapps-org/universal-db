@@ -88,6 +88,12 @@ public class PojoCodeGenerator {
 
 	}
 
+	public String createModelProviderCode(DatabaseModel model) throws IOException {
+		PojoTemplate tpl = PojoTemplate.createModelProviderCodeTpl();
+		createModelProviderClass(tpl, model);
+		return tpl.writeTemplateCode();
+	}
+
 	public String createModelProviderClassCode(DatabaseModel model) throws IOException {
 		PojoTemplate tpl = PojoTemplate.createModelProviderClass();
 		createModelProviderClass(tpl, model);

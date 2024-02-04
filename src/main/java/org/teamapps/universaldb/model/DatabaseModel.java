@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.teamapps.commons.util.collections.ByKeyComparisonResult;
 import org.teamapps.commons.util.collections.CollectionUtil;
 import org.teamapps.message.protocol.utils.MessageUtils;
+import org.teamapps.universaldb.generator.PojoCodeGenerator;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -97,6 +98,14 @@ public class DatabaseModel {
 			}
 		}
 		int views = dis.readInt();
+	}
+
+	public String getModelCode() {
+		try {
+			return new PojoCodeGenerator().createModelProviderCode(this);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void write(DataOutputStream dos) throws IOException {

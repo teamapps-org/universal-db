@@ -53,6 +53,10 @@ public class PojoTemplate {
 		return create(TemplateUtil.MODEL_PROVIDER_TPL);
 	}
 
+	public static PojoTemplate createModelProviderCodeTpl() throws IOException {
+		return create(TemplateUtil.MODEL_PROVIDER_CODE_TPL);
+	}
+
 	public static PojoTemplate createEntityInterface() throws IOException {
 		return create(TemplateUtil.ENTITY_INTERFACE_TPL);
 	}

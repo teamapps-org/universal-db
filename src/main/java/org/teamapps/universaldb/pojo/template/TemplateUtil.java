@@ -41,6 +41,7 @@ public class TemplateUtil {
 	public static final String ENUM_TPL = "Enum.txt";
 
 	public static final String MODEL_PROVIDER_TPL = "ModelProvider.txt";
+	public static final String MODEL_PROVIDER_CODE_TPL = "ModelProviderCode.txt";
 	public static final String TEMPLATE_BLOCKS_TPL = "templateBlocks.txt";
 
 	public static String readeTemplate(String name) throws IOException {

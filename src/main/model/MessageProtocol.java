@@ -28,7 +28,7 @@ import org.teamapps.message.protocol.service.ServiceProtocol;
 public class MessageProtocol implements ModelCollectionProvider {
 	@Override
 	public ModelCollection getModelCollection() {
-		MessageModelCollection modelCollection = new MessageModelCollection("newTestModel", "org.teamapps.udb.model", 1);
+		MessageModelCollection modelCollection = new MessageModelCollection("udbModel", "org.teamapps.udb.model", 1);
 
 		MessageDefinition fileContentData = modelCollection.createModel("fileContentData", "#udb.fileContentData");
 
