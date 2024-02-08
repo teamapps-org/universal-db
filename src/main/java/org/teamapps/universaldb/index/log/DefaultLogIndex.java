@@ -33,7 +33,11 @@ public class DefaultLogIndex implements LogIndex {
 	private long position;
 
 	public DefaultLogIndex(File basePath, String name) {
-		storeFile = new File(basePath, name);
+		this (new File(basePath, name));
+	}
+
+	public DefaultLogIndex(File logFile) {
+		storeFile = logFile;
 		position = storeFile.length();
 		dos = createIndexFile();
 	}

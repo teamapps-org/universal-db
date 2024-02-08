@@ -108,6 +108,14 @@ public class DatabaseModel {
 		}
 	}
 
+	public String getModelClassCode() {
+		try {
+			return new PojoCodeGenerator().createModelProviderClassCode(this);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public void write(DataOutputStream dos) throws IOException {
 		dos.writeInt(DATABASE_MODEL_VERSION);
 		MessageUtils.writeString(dos, name);
