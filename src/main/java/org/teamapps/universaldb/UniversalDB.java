@@ -362,9 +362,8 @@ public class UniversalDB {
 //			}
 			return handleTransactionRequest(transaction);
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		return null;
 	}
 
 	private synchronized ResolvedTransaction handleTransactionRequest(TransactionRequest transactionRequest) throws Exception {

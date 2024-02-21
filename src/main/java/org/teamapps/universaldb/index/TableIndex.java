@@ -227,7 +227,7 @@ public class TableIndex implements MappedObject {
 			}
 			collectionTextSearchIndex.commit(false);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 

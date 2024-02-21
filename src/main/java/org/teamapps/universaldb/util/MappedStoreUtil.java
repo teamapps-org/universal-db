@@ -87,9 +87,8 @@ public class MappedStoreUtil {
             return buffer;
         } catch (IOException e) {
             logger.error("Error creating buffer:" + e.getMessage() +  ", file:" + file) ;
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     public static void deleteBufferAndData(File file, MappedByteBuffer buffer) {

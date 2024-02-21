@@ -104,9 +104,8 @@ public class TemplateUtil {
 		try {
 			return readTemplateBlocks(TEMPLATE_BLOCKS_TPL);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		return null;
 	}
 
 	public static String setValue(String template, String name, String value) {
