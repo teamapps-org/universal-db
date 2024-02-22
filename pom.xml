@@ -48,7 +48,7 @@
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <junit.version>4.13.2</junit.version>
         <tika-version>2.9.1</tika-version>
-        <lucene-version>9.9.0</lucene-version>
+        <lucene-version>9.10.0</lucene-version>
     </properties>
 
     <distributionManagement>
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>org.teamapps</groupId>
             <artifactId>teamapps-message-protocol</artifactId>
-            <version>0.15-SNAPSHOT</version>
+            <version>0.15</version>
         </dependency>
 
         <dependency>
