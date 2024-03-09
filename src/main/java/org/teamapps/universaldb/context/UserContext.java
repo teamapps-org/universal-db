@@ -50,7 +50,7 @@ public interface UserContext {
 	}
 
 	default String getLanguage() {
-		return getRankedLanguages().get(0);
+		return getRankedLanguages().getFirst();
 	}
 
 	Locale getLocale();

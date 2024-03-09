@@ -26,9 +26,9 @@ import java.util.Locale;
 
 public class UserContextImpl implements UserContext {
 
-	private String language;
-	private Locale locale;
-	private List<String> rankedLanguages;
+	private final String language;
+	private final Locale locale;
+	private final List<String> rankedLanguages;
 
 	public UserContextImpl(Locale locale) {
 		this.locale = locale;
@@ -45,7 +45,7 @@ public class UserContextImpl implements UserContext {
 			rankedLanguages = Collections.singletonList("en");
 		}
 		this.rankedLanguages = rankedLanguages;
-		language = rankedLanguages.get(0);
+		language = rankedLanguages.getFirst();
 		locale = Locale.forLanguageTag(language);
 	}
 
