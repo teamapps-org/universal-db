@@ -42,9 +42,14 @@ public class MessageModelConverter {
 			enumMap.put(dbModelEnum.getName(), enumDefinition);
 		}
 		Map<String, MessageDefinition> modelMap = new HashMap<>();
+
 		for (TableModel table : dbModel.getLocalTables()) {
 			MessageDefinition def = model.createModel(table.getName() + dtoSuffix);
 			modelMap.put(table.getName(), def);
+		}
+
+		for (TableModel table : dbModel.getLocalTables()) {
+			MessageDefinition def = modelMap.get(table.getName());
 			int counter = 1;
 			for (FieldModel field : table.getFields()) {
 				if (!field.isMetaField()) {
