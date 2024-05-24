@@ -278,8 +278,11 @@ public class TableIndex implements MappedObject {
 		}
 	}
 
-
 	public Filter createFullTextFilter(String query, String... fieldNames) {
+		return createFullTextFilter(query, null, fieldNames);
+	}
+
+	public Filter createFullTextFilter(String query, UserContext userContext, String... fieldNames) {
 		AndFilter andFilter = new AndFilter();
 		if (query == null || query.isBlank()) {
 			return andFilter;
@@ -289,6 +292,9 @@ public class TableIndex implements MappedObject {
 			if (!term.isBlank()) {
 				boolean isNegation = term.startsWith("!");
 				TextFilter textFilter = parseTextFilter(term);
+				if (userContext != null) {
+					textFilter.setUserContext(userContext);
+				}
 				Filter fullTextFilter = createFullTextFilter(textFilter, !isNegation, fieldNames);
 				andFilter.and(fullTextFilter);
 			}

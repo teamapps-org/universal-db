@@ -117,6 +117,11 @@ public class TextFilter {
 		return userContext;
 	}
 
+	public TextFilter setUserContext(UserContext context) {
+		this.userContext = context;
+		return this;
+	}
+
 	@Override
 	public String toString() {
 		return userContext == null ? filterType + ":" + value : filterType + ":" + value + " (" + String.join(",", userContext.getRankedLanguages()) + ")";
