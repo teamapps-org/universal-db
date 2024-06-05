@@ -148,6 +148,9 @@ public class TranslatableText {
             return this;
         }
         getTranslationMap().put(language, translation);
+        if (language.equals(originalLanguage)) {
+            originalText = translation;
+        }
         return this;
     }
 
