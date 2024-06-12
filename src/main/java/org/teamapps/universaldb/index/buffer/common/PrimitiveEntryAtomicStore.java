@@ -117,6 +117,16 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 		return buffer.getInt(offset, byteOrder);
 	}
 
+	public int getIntAllowZeroId(int id) {
+		if (id < 0 || id > getMaximumId(4)) {
+			return 0;
+		}
+		int bufferIndex = id / INTEGER_ENTRIES_PER_FILE;
+		int offset = getOffset(id, bufferIndex, INTEGER_ENTRIES_PER_FILE, 4);
+		AtomicBuffer buffer = getBuffer(bufferIndex);
+		return buffer.getInt(offset, byteOrder);
+	}
+
 	public void setInt(int id, int value) {
 		ensureCapacity(id, 4);
 		int bufferIndex = id / INTEGER_ENTRIES_PER_FILE;
@@ -145,6 +155,16 @@ public class PrimitiveEntryAtomicStore extends AbstractResizingAtomicStore {
 
 	public long getLong(int id) {
 		if (id <= 0 || id > getMaximumId(8)) {
+			return 0;
+		}
+		int bufferIndex = id / LONG_ENTRIES_PER_FILE;
+		int offset = getOffset(id, bufferIndex, LONG_ENTRIES_PER_FILE, 8);
+		AtomicBuffer buffer = getBuffer(bufferIndex);
+		return buffer.getLong(offset, byteOrder);
+	}
+
+	public long getLongAllowZeroId(int id) {
+		if (id < 0 || id > getMaximumId(8)) {
 			return 0;
 		}
 		int bufferIndex = id / LONG_ENTRIES_PER_FILE;

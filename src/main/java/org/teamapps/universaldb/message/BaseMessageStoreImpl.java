@@ -76,7 +76,7 @@ public class BaseMessageStoreImpl implements BaseMessageStore {
 
 	private DataOutputStream init() {
 		try {
-			lastId = (int) messagePositions.getLong(0);
+			lastId = (int) messagePositions.getLongAllowZeroId(0);
 			DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(storeFile, true), 16_000));
 			if (position == 0) {
 				dataOutputStream.writeInt((int) (System.currentTimeMillis() / 1000));
