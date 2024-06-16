@@ -29,6 +29,8 @@ import org.teamapps.universaldb.index.DatabaseIndex;
 import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.counter.ViewCounter;
+import org.teamapps.universaldb.index.counter.ViewCounterImpl;
 import org.teamapps.universaldb.index.file.FileIndex;
 import org.teamapps.universaldb.index.file.FileValue;
 import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
@@ -88,6 +90,7 @@ public class UniversalDB {
     private final Map<TableIndex, Class> queryClassByTableIndex = new HashMap<>();
     private final ArrayBlockingQueue<RecordUpdateEvent> updateEventQueue = new ArrayBlockingQueue<>(25_000);
     private final Map<Long, CompletableFuture<ResolvedTransaction>> transactionCompletableFutureMap = new ConcurrentHashMap<>();
+    private final Map<TableIndex, ViewCounter> viewCounterMap = new ConcurrentHashMap<>();
 
     protected UniversalDB(ModelProvider modelProvider, DatabaseManager databaseManager, DatabaseFileStore fileStore, File indexPath, File fullTextIndexPath, File transactionLogPath, ClassLoader classLoader, boolean skipTransactionIndexCheck) throws Exception {
         this.databaseManager = databaseManager;
@@ -181,6 +184,15 @@ public class UniversalDB {
                 e.printStackTrace();
             }
         }));
+    }
+
+    public synchronized ViewCounter getOrCreateViewCounter(TableIndex tableIndex) {
+        ViewCounter viewCounter = viewCounterMap.get(tableIndex);
+        if (viewCounter == null) {
+            viewCounter = new ViewCounterImpl(tableIndex);
+            viewCounterMap.put(tableIndex, viewCounter);
+        }
+        return viewCounter;
     }
 
     private void installLocalTableClasses(ClassLoader classLoader) throws Exception {
