@@ -261,6 +261,10 @@ public class TableModel {
 		return addFile(name, name, true, true);
 	}
 
+	public FileFieldModel addFile(String name, boolean index) {
+		return addFile(name, name, index, index);
+	}
+
 	public FileFieldModel addFile(String name, String title) {
 		return addFile(name, title, true, true);
 	}
