@@ -41,17 +41,8 @@ public class DatabaseManager {
 
 	public synchronized void registerDatabase(String name, UniversalDB newDb, ClassLoader classLoader) {
 		LOGGER.info("Register new database: {}", name);
-		for (DatabaseData dbData : databaseMap.values()) {
-			Set<String> remoteDbNames = dbData.getUniversalDB().getTransactionIndex().getCurrentModel().getRemoteTables().stream().map(TableModel::getRemoteDatabase).collect(Collectors.toSet());
-			if (remoteDbNames.contains(newDb.getName()) && remoteDbNames.stream().allMatch(databaseMap::containsKey)) {
-				installRemoteTables(dbData.getUniversalDB(), classLoader);
-			}
-		}
 		databaseMap.put(name, new DatabaseData(newDb, classLoader));
-		Set<String> remoteDbNames = newDb.getTransactionIndex().getCurrentModel().getRemoteTables().stream().map(TableModel::getRemoteDatabase).collect(Collectors.toSet());
-		if (remoteDbNames.stream().allMatch(databaseMap::containsKey)) {
-			installRemoteTables(newDb, classLoader);
-		}
+		databaseMap.values().forEach(databaseData -> installRemoteTables(databaseData.getUniversalDB(), databaseData.getClassLoader()));
 		managedDbHandler.forEach(handler -> handler.accept(newDb));
 	}
 
@@ -62,23 +53,11 @@ public class DatabaseManager {
 		if (updatedDb == null || classLoader == null) {
 			throw new RuntimeException("Error missing database for update:" + name);
 		}
-		for (DatabaseData dbData : databaseMap.values()) {
-			if (!dbData.getUniversalDB().getName().equals(name)) {
-				Set<String> remoteDbNames = dbData.getUniversalDB().getTransactionIndex().getCurrentModel().getRemoteTables().stream().map(TableModel::getRemoteDatabase).collect(Collectors.toSet());
-				if (remoteDbNames.contains(updatedDb.getName()) && remoteDbNames.stream().allMatch(databaseMap::containsKey)) {
-					installRemoteTables(dbData.getUniversalDB(), classLoader);
-				}
-			}
-		}
-		Set<String> remoteDbNames = updatedDb.getTransactionIndex().getCurrentModel().getRemoteTables().stream().map(TableModel::getRemoteDatabase).collect(Collectors.toSet());
-		if (remoteDbNames.stream().allMatch(databaseMap::containsKey)) {
-			installRemoteTables(updatedDb, classLoader);
-		}
-
+		databaseMap.values().forEach(databaseData -> installRemoteTables(databaseData.getUniversalDB(), databaseData.getClassLoader()));
 	}
 
-	private void installRemoteTables(UniversalDB db, ClassLoader classLoader) {
-		db.installRemoteTableClasses(classLoader);
+	private void installRemoteTables(UniversalDB db, ClassLoader localDbClassLoader) {
+		db.installAvailableRemoteTables(localDbClassLoader);
 	}
 
 	public void addDatabaseHandler(Consumer<UniversalDB> handler) {

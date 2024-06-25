@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ import org.teamapps.universaldb.model.DatabaseModel;
 import org.teamapps.universaldb.model.ReferenceFieldModel;
 import org.teamapps.universaldb.model.TableModel;
 
-import java.io.*;
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,12 +91,12 @@ public class DatabaseIndex {
 			addTable(tableIndex);
 		}
 
-		tables.stream().flatMap(tableIndex ->  tableIndex.getReferenceFields().stream()).forEach(index -> {
+		tables.stream().flatMap(tableIndex -> tableIndex.getReferenceFields().stream()).forEach(index -> {
 			ReferenceFieldModel referenceFieldModel = index.getReferenceFieldModel();
 			TableIndex referencedTable = referenceFieldModel.getReferencedTable() != null ? getTable(referenceFieldModel.getReferencedTable().getName()) : null;
 			FieldIndex reverseIndex = referenceFieldModel.getReverseReferenceField() != null ? referencedTable.getFieldIndex(referenceFieldModel.getReverseReferenceField().getName()) : null;
 			if (referencedTable == null && !referenceFieldModel.getReferencedTable().isRemoteTable()) {
-				throw new RuntimeException("Error missing reference table:" + name + "." +  index.getName() + " -> " + index.getReferenceFieldModel().getReferencedTable().getName());
+				throw new RuntimeException("Error missing reference table:" + name + "." + index.getName() + " -> " + index.getReferenceFieldModel().getReferencedTable().getName());
 			}
 			if (referencedTable != null) {
 				index.setReferencedTable(referencedTable, reverseIndex, referenceFieldModel.isCascadeDelete());
@@ -113,17 +113,16 @@ public class DatabaseIndex {
 		}
 	}
 
-	public void installRemoteReferencedTables(DatabaseManager databaseManager) {
-		logger.info("Install remote tables for DB: " + name);
+	public void installAvailableRemoteReferences(DatabaseManager databaseManager) {
 		tables.stream().filter(t -> !t.getTableModel().isRemoteTable()).flatMap(tableIndex -> tableIndex.getReferenceFields().stream()).filter(index -> index.getReferenceFieldModel().getReferencedTable().isRemoteTable()).forEach(index -> {
 			TableModel referencedTable = index.getReferenceFieldModel().getReferencedTable();
 			UniversalDB remoteDb = databaseManager.getDatabase(referencedTable.getRemoteDatabase());
-			TableIndex remoteTableIndex = remoteDb.getDatabaseIndex().getTable(referencedTable.getRemoteTableName());
-			if (index.getReferencedTable() == null) {
-				logger.info("Install remote reference table: " + name + "." + index.getTable().getName()  + index.getName() + " -> " + remoteDb.getName() + "." +  remoteTableIndex.getName());
-				index.setReferencedTable(remoteTableIndex, null, false);
-			} else {
-				logger.info("Remote reference table already installed!: " + name + "." + index.getTable().getName() + "." +  index.getName() + " -> " + remoteDb.getName() + "." + remoteTableIndex.getName());
+			if (remoteDb != null) {
+				TableIndex remoteTableIndex = remoteDb.getDatabaseIndex().getTable(referencedTable.getRemoteTableName());
+				if (index.getReferencedTable() == null && remoteTableIndex != null) {
+					logger.info("Install remote reference for database: {} and table: {}, reference: {}", name, index.getTable().getName(), (index.getName() + " -> " + remoteDb.getName() + "." + remoteTableIndex.getName()));
+					index.setReferencedTable(remoteTableIndex, null, false);
+				}
 			}
 		});
 	}
