@@ -22,7 +22,7 @@ package org.teamapps.universaldb;
 public class DatabaseData {
 
 	private final UniversalDB universalDB;
-	private final ClassLoader classLoader;
+	private ClassLoader classLoader;
 
 	public DatabaseData(UniversalDB universalDB, ClassLoader classLoader) {
 		this.universalDB = universalDB;
@@ -44,5 +44,9 @@ public class DatabaseData {
 
 	public ClassLoader getClassLoader() {
 		return classLoader;
+	}
+
+	public void setClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
 	}
 }

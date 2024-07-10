@@ -46,14 +46,15 @@ public class DatabaseManager {
 		managedDbHandler.forEach(handler -> handler.accept(newDb));
 	}
 
-	public synchronized void updateDatabase(String name) {
+	public synchronized void updateDatabase(String name, ClassLoader classLoader) {
 		LOGGER.info("Update database: {}", name);
-		UniversalDB updatedDb = getDatabase(name);
-		ClassLoader classLoader = getClassLoader(name);
+		DatabaseData databaseData = getDatabaseData(name);
+		databaseData.setClassLoader(classLoader);
+		UniversalDB updatedDb = databaseData.getUniversalDB();
 		if (updatedDb == null || classLoader == null) {
 			throw new RuntimeException("Error missing database for update:" + name);
 		}
-		databaseMap.values().forEach(databaseData -> installRemoteTables(databaseData.getUniversalDB(), databaseData.getClassLoader()));
+		databaseMap.values().forEach(dbData -> installRemoteTables(dbData.getUniversalDB(), dbData.getClassLoader()));
 	}
 
 	private void installRemoteTables(UniversalDB db, ClassLoader localDbClassLoader) {
@@ -65,8 +66,13 @@ public class DatabaseManager {
 	}
 
 	public synchronized UniversalDB getDatabase(String name) {
-		DatabaseData databaseData = databaseMap.get(name);
+		DatabaseData databaseData = getDatabaseData(name);
 		return databaseData != null ? databaseData.getUniversalDB() : null;
+	}
+
+	private DatabaseData getDatabaseData(String name) {
+		DatabaseData databaseData = databaseMap.get(name);
+		return databaseData;
 	}
 
 	public synchronized ClassLoader getClassLoader(UniversalDB udb) {

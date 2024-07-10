@@ -123,7 +123,7 @@ public class UniversalDB {
 		}
 
 		installLocalTableClasses(classLoader);
-		databaseManager.registerDatabase(model.getName(), this, UniversalDB.class.getClassLoader());
+		databaseManager.registerDatabase(model.getName(), this, classLoader);
 	}
 
 	public static int getUserId() {
@@ -257,7 +257,7 @@ public class UniversalDB {
 			executeTransaction(modelUpdateTransactionRequest);
 		}
 		installLocalTableClasses(classLoader);
-		databaseManager.updateDatabase(getName());
+		databaseManager.updateDatabase(getName(), classLoader);
 	}
 
 	public Class getEntityClass(TableIndex tableIndex) {
