@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package org.teamapps.universaldb.index.transaction.request;
 
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.file.FileValue;
+import org.teamapps.universaldb.index.file.value.StoreDescriptionFile;
 import org.teamapps.universaldb.index.reference.value.MultiReferenceEditValue;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
 import org.teamapps.universaldb.index.translation.TranslatableText;
@@ -83,7 +84,7 @@ public class TransactionRequestRecordValue {
 			case MULTI_REFERENCE:
 				return new MultiReferenceEditValue(dis);
 			case FILE:
-				return new FileValue(dis);
+				return new StoreDescriptionFile(dis);
 			case BINARY:
 				return DataStreamUtil.readByteArrayWithLengthHeader(dis);
 			case FILE_NG:

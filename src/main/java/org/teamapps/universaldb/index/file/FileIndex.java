@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,23 @@
  */
 package org.teamapps.universaldb.index.file;
 
+import org.teamapps.message.protocol.utils.MessageUtils;
+import org.teamapps.udb.model.FileContentData;
 import org.teamapps.universaldb.context.UserContext;
-import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.binary.BinaryIndex;
-import org.teamapps.universaldb.index.numeric.LongIndex;
+import org.teamapps.universaldb.index.AbstractIndex;
+import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.SortEntry;
+import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.buffer.index.ByteArrayAtomicMappedIndex;
+import org.teamapps.universaldb.index.buffer.index.LongAtomicMappedIndex;
+import org.teamapps.universaldb.index.buffer.index.StringAtomicMappedIndex;
+import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
+import org.teamapps.universaldb.index.file.store.FileStoreUtil;
+import org.teamapps.universaldb.index.file.value.*;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
-import org.teamapps.universaldb.index.text.TextIndex;
-import org.teamapps.universaldb.util.DataStreamUtil;
+import org.teamapps.universaldb.message.MessageStore;
+import org.teamapps.universaldb.message.MessageStoreImpl;
+import org.teamapps.universaldb.model.FileFieldModel;
 
 import java.io.*;
 import java.util.BitSet;
@@ -35,25 +45,33 @@ import java.util.function.Supplier;
 
 public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 
-	private final TextIndex uuidIndex;
-	private final TextIndex hashIndex;
-	private final LongIndex sizeIndex;
-	private final BinaryIndex metaDataIndex;
-	private final FullTextIndexingOptions fullTextIndexingOptions;
-	private final CollectionTextSearchIndex fileDataIndex;
-	private final FileStore fileStore;
-	private final String filePath;
+	private final StringAtomicMappedIndex nameIndex;
+	private final LongAtomicMappedIndex sizeIndex;
+	private final ByteArrayAtomicMappedIndex hashIndex;
+	private final ByteArrayAtomicMappedIndex keyIndex;
+	private final FileFieldModel fileFieldModel;
+	private final DatabaseFileStore fileStore;
+	private final boolean fileStoreEncrypted;
+	private CollectionTextSearchIndex fullTextIndex;
+	private MessageStore<FileContentData> contentDataMessageStore;
 
-	public FileIndex(String name, TableIndex table, ColumnType columnType, FullTextIndexingOptions fullTextIndexingOptions, CollectionTextSearchIndex collectionSearchIndex, FileStore fileStore) {
-		super(name, table, columnType, fullTextIndexingOptions);
-		this.uuidIndex = new TextIndex(name + "-file-uuid", table, columnType, false);
-		this.hashIndex = new TextIndex(name + "-file-hash", table, columnType, false);
-		this.sizeIndex = new LongIndex(name + "-file-size", table, columnType);
-		this.fileDataIndex = fullTextIndexingOptions.isIndex() ? new CollectionTextSearchIndex(getFullTextIndexPath(), name) : null;
-		this.metaDataIndex = fullTextIndexingOptions.isIndex() ? new BinaryIndex(name, table, true, columnType) : null;
-		this.fullTextIndexingOptions = fullTextIndexingOptions;
-		this.filePath = getFQN().replace('.', '/');
-		this.fileStore = fileStore;
+	public FileIndex(FileFieldModel fileFieldModel, TableIndex tableIndex) {
+		super(fileFieldModel, tableIndex);
+		this.fileFieldModel = fileFieldModel;
+		this.fileStore = tableIndex.getDatabaseIndex().getDatabaseFileStore();
+		nameIndex = new StringAtomicMappedIndex(tableIndex.getDataPath(), fileFieldModel.getName());
+		sizeIndex = new LongAtomicMappedIndex(tableIndex.getDataPath(), fileFieldModel.getName() + "-len");
+		hashIndex = new ByteArrayAtomicMappedIndex(tableIndex.getDataPath(), fileFieldModel.getName() + "-hash");
+		fileStoreEncrypted = fileStore.isEncrypted();
+		keyIndex = fileStoreEncrypted ? new ByteArrayAtomicMappedIndex(tableIndex.getDataPath(), fileFieldModel.getName() + "-hash") : null;
+		if (fileFieldModel.isIndexContent()) {
+			contentDataMessageStore = new MessageStoreImpl<>(tableIndex.getDataPath(), fileFieldModel.getName() + "-file-meta", FileContentData.getMessageDecoder());
+			fullTextIndex = new CollectionTextSearchIndex(tableIndex.getFullTextIndexPath(), fileFieldModel.getName());
+		}
+	}
+
+	public FileFieldModel getFileFieldModel() {
+		return fileFieldModel;
 	}
 
 	@Override
@@ -78,86 +96,63 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	}
 
 	public FileValue getValue(int id) {
-		String uuid = uuidIndex.getValue(id);
-		if (uuid != null) {
-			String hash = hashIndex.getValue(id);
-			long size = sizeIndex.getValue(id);
-			FileValue fileValue = new FileValue(uuid, hash, size);
-			if (fullTextIndexingOptions.isIndex()) {
-				byte[] value = metaDataIndex.getValue(id);
-				if (value != null) {
-					try {
-						FileMetaData metaData = new FileMetaData(value);
-						fileValue.setMetaData(metaData);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
+		long size = sizeIndex.getValue(id);
+		if (size != 0) {
+			String name = nameIndex.getValue(id);
+			String hash = FileStoreUtil.bytesToHex(hashIndex.getValue(id));
+			String key = fileStoreEncrypted ? FileStoreUtil.bytesToHex(keyIndex.getValue(id)) : null;
+			File file = fileStore.getLocalFile(hash, size, key);
+			Supplier<FileContentData> contentDataSupplier = fileFieldModel.isIndexContent() ? () -> contentDataMessageStore.getById(id) : null;
+			if (file != null) {
+				return new CommittedLocalFile(file, name, hash, size, contentDataSupplier);
+			} else {
+				return new CommittedRemoteFile(() -> fileStore.loadRemoteFile(hash, size, key), name, hash, size, contentDataSupplier);
 			}
-			Supplier<File> fileSupplier = fileStore.getFileSupplier(filePath, uuid, hash);
-			fileValue.setFileSupplier(fileSupplier);
-			return fileValue;
+		} else {
+			return null;
 		}
-		return null;
 	}
 
 	public void setValue(int id, FileValue value) {
-		String uuid = uuidIndex.getValue(id);
-		if (value == null) {
-			if (uuid != null) {
-				uuidIndex.setValue(id, null);
-				hashIndex.setValue(id, null);
+		if (value != null && value.getType() == FileValueType.UNCOMMITTED_FILE) {
+			throw new RuntimeException("Error saving uncommitted file is not possible!");
+		}
+		boolean update = sizeIndex.getValue(id) != 0;
+		if (value == null || value.getSize() == 0) {
+			if (update) {
 				sizeIndex.setValue(id, 0);
-				if (fileDataIndex != null) {
-					fileDataIndex.setRecordValues(id, Collections.emptyList(), true);
-					metaDataIndex.setValue(id, null);
+				nameIndex.setValue(id, null);
+				hashIndex.removeValue(id);
+				if (fileFieldModel.isIndexContent()) {
+					fullTextIndex.setRecordValues(id, Collections.emptyList(), true);
+					contentDataMessageStore.delete(id);
 				}
 			}
 		} else {
-			boolean update = uuid != null;
-			uuidIndex.setValue(id, value.getUuid());
-			hashIndex.setValue(id, value.getHash());
 			sizeIndex.setValue(id, value.getSize());
-			if (fileDataIndex != null && value.getMetaData() != null) {
-				fileDataIndex.setRecordValues(id, value.getMetaData().getFullTextIndexData(), update);
-				metaDataIndex.setValue(id, value.getMetaData().getMetaDataBytes());
+			nameIndex.setValue(id, value.getFileName());
+			hashIndex.setValue(id, value.getHashBytes());
+			if (fileFieldModel.isIndexContent()) {
+				FileContentData contentData = value.getFileContentData();
+				contentData.setRecordId(id);
+				fullTextIndex.setRecordValues(id, value.getFullTextIndexData(), update);
+				contentDataMessageStore.save(contentData);
 			}
 		}
 	}
 
 	public FileValue storeFile(File file) {
-		if (file == null) {
-			return null;
-		}
-		return storeFile(file, file.getName());
+		return (file != null && file.exists() && file.length() > 0) ? storeFile(file, file.getName()) : null;
 	}
 
 	public FileValue storeFile(File file, String fileName) {
-		if (file == null) {
-			return null;
+		FileValue fileValue = FileValue.create(file, fileName);
+		String key = fileStore.storeFile(file, fileValue.getHash(), fileValue.getSize());
+		FileContentData contentData = fileFieldModel.isIndexContent() ? fileValue.getFileContentData(fileFieldModel.getMaxIndexContentLength()) : null;
+		if (fileFieldModel.isIndexContent() && fileFieldModel.isDetectLanguage()) {
+			fileValue.getDetectedLanguage();
 		}
-		FileValue fileValue = new FileValue(file, fileName);
-		return storeFile(fileValue);
-	}
-
-	public FileValue storeFile(FileValue fileValue) {
-		if (fileValue == null || fileValue.retrieveFile() == null) {
-			return null;
-		}
-		if (fullTextIndexingOptions.isIndex()) {
-			FileMetaData metaData = FileUtil.parseFileMetaData(fileValue.retrieveFile(), fileValue.getMetaData());
-			fileValue.setMetaData(metaData);
-		}
-		fileStore.setFile(filePath, fileValue.getUuid(), fileValue.getHash(), fileValue.retrieveFile());
-		fileValue.setFileSupplier(fileStore.getFileSupplier(filePath, fileValue.getUuid(), fileValue.getHash()));
-		return fileValue;
-	}
-
-	public void removeStoredFile(int id) {
-		String uuid = uuidIndex.getValue(id);
-		if (uuid != null) {
-			fileStore.removeFile(filePath, uuid);
-		}
+		return new StoreDescriptionFile(file, fileName, fileValue.getSize(), fileValue.getHash(), key, contentData);
 	}
 
 	@Override
@@ -171,59 +166,60 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	}
 
 	@Override
-	public void dumpIndex(DataOutputStream dataOutputStream, BitSet records) throws IOException {
+	public void dumpIndex(DataOutputStream dos, BitSet records) throws IOException {
+		boolean withContent = fileFieldModel.isIndexContent();
 		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
-			String uuid = uuidIndex.getValue(id);
-			if (uuid != null) {
-				String hash = hashIndex.getValue(id);
-				long size = sizeIndex.getValue(id);
-				byte[] metaData = metaDataIndex.getValue(id);
-				dataOutputStream.writeInt(id);
-				DataStreamUtil.writeStringWithLengthHeader(dataOutputStream,uuid);
-				DataStreamUtil.writeStringWithLengthHeader(dataOutputStream,hash);
-				dataOutputStream.writeLong(size);
-				DataStreamUtil.writeByteArrayWithLengthHeader(dataOutputStream,metaData);
+			long size = sizeIndex.getValue(id);
+			if (size > 0) {
+				dos.writeInt(id);
+				MessageUtils.writeString(dos, nameIndex.getValue(id));
+				MessageUtils.writeByteArray(dos, hashIndex.getValue(id));
+				dos.writeLong(size);
+				if (withContent) {
+					FileContentData contentData = contentDataMessageStore.getById(id);
+					if (contentData != null) {
+						dos.writeBoolean(true);
+						MessageUtils.writeByteArray(dos, contentData.toBytes());
+					}
+				}
 			}
 		}
 	}
 
 	@Override
-	public void restoreIndex(DataInputStream dataInputStream) throws IOException {
+	public void restoreIndex(DataInputStream dis) throws IOException {
 		try {
-			int id = dataInputStream.readInt();
-			String uuid = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
-			String hash = DataStreamUtil.readStringWithLengthHeader(dataInputStream);
-			long size = dataInputStream.readLong();
-			byte[] metaData = DataStreamUtil.readByteArrayWithLengthHeader(dataInputStream);
-			uuidIndex.setValue(id, uuid);
+			int id = dis.readInt();
+			String name = MessageUtils.readString(dis);
+			byte[] hash = MessageUtils.readByteArray(dis);
+			long size = dis.readLong();
+			nameIndex.setValue(id, name);
 			hashIndex.setValue(id, hash);
 			sizeIndex.setValue(id, size);
-			metaDataIndex.setValue(id, metaData);
-		} catch (EOFException ignore) {}
+			if (dis.readBoolean()) {
+				byte[] bytes = MessageUtils.readByteArray(dis);
+				FileContentData contentData = new FileContentData(bytes);
+				contentDataMessageStore.save(contentData);
+			}
+		} catch (EOFException ignore) {
+		}
 	}
 
 	@Override
 	public BitSet filter(BitSet records, FileFilter fileFilter) {
-		switch (fileFilter.getFilterType()) {
-			case FULL_TEXT_FILTER:
-				return filterFullText(records, fileFilter);
-			case SIZE_EQUALS:
-				return sizeIndex.filterEquals(records, fileFilter.getSize());
-			case SIZE_NOT_EQUALS:
-				return sizeIndex.filterNotEquals(records, fileFilter.getSize());
-			case SIZE_GREATER:
-				return sizeIndex.filterGreater(records, fileFilter.getSize());
-			case SIZE_SMALLER:
-				return sizeIndex.filterSmaller(records, fileFilter.getSize());
-			case SIZE_BETWEEN:
-				return sizeIndex.filterBetween(records, fileFilter.getSize(), fileFilter.getSize2());
-		}
-		return null;
+		return switch (fileFilter.getFilterType()) {
+			case FULL_TEXT_FILTER -> filterFullText(records, fileFilter);
+			case SIZE_EQUALS -> sizeIndex.filterEquals(fileFilter.getSize(), records);
+			case SIZE_NOT_EQUALS -> sizeIndex.filterNotEquals(fileFilter.getSize(), records);
+			case SIZE_GREATER -> sizeIndex.filterGreater(fileFilter.getSize(), records);
+			case SIZE_SMALLER -> sizeIndex.filterSmaller(fileFilter.getSize(), records);
+			case SIZE_BETWEEN -> sizeIndex.filterBetween(fileFilter.getSize(), fileFilter.getSize2(), records);
+		};
 	}
 
 	public BitSet filterFullText(BitSet records, FileFilter fileFilter) {
-		if (fileDataIndex != null) {
-			return fileDataIndex.filter(records, fileFilter.getTextFilters(), false);
+		if (fileFieldModel.isIndexContent()) {
+			return fullTextIndex.filter(records, fileFilter.getTextFilters(), false);
 		} else {
 			return new BitSet();
 		}
@@ -231,20 +227,22 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 
 	@Override
 	public void close() {
-		if (fileDataIndex != null) {
-			fileDataIndex.commit(true);
+		if (fullTextIndex != null) {
+			contentDataMessageStore.close();
+			fullTextIndex.commit(true);
 		}
-		uuidIndex.close();
+		nameIndex.close();
 		hashIndex.close();
 		sizeIndex.close();
 	}
 
 	@Override
 	public void drop() {
-		if (fileDataIndex != null) {
-			fileDataIndex.drop();
+		if (fullTextIndex != null) {
+			contentDataMessageStore.drop();
+			fullTextIndex.drop();
 		}
-		uuidIndex.drop();
+		nameIndex.drop();
 		hashIndex.drop();
 		sizeIndex.drop();
 	}

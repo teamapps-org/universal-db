@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,10 @@
 package org.teamapps.universaldb.index.translation;
 
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -63,5 +67,62 @@ public class TranslatableTextTest {
 
     @Test
     public void getEncodedValue() {
+    }
+
+	@Test
+	public void testGetEncodedValue() {
+	}
+
+
+    public void compareImplementations() throws IOException {
+        int loops = 10;
+        int size = 1_000_000;
+        for (int n = 0; n < loops; n++) {
+            long time = System.currentTimeMillis();
+            List<String> encodedList = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                TranslatableText translatableText = new TranslatableText("text" + i, "de").setTranslation("text-en" + i, "en").setTranslation("text-fr" + i, "fr");
+                String encoded = translatableText.getEncodedValue();
+                encodedList.add(encoded);
+            }
+            System.out.println("Time encode: " + (System.currentTimeMillis() - time));
+            time = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) {
+                String value = encodedList.get(i);
+                TranslatableText translatableText = new TranslatableText(value);
+                if (!("text-en" + i).equals(translatableText.getText("en"))) {
+                    System.out.println("Error:" + translatableText.getText("en"));
+                }
+                if (!("text" + i).equals(translatableText.getText())) {
+                    System.out.println("Error:" + translatableText.getText());
+                }
+            }
+            System.out.println("Time decode: " + (System.currentTimeMillis() - time));
+        }
+
+        System.out.println("Binary:...");
+        for (int n = 0; n < loops; n++) {
+            long time = System.currentTimeMillis();
+            List<byte[]> encodedList = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                BinaryTranslatedText translatableText = new BinaryTranslatedText("text" + i, "de").setTranslation("text-en" + i, "en").setTranslation("text-fr" + i, "fr");
+                byte[] encoded = translatableText.getEncodedValue();
+                encodedList.add(encoded);
+            }
+            System.out.println("Time encode: " + (System.currentTimeMillis() - time));
+            time = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) {
+                byte[] value = encodedList.get(i);
+                BinaryTranslatedText translatableText = new BinaryTranslatedText(value);
+                if (!("text-en" + i).equals(translatableText.getText("en"))) {
+                    System.out.println("Error:" + translatableText.getText("en"));
+                }
+                if (!("text" + i).equals(translatableText.getText())) {
+                    System.out.println("Error:" + translatableText.getText());
+                }
+            }
+            System.out.println("Time decode: " + (System.currentTimeMillis() - time));
+        }
+
     }
 }

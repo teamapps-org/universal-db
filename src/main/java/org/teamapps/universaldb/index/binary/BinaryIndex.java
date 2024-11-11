@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,12 @@
 package org.teamapps.universaldb.index.binary;
 
 import org.teamapps.universaldb.context.UserContext;
-import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
+import org.teamapps.universaldb.index.AbstractIndex;
+import org.teamapps.universaldb.index.IndexType;
+import org.teamapps.universaldb.index.SortEntry;
+import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.index.buffer.common.BlockEntryAtomicStore;
+import org.teamapps.universaldb.model.FieldModel;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.*;
@@ -33,9 +37,9 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 
 	private BlockEntryAtomicStore atomicStore;
 
-	public BinaryIndex(String name, TableIndex table, boolean compressContent, ColumnType columnType) {
-		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
+	public BinaryIndex(FieldModel fieldModel, TableIndex tableIndex) {
+		super(fieldModel, tableIndex);
+		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
 	@Override
@@ -96,7 +100,7 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 		for (int id = records.nextSetBit(0); id >= 0; id = records.nextSetBit(id + 1)) {
 			byte[] value = getValue(id);
 			dataOutputStream.writeInt(id);
-			DataStreamUtil.writeByteArrayWithLengthHeader(dataOutputStream,value);
+			DataStreamUtil.writeByteArrayWithLengthHeader(dataOutputStream, value);
 		}
 	}
 
@@ -106,7 +110,8 @@ public class BinaryIndex extends AbstractIndex<byte[], BinaryFilter> {
 			int id = dataInputStream.readInt();
 			byte[] value = DataStreamUtil.readByteArrayWithLengthHeader(dataInputStream);
 			setValue(id, value);
-		} catch (EOFException ignore) {}
+		} catch (EOFException ignore) {
+		}
 	}
 
 

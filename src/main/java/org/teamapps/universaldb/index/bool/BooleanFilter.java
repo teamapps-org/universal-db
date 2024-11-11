@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,10 @@ public class BooleanFilter {
 
 	public static BooleanFilter falseFilter() {
 		return new BooleanFilter(false);
+	}
+
+	public static BooleanFilter create(boolean filter) {
+		return new BooleanFilter(filter);
 	}
 
 	private final boolean filter;

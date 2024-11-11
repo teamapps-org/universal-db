@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@
  */
 package org.teamapps.universaldb.query;
 
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.ColumnIndex;
-import org.teamapps.universaldb.index.file.FileIndex;
+import org.teamapps.universaldb.index.filelegacy.FileIndex;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
@@ -94,25 +94,25 @@ public class OrFilter implements Filter {
                     if (!secondaryFilter.isEmpty()) {
                         BitSet fullTextResult = null;
                         for (IndexFilter filter : secondaryFilter) {
-                            ColumnIndex columnIndex = filter.getColumnIndex();
-                            if (columnIndex instanceof TextIndex) {
-                                TextIndex textIndex = (TextIndex) columnIndex;
+                            FieldIndex fieldIndex = filter.getColumnIndex();
+                            if (fieldIndex instanceof TextIndex) {
+                                TextIndex textIndex = (TextIndex) fieldIndex;
                                 BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
                                 if (fullTextResult == null) {
                                     fullTextResult = fullTextReduced;
                                 } else {
                                     fullTextResult.or(fullTextReduced);
                                 }
-                            } else if (columnIndex instanceof TranslatableTextIndex) {
-                                TranslatableTextIndex textIndex = (TranslatableTextIndex) columnIndex;
+                            } else if (fieldIndex instanceof TranslatableTextIndex) {
+                                TranslatableTextIndex textIndex = (TranslatableTextIndex) fieldIndex;
                                 BitSet fullTextReduced = textIndex.filter(reduced, (TextFilter) filter.getFilter(), false);
                                 if (fullTextResult == null) {
                                     fullTextResult = fullTextReduced;
                                 } else {
                                     fullTextResult.or(fullTextReduced);
                                 }
-                            } else if (columnIndex instanceof FileIndex) {
-                                FileIndex fileIndex = (FileIndex) columnIndex;
+                            } else if (fieldIndex instanceof FileIndex) {
+                                FileIndex fileIndex = (FileIndex) fieldIndex;
                                 //currently file index maintains its own index...
                             }
                         }

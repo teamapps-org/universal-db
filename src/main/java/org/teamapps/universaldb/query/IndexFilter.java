@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
  */
 package org.teamapps.universaldb.query;
 
-import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.file.FileFilter;
 import org.teamapps.universaldb.index.text.TextFieldFilter;
 import org.teamapps.universaldb.index.text.TextFilter;
@@ -33,10 +33,10 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 	public static List<TextFieldFilter> createTextFilters(List<IndexFilter> filters) {
 		List<TextFieldFilter> textFieldFilters = new ArrayList<>();
 		for (IndexFilter filter : filters) {
-			ColumnIndex columnIndex = filter.getColumnIndex();
+			FieldIndex fieldIndex = filter.getColumnIndex();
 			if (filter.getFilter() instanceof TextFilter) {
 				TextFilter textFilter = (TextFilter) filter.getFilter();
-				textFieldFilters.add(TextFieldFilter.create(textFilter, columnIndex.getName()));
+				textFieldFilters.add(TextFieldFilter.create(textFilter, fieldIndex.getName()));
 			} else if (filter.getFilter() instanceof FileFilter) {
 				//currently file content indexing is performed with FileIndex
 			}
@@ -44,17 +44,17 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 		return textFieldFilters;
 	}
 
-	private final ColumnIndex<TYPE, FILTER> columnIndex;
+	private final FieldIndex<TYPE, FILTER> fieldIndex;
 	private final FILTER filter;
 	private final boolean fullTextFilter;
 	private IndexPath indexPath;
 
-	public IndexFilter(ColumnIndex<TYPE, FILTER> columnIndex, FILTER filter) {
-		this(columnIndex, filter, new IndexPath());
+	public IndexFilter(FieldIndex<TYPE, FILTER> fieldIndex, FILTER filter) {
+		this(fieldIndex, filter, new IndexPath());
 	}
 
-	public IndexFilter(ColumnIndex<TYPE, FILTER> columnIndex, FILTER filter, IndexPath indexPath) {
-		this.columnIndex = columnIndex;
+	public IndexFilter(FieldIndex<TYPE, FILTER> fieldIndex, FILTER filter, IndexPath indexPath) {
+		this.fieldIndex = fieldIndex;
 		this.filter = filter;
 		this.fullTextFilter = filter instanceof TextFilter || filter instanceof FileFilter;
 		this.indexPath = indexPath;
@@ -64,8 +64,8 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 		return fullTextFilter;
 	}
 
-	public ColumnIndex<TYPE, FILTER> getColumnIndex() {
-		return columnIndex;
+	public FieldIndex<TYPE, FILTER> getColumnIndex() {
+		return fieldIndex;
 	}
 
 	public FILTER getFilter() {
@@ -81,7 +81,7 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 
 	@Override
 	public BitSet localFilter(BitSet localRecords) {
-		return columnIndex.filter(localRecords, filter);
+		return fieldIndex.filter(localRecords, filter);
 	}
 
 	@Override
@@ -107,7 +107,7 @@ public class IndexFilter<TYPE, FILTER> implements Filter {
 		if (indexPath != null && !indexPath.isLocalPath()) {
 			sb.append(indexPath).append(": ");
 		}
-		sb.append(columnIndex.getFQN()).append(": ").append(filter);
+		sb.append(fieldIndex.getFQN()).append(": ").append(filter);
 		sb.append("\n");
 		return sb.toString();
 	}

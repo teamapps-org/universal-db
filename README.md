@@ -56,29 +56,29 @@ Add a source folder e.g. `/src/main/model` and create a model class e.g. `MyAppM
 ```java
 import org.teamapps.universaldb.schema.*;
 
-public class MyAppModel implements SchemaInfoProvider {
+public class MyAppModel implements ModelProvider {
 
-    public Schema getSchema() {
-        Schema schema = Schema.create("org.teamapps.myapp.model");
-        schema.setSchemaName("MyAppSchema");
-        Database database = schema.addDatabase("myAppDb");
-        Table user = database.addTable("user");
-        Table project = database.addTable("project");
-        user
-                .addText("name")
-                .addText("text2")
-                .addTimestamp("timestamp")
-                .addEnum("enumValue", "value1", "value2", "value3")
-                .addInteger("number")
-                .addLong("bigNumber")
-                .addReference("projects", project, true, "manager");
+	public Schema getSchema() {
+		Schema schema = Schema.create("org.teamapps.myapp.model");
+		schema.setSchemaName("MyAppSchema");
+		Database database = schema.addDatabase("myAppDb");
+		Table user = database.addTable("user");
+		Table project = database.addTable("project");
+		user
+				.addText("name")
+				.addText("text2")
+				.addTimestamp("timestamp")
+				.addEnum("enumValue", "value1", "value2", "value3")
+				.addInteger("number")
+				.addLong("bigNumber")
+				.addReference("projects", project, true, "manager");
 
-        project
-                .addText("title")
-                .addReference("manager", user, false, "projects");
+		project
+				.addText("title")
+				.addReference("manager", user, false, "projects");
 
-        return schema;
-    }
+		return schema;
+	}
 }
 ```
 After compiling you will have a User and a Project class to work with.

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ package org.teamapps.universaldb.generator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.schema.SchemaInfoProvider;
+import org.teamapps.universaldb.model.DatabaseModel;
+import org.teamapps.universaldb.schema.ModelProvider;
 
 import java.io.File;
 
@@ -35,18 +35,18 @@ public class ModelApiGenerator {
 			log.error("Error: missing argument(s). Mandatory arguments are: modelClassName targetPath");
 			System.exit(1);
 		}
-		String schemaClassName = args[0];
+		String modelClassName = args[0];
 		String targetPath = args[1];
 
-		Class<?> schemaClass = Class.forName(schemaClassName);
-		SchemaInfoProvider schemaInfoProvider = (SchemaInfoProvider) schemaClass.getConstructor().newInstance();
-		Schema schema = schemaInfoProvider.getSchema();
+		Class<?> modelClass = Class.forName(modelClassName);
+		ModelProvider modelProvider = (ModelProvider) modelClass.getConstructor().newInstance();
+		DatabaseModel model = modelProvider.getModel();
 		PojoCodeGenerator pojoCodeGenerator = new PojoCodeGenerator();
 		File basePath = new File(targetPath);
 		if (!basePath.getParentFile().exists() && basePath.getParentFile().getParentFile().exists()) {
 			basePath.getParentFile().mkdir();
 		}
-		pojoCodeGenerator.generateCode(schema, basePath);
+		pojoCodeGenerator.generateCode(model, basePath);
 	}
 
 }

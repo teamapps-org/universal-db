@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
  */
 package org.teamapps.universaldb.query;
 
-import org.teamapps.universaldb.index.ColumnIndex;
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.IndexType;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
@@ -103,18 +103,18 @@ public interface Filter {
     default boolean isCollectionFullTextFilter(boolean checkExclusive) {
         if (this instanceof IndexFilter) {
             IndexFilter indexFilter = (IndexFilter) this;
-            ColumnIndex columnIndex = indexFilter.getColumnIndex();
-            if (columnIndex.getType() == IndexType.TEXT) {
+            FieldIndex fieldIndex = indexFilter.getColumnIndex();
+            if (fieldIndex.getType() == IndexType.TEXT) {
                 TextFilter textFilter = (TextFilter) indexFilter.getFilter();
-                TextIndex textIndex = (TextIndex) columnIndex;
+                TextIndex textIndex = (TextIndex) fieldIndex;
                 if (checkExclusive) {
                     return textIndex.isFilteredExclusivelyByCollectionTextIndex(textFilter);
                 } else {
                     return textIndex.isFilteredByCollectionTextIndex(textFilter);
                 }
-            } else if (columnIndex.getType() == IndexType.TRANSLATABLE_TEXT) {
+            } else if (fieldIndex.getType() == IndexType.TRANSLATABLE_TEXT) {
                 TextFilter textFilter = (TextFilter) indexFilter.getFilter();
-                TranslatableTextIndex textIndex = (TranslatableTextIndex) columnIndex;
+                TranslatableTextIndex textIndex = (TranslatableTextIndex) fieldIndex;
                 if (checkExclusive) {
                     return textIndex.isFilteredExclusivelyByCollectionTextIndex(textFilter);
                 } else {

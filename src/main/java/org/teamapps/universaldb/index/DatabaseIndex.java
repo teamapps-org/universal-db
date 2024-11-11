@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,32 +19,41 @@
  */
 package org.teamapps.universaldb.index;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.teamapps.commons.util.collections.ByKeyComparisonResult;
+import org.teamapps.commons.util.collections.CollectionUtil;
+import org.teamapps.universaldb.DatabaseManager;
 import org.teamapps.universaldb.UniversalDB;
-import org.teamapps.universaldb.schema.Database;
-import org.teamapps.universaldb.schema.Table;
+import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
+import org.teamapps.universaldb.model.DatabaseModel;
+import org.teamapps.universaldb.model.ReferenceFieldModel;
+import org.teamapps.universaldb.model.TableModel;
 
-import java.io.*;
+import java.io.File;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-public class DatabaseIndex implements MappedObject {
+public class DatabaseIndex {
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-	private final SchemaIndex schemaIndex;
+	private final UniversalDB universalDB;
 	private final String name;
 	private final File dataPath;
 	private final File fullTextIndexPath;
 	private final List<TableIndex> tables;
-	private int mappingId;
+	private final DatabaseFileStore databaseFileStore;
+	private DatabaseModel databaseModel;
 
-	public DatabaseIndex(SchemaIndex schema, String name) {
-		this.schemaIndex = schema;
+
+	public DatabaseIndex(UniversalDB universalDB, String name, File dataPath, File fullTextIndexPath, DatabaseFileStore databaseFileStore) {
+		this.universalDB = universalDB;
 		this.name = name;
-		this.dataPath = new File(schema.getDataPath(), name);
-		this.fullTextIndexPath = new File(schema.getFullTextIndexPath(), name);
-		dataPath.mkdir();
-		fullTextIndexPath.mkdir();
+		this.dataPath = dataPath;
+		this.fullTextIndexPath = fullTextIndexPath;
+		this.databaseFileStore = databaseFileStore;
 		this.tables = new ArrayList<>();
 	}
 
@@ -56,48 +65,72 @@ public class DatabaseIndex implements MappedObject {
 		return fullTextIndexPath;
 	}
 
-	public SchemaIndex getSchemaIndex() {
-		return schemaIndex;
+	public DatabaseFileStore getDatabaseFileStore() {
+		return databaseFileStore;
 	}
 
-	public void merge(Database database, boolean checkFullTextIndex, UniversalDB universalDB) {
-		Map<String, TableIndex> tableMap = tables.stream().collect(Collectors.toMap(TableIndex::getName, table -> table));
-		for (Table table : database.getTables()) {
-			TableIndex localTable = tableMap.get(table.getName());
-			if (localTable == null) {
-				localTable = new TableIndex(this, table, table.getTableConfig());
-				addTable(localTable);
-			}
-			if (localTable.getMappingId() == 0) {
-				localTable.setMappingId(table.getMappingId());
-			}
-			localTable.merge(table);
-		}
-		if (checkFullTextIndex) {
-			for (TableIndex table : tables) {
-				table.getRecordVersioningIndex().checkVersionIndex(universalDB);
-				table.checkFullTextIndex();
-			}
+	public void installModel(DatabaseModel model, boolean checkFullTextIndex, UniversalDB universalDB) {
+		this.databaseModel = model;
+
+		ByKeyComparisonResult<TableIndex, TableModel, String> compareResult = CollectionUtil.compareByKey(tables, databaseModel.getLocalTables(), TableIndex::getName, TableModel::getName, true);
+		//unknown table indices for this model
+		if (!compareResult.getAEntriesNotInB().isEmpty()) {
+			throw new RuntimeException("Unknown table indices that are not within the model:" + compareResult.getAEntriesNotInB().stream().map(TableIndex::getName).collect(Collectors.joining(", ")));
 		}
 
+		//existing tables
+		for (TableIndex tableIndex : compareResult.getAEntriesInB()) {
+			TableModel tableModel = compareResult.getB(tableIndex);
+			tableIndex.installOrMerge(tableModel);
+		}
+
+		//new tables
+		for (TableModel tableModel : compareResult.getBEntriesNotInA()) {
+			TableIndex tableIndex = new TableIndex(this, tableModel);
+			tableIndex.installOrMerge(tableModel);
+			addTable(tableIndex);
+		}
+
+		tables.stream().flatMap(tableIndex -> tableIndex.getReferenceFields().stream()).forEach(index -> {
+			ReferenceFieldModel referenceFieldModel = index.getReferenceFieldModel();
+			TableIndex referencedTable = referenceFieldModel.getReferencedTable() != null ? getTable(referenceFieldModel.getReferencedTable().getName()) : null;
+			FieldIndex reverseIndex = referenceFieldModel.getReverseReferenceField() != null ? referencedTable.getFieldIndex(referenceFieldModel.getReverseReferenceField().getName()) : null;
+			if (referencedTable == null && !referenceFieldModel.getReferencedTable().isRemoteTable()) {
+				throw new RuntimeException("Error missing reference table:" + name + "." + index.getName() + " -> " + index.getReferenceFieldModel().getReferencedTable().getName());
+			}
+			if (referencedTable != null) {
+				index.setReferencedTable(referencedTable, reverseIndex, referenceFieldModel.isCascadeDelete());
+			}
+		});
+
+		if (checkFullTextIndex) {
+			for (TableIndex tableIndex : tables) {
+				if (tableIndex.getTableModel().isVersioning()) {
+					tableIndex.getRecordVersioningIndex().checkVersionIndex(universalDB);
+				}
+				tableIndex.checkFullTextIndex();
+			}
+		}
+	}
+
+	public void installAvailableRemoteReferences(DatabaseManager databaseManager) {
+		tables.stream().filter(t -> !t.getTableModel().isRemoteTable()).flatMap(tableIndex -> tableIndex.getReferenceFields().stream()).filter(index -> index.getReferenceFieldModel().getReferencedTable().isRemoteTable()).forEach(index -> {
+			TableModel referencedTable = index.getReferenceFieldModel().getReferencedTable();
+			UniversalDB remoteDb = databaseManager.getDatabase(referencedTable.getRemoteDatabase());
+			if (remoteDb != null) {
+				TableIndex remoteTableIndex = remoteDb.getDatabaseIndex().getTable(referencedTable.getRemoteTableName());
+				if (index.getReferencedTable() == null && remoteTableIndex != null) {
+					logger.info("Install remote reference for database: {} and table: {}, reference: {}", name, index.getTable().getName(), (index.getName() + " -> " + remoteDb.getName() + "." + remoteTableIndex.getName()));
+					index.setReferencedTable(remoteTableIndex, null, false);
+				}
+			}
+		});
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	@Override
-	public String getFQN() {
-		return name;
-	}
-
-	public int getMappingId() {
-		return mappingId;
-	}
-
-	public void setMappingId(int mappingId) {
-		this.mappingId = mappingId;
-	}
 
 	public TableIndex addTable(TableIndex table) {
 		tables.add(table);
@@ -110,6 +143,14 @@ public class DatabaseIndex implements MappedObject {
 
 	public TableIndex getTable(String name) {
 		return tables.stream().filter(table -> table.getName().equals(name)).findAny().orElse(null);
+	}
+
+	public DatabaseModel getDatabaseModel() {
+		return databaseModel;
+	}
+
+	public UniversalDB getUniversalDB() {
+		return universalDB;
 	}
 
 	@Override

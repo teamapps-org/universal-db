@@ -1,0 +1,15 @@
+package {package};
+
+import org.teamapps.universaldb.model.*;
+import org.teamapps.universaldb.schema.ModelProvider;
+import java.util.Arrays;
+
+public class {type} implements ModelProvider {
+
+	@Override
+	public DatabaseModel getModel() {
+{model}
+		return model;
+	}
+
+}

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@
 package org.teamapps.universaldb;
 
 import org.apache.commons.io.IOUtils;
-import org.teamapps.datamodel.TestBaseSchema;
+import org.teamapps.datamodel.TestDb1Model;
+import org.teamapps.datamodel.TestDb2Model;
 import org.teamapps.datamodel.testdb1.FieldTest;
 import org.teamapps.universaldb.pojo.Entity;
 
@@ -37,6 +38,7 @@ import java.util.Set;
 public class TestBase {
 
 	private static volatile boolean initialized;
+	private static volatile boolean initialize2;
 
 	public synchronized static void init() throws Exception {
 		if (initialized) {
@@ -46,10 +48,27 @@ public class TestBase {
 		initialized = true;
 	}
 
+	public synchronized static void init2() throws Exception {
+		if (initialize2) {
+			return;
+		}
+		startDb2();
+		initialize2 = true;
+	}
+
 	private static void startDb() throws Exception {
 		File tempDir = Files.createTempDirectory("temp").toFile();
 		tempDir.deleteOnExit();
-		UniversalDB.createStandalone(tempDir, new TestBaseSchema());
+		UniversalDbBuilder.create().basePath(tempDir).modelProvider(new TestDb1Model()).build();
+	}
+
+	private static void startDb2() throws Exception {
+		File tempDir1 = Files.createTempDirectory("temp").toFile();
+		tempDir1.deleteOnExit();
+		File tempDir2 = Files.createTempDirectory("temp").toFile();
+		tempDir2.deleteOnExit();
+		UniversalDbBuilder.create().basePath(tempDir1).modelProvider(new TestDb1Model()).build();
+		UniversalDbBuilder.create().basePath(tempDir2).modelProvider(new TestDb2Model()).build();
 	}
 
 	public static File createResourceFile() throws IOException {

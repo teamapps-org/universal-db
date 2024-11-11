@@ -398,8 +398,8 @@ protected static {type} {name};
 #
 {ENTITY_GET_METHOD_ENUM}#
 	@Override
-	public {name} get{name}() {
-	    return getEnumValue({name2}, {name}.values());
+	public {enum} get{name}() {
+	    return getEnumValue({name2}, {enum}.values());
 	}
 #
 
@@ -463,16 +463,16 @@ protected static {type} {name};
 {ENTITY_SET_METHOD_FILE}#
 	@Override
 	public {type} set{name}(File value) {
-	    FileValue storeFile = {name2}.storeFile(value);
-		setChangeValue(this.{name2}, storeFile, table);
+	    FileValue fileValue = createFileValue(value);
+		setChangeValue(this.{name2}, fileValue, table);
 		return this;
 	}
 #
 {ENTITY_SET_METHOD_FILE_2}#
 	@Override
 	public {type} set{name}(File value, String fileName) {
-	    FileValue storeFile = {name2}.storeFile(value, fileName);
-		setChangeValue(this.{name2}, storeFile, table);
+	    FileValue fileValue = createFileValue(value, fileName);
+		setChangeValue(this.{name2}, fileValue, table);
 		return this;
 	}
 #
@@ -619,7 +619,7 @@ protected static {type} {name};
 #
 {ENTITY_SET_METHOD_ENUM}#
 	@Override
-	public {type} set{name}({name} value) {
+	public {type} set{name}({enum} value) {
     	setEnumValue(this.{name2}, value);
 		return this;
 	}

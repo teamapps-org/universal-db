@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,23 @@
  */
 package org.teamapps.universaldb.index.reference;
 
+import org.teamapps.universaldb.index.FieldIndex;
 import org.teamapps.universaldb.index.TableIndex;
+import org.teamapps.universaldb.model.ReferenceFieldModel;
 
-public interface ReferenceIndex {
+public interface ReferenceIndex<TYPE, FILTER> extends FieldIndex<TYPE, FILTER>{
 
 	TableIndex getReferencedTable();
+
+	default ReferenceFieldModel getReferenceFieldModel() {
+		return (ReferenceFieldModel) getFieldModel();
+	}
 
 	boolean isCascadeDeleteReferences();
 
 	boolean isMultiReference();
+
+	void setReferencedTable(TableIndex referencedTable, FieldIndex reverseIndex, boolean cascadeDeleteReferences);
+
+
 }

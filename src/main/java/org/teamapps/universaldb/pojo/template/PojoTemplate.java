@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@
  */
 package org.teamapps.universaldb.pojo.template;
 
+import org.teamapps.universaldb.generator.PojoCodeGenerator;
 import org.teamapps.universaldb.index.ColumnType;
 import org.teamapps.universaldb.index.binary.BinaryFilter;
 import org.teamapps.universaldb.index.binary.BinaryIndex;
 import org.teamapps.universaldb.index.translation.TranslatableTextFilter;
 import org.teamapps.universaldb.index.translation.TranslatableTextIndex;
-import org.teamapps.universaldb.schema.Column;
+import org.teamapps.universaldb.model.*;
 import org.teamapps.universaldb.index.IndexType;
-import org.teamapps.universaldb.schema.Table;
 import org.teamapps.universaldb.index.bool.BooleanFilter;
 import org.teamapps.universaldb.index.bool.BooleanIndex;
 import org.teamapps.universaldb.index.file.FileIndex;
@@ -36,7 +36,6 @@ import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.text.TextFilter;
 import org.teamapps.universaldb.index.text.TextIndex;
-import org.teamapps.universaldb.generator.PojoCodeGenerator;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -50,8 +49,12 @@ public class PojoTemplate {
 	private List<String> methods = new ArrayList<>();
 	private Map<String, String> blocks = TemplateUtil.getTemplateBlocksMap();
 
-	public static PojoTemplate createSchemaInterface() throws IOException {
-		return create(TemplateUtil.SCHEMA_INTERFACE_TPL);
+	public static PojoTemplate createModelProviderClass() throws IOException {
+		return create(TemplateUtil.MODEL_PROVIDER_TPL);
+	}
+
+	public static PojoTemplate createModelProviderCodeTpl() throws IOException {
+		return create(TemplateUtil.MODEL_PROVIDER_CODE_TPL);
 	}
 
 	public static PojoTemplate createEntityInterface() throws IOException {
@@ -99,8 +102,8 @@ public class PojoTemplate {
 		return template;
 	}
 
-	public boolean addInterfaceGetMethod(Column column, int version) {
-		ColumnType type = column.getType();
+	public boolean addInterfaceGetMethod(FieldModel fieldModel, int version) {
+		ColumnType type = fieldModel.getFieldType().getColumnType();
 		String versionTag = "";
 		if (version > 1) {
 			versionTag = "_" + version;
@@ -109,19 +112,21 @@ public class PojoTemplate {
 		if (tpl == null) {
 			return false;
 		}
-		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(column.getName()));
+		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(fieldModel.getName()));
 		if (type == ColumnType.SINGLE_REFERENCE || type == ColumnType.MULTI_REFERENCE) {
-			tpl = TemplateUtil.setValue(tpl, "reference", firstUpper(column.getReferencedTable().getName()));
+			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
+			tpl = TemplateUtil.setValue(tpl, "reference", firstUpper(referenceFieldModel.getReferencedTable().getName()));
 		} else if (type == ColumnType.ENUM) {
-			String enumType = firstUpper(column.getName());
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
 			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
 		return true;
 	}
 
-	public boolean addInterfaceSetMethod(Column column, Table table, int version) {
-		ColumnType type = column.getType();
+	public boolean addInterfaceSetMethod(FieldModel fieldModel, TableModel table, int version) {
+		ColumnType type = fieldModel.getFieldType().getColumnType();
 		String versionTag = "";
 		if (version > 1) {
 			versionTag = "_" + version;
@@ -130,12 +135,14 @@ public class PojoTemplate {
 		if (tpl == null) {
 			return false;
 		}
-		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(column.getName()));
+		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(fieldModel.getName()));
 		tpl = TemplateUtil.setValue(tpl, "type", firstUpper(table.getName()));
 		if (type == ColumnType.SINGLE_REFERENCE || type == ColumnType.MULTI_REFERENCE) {
-			tpl = TemplateUtil.setValue(tpl, "reference", firstUpper(column.getReferencedTable().getName()));
+			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
+			tpl = TemplateUtil.setValue(tpl, "reference", firstUpper(referenceFieldModel.getReferencedTable().getName()));
 		} else if (type == ColumnType.ENUM) {
-			String enumType = firstUpper(column.getName());
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
 			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
@@ -143,8 +150,8 @@ public class PojoTemplate {
 	}
 
 
-	public boolean addUdbEntityGetMethod(Column column, int version) {
-		ColumnType type = column.getType();
+	public boolean addUdbEntityGetMethod(FieldModel fieldModel, int version) {
+		ColumnType type = fieldModel.getFieldType().getColumnType();
 		String versionTag = "";
 		if (version > 1) {
 			versionTag = "_" + version;
@@ -153,20 +160,23 @@ public class PojoTemplate {
 		if (tpl == null) {
 			return false;
 		}
-		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(column.getName()));
-		tpl = TemplateUtil.setValue(tpl, "name2", column.getName());
+		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(fieldModel.getName()));
+		tpl = TemplateUtil.setValue(tpl, "name2", fieldModel.getName());
 		if (type == ColumnType.SINGLE_REFERENCE || type == ColumnType.MULTI_REFERENCE) {
-			tpl = TemplateUtil.setValue(tpl, "otherType", firstUpper(column.getReferencedTable().getName()));
-			tpl = TemplateUtil.setValue(tpl, "name2", column.getName());
+			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
+			tpl = TemplateUtil.setValue(tpl, "otherType", firstUpper(referenceFieldModel.getReferencedTable().getName()));
+			tpl = TemplateUtil.setValue(tpl, "name2", fieldModel.getName());
 		} else if (type == ColumnType.ENUM) {
-			//...
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
+			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
 		return true;
 	}
 
-	public boolean addUdbEntitySetMethod(Column column, Table table, int version) {
-		ColumnType type = column.getType();
+	public boolean addUdbEntitySetMethod(FieldModel fieldModel, TableModel table, int version) {
+		ColumnType type = fieldModel.getFieldType().getColumnType();
 		String versionTag = "";
 		if (version > 1) {
 			versionTag = "_" + version;
@@ -175,55 +185,60 @@ public class PojoTemplate {
 		if (tpl == null) {
 			return false;
 		}
-		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(column.getName()));
-		tpl = TemplateUtil.setValue(tpl, "name2", column.getName());
+		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(fieldModel.getName()));
+		tpl = TemplateUtil.setValue(tpl, "name2", fieldModel.getName());
 		tpl = TemplateUtil.setValue(tpl, "type", firstUpper(table.getName()));
 		if (type == ColumnType.SINGLE_REFERENCE || type == ColumnType.MULTI_REFERENCE) {
-			tpl = TemplateUtil.setValue(tpl, "otherType", firstUpper(column.getReferencedTable().getName()));
-			tpl = TemplateUtil.setValue(tpl, "name2", column.getName());
+			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
+			tpl = TemplateUtil.setValue(tpl, "otherType", firstUpper(referenceFieldModel.getReferencedTable().getName()));
+			tpl = TemplateUtil.setValue(tpl, "name2", fieldModel.getName());
 		} else if (type == ColumnType.ENUM) {
-			//...
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String enumType = firstUpper(enumFieldModel.getEnumModel().getName());
+			tpl = TemplateUtil.setValue(tpl, "enum", enumType);
 		}
 		methods.add(tpl);
 		return true;
 	}
 
-	public void addQueryInterfaceMethod(Column column, String query, boolean orQuery) {
-		String name = orQuery ? "or" + firstUpper(column.getName()) : column.getName();
-		if (column.getType() == ColumnType.ENUM) {
-			String method = "\t" + query + " " + name + "(EnumFilterType filterType, " +  firstUpper(column.getName()) + " ... enums);";
+	public void addQueryInterfaceMethod(FieldModel fieldModel, String query, boolean orQuery) {
+		String name = orQuery ? "or" + firstUpper(fieldModel.getName()) : fieldModel.getName();
+		if (fieldModel.getFieldType() == FieldType.ENUM) {
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
+			String method = "\t" + query + " " + name + "(EnumFilterType filterType, " +  firstUpper(enumFieldModel.getEnumModel().getName()) + " ... enums);";
 			methods.add(method);
 		} else {
-			String method = "\t" + query + " " + name + "(" + getFilterTypeName(column.getType()) + " filter);";
+			String method = "\t" + query + " " + name + "(" + getFilterTypeName(fieldModel.getFieldType()) + " filter);";
 			methods.add(method);
 		}
 	}
 
-	public void addSubQueryInterfaceMethod(Column column, String query) {
-		Table referencedTable = column.getReferencedTable();
-		if (column.getType().isReference()) {
-			String method = "\t" + query + " filter" + firstUpper(column.getName()) + "(" + firstUpper(column.getReferencedTable().getName() + PojoCodeGenerator.QUERY_SUFFIX) + " query);";
+	public void addSubQueryInterfaceMethod(FieldModel fieldModel, String query) {
+		if (fieldModel.getFieldType().isReference()) {
+			ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
+			String method = "\t" + query + " filter" + firstUpper(fieldModel.getName()) + "(" + firstUpper(referenceFieldModel.getReferencedTable().getName() + PojoCodeGenerator.QUERY_SUFFIX) + " query);";
 			methods.add(method);
-		}
-		if (column.getType() == ColumnType.MULTI_REFERENCE) {
-			methods.add("\t" + query + " " + column.getName() + "(MultiReferenceFilterType type, " + firstUpper(referencedTable.getName()) + " ... value);");
-			methods.add("\t" + query + " " + column.getName() + "Count(MultiReferenceFilterType type, int count);");
+			if (fieldModel.getFieldType() == FieldType.MULTI_REFERENCE) {
+				methods.add("\t" + query + " " + fieldModel.getName() + "(MultiReferenceFilterType type, " + firstUpper(referenceFieldModel.getReferencedTable().getName()) + " ... value);");
+				methods.add("\t" + query + " " + fieldModel.getName() + "Count(MultiReferenceFilterType type, int count);");
+			}
 		}
 	}
 
-	public void addUdbSubQueryMethod(Column column, String query, String type) {
-		if (!column.getType().isReference()) {
+	public void addUdbSubQueryMethod(FieldModel fieldModel, String query, String type) {
+		if (!fieldModel.getFieldType().isReference()) {
 			return;
 		}
+		ReferenceFieldModel referenceFieldModel = (ReferenceFieldModel) fieldModel;
 		String tpl = blocks.get("QUERY_SUB_QUERY");
-		Table referencedTable = column.getReferencedTable();
-		String backReference = column.getBackReference();
+		TableModel referencedTable = referenceFieldModel.getReferencedTable();
+		String backReference = referenceFieldModel.getReverseReferenceField() == null ? null : referenceFieldModel.getReverseReferenceField().getName();
 		if (backReference == null) {
 			tpl = blocks.get("QUERY_SUB_QUERY_2");
 		}
 
-		String name = firstUpper(column.getName());
-		String name2 = column.getName();
+		String name = firstUpper(fieldModel.getName());
+		String name2 = fieldModel.getName();
 		String udbType = PojoCodeGenerator.UDB_PREFIX + type;
 		String otherType = firstUpper(referencedTable.getName());
 
@@ -240,7 +255,7 @@ public class PojoTemplate {
 		tpl = TemplateUtil.setValue(tpl, "udbType", udbType);
 		methods.add(tpl);
 
-		if (column.getType() == ColumnType.MULTI_REFERENCE) {
+		if (fieldModel.getFieldType() == FieldType.MULTI_REFERENCE) {
 			tpl = blocks.get("QUERY_MULTI_REFERENCE");
 			tpl = TemplateUtil.setValue(tpl, "otherType", otherType);
 			tpl = TemplateUtil.setValue(tpl, "name", name);
@@ -260,18 +275,19 @@ public class PojoTemplate {
 
 	}
 
-	public void addUdbQueryMethod(Column column, String query, String type, boolean orQuery) {
-		String name = column.getName();
+	public void addUdbQueryMethod(FieldModel fieldModel, String query, String type, boolean orQuery) {
+		String name = fieldModel.getName();
 		String tpl = orQuery ? blocks.get("QUERY_METHOD_OR") : blocks.get("QUERY_METHOD");
-		if (column.getType() == ColumnType.ENUM) {
+		if (fieldModel.getFieldType() == FieldType.ENUM) {
+			EnumFieldModel enumFieldModel = (EnumFieldModel) fieldModel;
 			tpl = orQuery ? blocks.get("QUERY_ENUMS_OR") : blocks.get("QUERY_ENUMS");
-			tpl = TemplateUtil.setValue(tpl, "enumType", firstUpper(column.getName()));
+			tpl = TemplateUtil.setValue(tpl, "enumType", firstUpper(enumFieldModel.getEnumModel().getName()));
 		}
 		tpl = TemplateUtil.setValue(tpl, "query", query);
 		tpl = TemplateUtil.setValue(tpl, "name", firstUpper(name));
 		tpl = TemplateUtil.setValue(tpl, "name2", name);
 		tpl = TemplateUtil.setValue(tpl, "udbType", PojoCodeGenerator.UDB_PREFIX + type);
-		tpl = TemplateUtil.setValue(tpl, "filter", getFilterTypeName(column.getType()));
+		tpl = TemplateUtil.setValue(tpl, "filter", getFilterTypeName(fieldModel.getFieldType()));
 		methods.add(tpl);
 	}
 
@@ -312,38 +328,26 @@ public class PojoTemplate {
 		return true;
 	}
 
-	public String getIndexTypeName(ColumnType type) {
+	public String getIndexTypeName(FieldType type) {
 		IndexType indexType = type.getIndexType();
-		switch (indexType) {
-			case BOOLEAN:
-				return BooleanIndex.class.getSimpleName();
-			case SHORT:
-				return ShortIndex.class.getSimpleName();
-			case INT:
-				return IntegerIndex.class.getSimpleName();
-			case LONG:
-				return LongIndex.class.getSimpleName();
-			case FLOAT:
-				return FloatIndex.class.getSimpleName();
-			case DOUBLE:
-				return DoubleIndex.class.getSimpleName();
-			case TEXT:
-				return TextIndex.class.getSimpleName();
-			case TRANSLATABLE_TEXT:
-				return TranslatableTextIndex.class.getSimpleName();
-			case REFERENCE:
-				return SingleReferenceIndex.class.getSimpleName();
-			case MULTI_REFERENCE:
-				return MultiReferenceIndex.class.getSimpleName();
-			case FILE:
-				return FileIndex.class.getSimpleName();
-			case BINARY:
-				return BinaryIndex.class.getSimpleName();
-		}
-		return null;
+		return switch (indexType) {
+			case BOOLEAN -> BooleanIndex.class.getSimpleName();
+			case SHORT -> ShortIndex.class.getSimpleName();
+			case INT -> IntegerIndex.class.getSimpleName();
+			case LONG -> LongIndex.class.getSimpleName();
+			case FLOAT -> FloatIndex.class.getSimpleName();
+			case DOUBLE -> DoubleIndex.class.getSimpleName();
+			case TEXT -> TextIndex.class.getSimpleName();
+			case TRANSLATABLE_TEXT -> TranslatableTextIndex.class.getSimpleName();
+			case REFERENCE -> SingleReferenceIndex.class.getSimpleName();
+			case MULTI_REFERENCE -> MultiReferenceIndex.class.getSimpleName();
+			case FILE -> FileIndex.class.getSimpleName();
+			case BINARY -> BinaryIndex.class.getSimpleName();
+			default -> null;
+		};
 	}
 
-	public String getFilterTypeName(ColumnType type) {
+	public String getFilterTypeName(FieldType type) {
 		switch (type) {
 			case BOOLEAN:
 				return BooleanFilter.class.getSimpleName();
@@ -386,6 +390,14 @@ public class PojoTemplate {
 	}
 
 	public void writeTemplate(String name, File dir) throws IOException {
+		String templateText = writeTemplateCode();
+		File file = new File(dir, TemplateUtil.firstUpperCase(name) + ".java");
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+		writer.write(templateText);
+		writer.close();
+	}
+
+	public String writeTemplateCode() {
 		if (!methods.isEmpty()) {
 			StringBuilder sb = new StringBuilder();
 			for (String method : methods) {
@@ -394,9 +406,6 @@ public class PojoTemplate {
 			setValue("methods", sb.toString());
 			methods.clear();
 		}
-		File file = new File(dir, TemplateUtil.firstUpperCase(name) + ".java");
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
-		writer.write(template);
-		writer.close();
+		return template;
 	}
 }

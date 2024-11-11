@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.UniversalDB;
 import org.teamapps.universaldb.index.TableIndex;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.log.DefaultLogIndex;
 import org.teamapps.universaldb.index.log.LogIndex;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransaction;

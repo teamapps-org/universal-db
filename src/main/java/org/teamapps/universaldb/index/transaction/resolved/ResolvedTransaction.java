@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,8 @@ package org.teamapps.universaldb.index.transaction.resolved;
 
 import org.teamapps.universaldb.index.transaction.TransactionType;
 import org.teamapps.universaldb.index.transaction.request.TransactionRequest;
-import org.teamapps.universaldb.index.transaction.schema.SchemaUpdate;
-import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.util.DataStreamUtil;
+import org.teamapps.universaldb.index.transaction.schema.ModelUpdate;
+import org.teamapps.universaldb.model.DatabaseModel;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -40,8 +39,8 @@ public class ResolvedTransaction {
 	private final int userId;
 	private final long timestamp;
 	private final List<ResolvedTransactionRecord> transactionRecords;
-	private Schema schema;
 	private Map<Integer, Integer> recordIdByCorrelationId;
+	private ModelUpdate modelUpdate;
 
 	public static ResolvedTransaction createResolvedTransaction(byte[] bytes) {
 		try {
@@ -56,7 +55,7 @@ public class ResolvedTransaction {
 		if (request.getTransactionType() == TransactionType.DATA_UPDATE) {
 			return new ResolvedTransaction(request.getNodeId(), request.getRequestId(), transactionId, request.getUserId(), request.getTimestamp());
 		} else {
-			return new ResolvedTransaction(request.getNodeId(), request.getRequestId(), transactionId, request.getUserId(), request.getTimestamp(), null);
+			return new ResolvedTransaction(request.getNodeId(), request.getRequestId(), transactionId, request.getUserId(), request.getTimestamp(), new ModelUpdate(request.getDatabaseModel(), transactionId, request.getTimestamp()));
 		}
 	}
 
@@ -73,10 +72,10 @@ public class ResolvedTransaction {
 		this.timestamp = timestamp;
 		this.transactionRecords = new ArrayList<>();
 		this.recordIdByCorrelationId = new HashMap<>();
-		this.schema = null;
+		this.modelUpdate = null;
 	}
 
-	public ResolvedTransaction(long nodeId, long requestId,long transactionId, int userId, long timestamp, Schema schema) {
+	public ResolvedTransaction(long nodeId, long requestId,long transactionId, int userId, long timestamp, ModelUpdate modelUpdate) {
 		this.nodeId = nodeId;
 		this.requestId = requestId;
 		this.transactionId = transactionId;
@@ -85,7 +84,7 @@ public class ResolvedTransaction {
 		this.timestamp = timestamp;
 		this.transactionRecords = null;
 		this.recordIdByCorrelationId = null;
-		this.schema = schema;
+		this.modelUpdate = modelUpdate;
 	}
 
 	private ResolvedTransaction(long transactionId, ResolvedTransaction transaction) {
@@ -96,7 +95,7 @@ public class ResolvedTransaction {
 		this.userId = transaction.getUserId();
 		this.timestamp = transaction.getTimestamp();
 		this.transactionRecords = transaction.getTransactionRecords();
-		this.schema = transaction.getSchema();
+		this.modelUpdate = transaction.getModelUpdate();
 		this.recordIdByCorrelationId = transaction.getRecordIdByCorrelationId();
 	}
 
@@ -110,7 +109,7 @@ public class ResolvedTransaction {
 		if (transactionType == TransactionType.DATA_UPDATE) {
 			transactionRecords = new ArrayList<>();
 			recordIdByCorrelationId = new HashMap<>();
-			schema = null;
+			modelUpdate = null;
 			int count = dis.readInt();
 			for (int i = 0; i < count; i++) {
 				transactionRecords.add(new ResolvedTransactionRecord(dis));
@@ -124,7 +123,7 @@ public class ResolvedTransaction {
 		} else {
 			transactionRecords = null;
 			recordIdByCorrelationId = null;
-			schema = new Schema(dis);
+			modelUpdate = new ModelUpdate(dis);
 		}
 	}
 
@@ -150,7 +149,7 @@ public class ResolvedTransaction {
 				dos.writeInt(0);
 			}
 		} else {
-			DataStreamUtil.writeStringWithLengthHeader(dos, schema.getSchemaDefinition());
+			modelUpdate.write(dos);
 		}
 	}
 
@@ -197,16 +196,21 @@ public class ResolvedTransaction {
 		return transactionRecords;
 	}
 
-	public Schema getSchema() {
-		return schema;
-	}
+//	public DatabaseModel getDatabaseModel() {
+//		return databaseModel;
+//	}
+//
+//	public void setDatabaseModel(DatabaseModel databaseModel) {
+//		this.databaseModel = databaseModel;
+//	}
+//
+//	public ModelUpdate getModelUpdate() {
+//		return new ModelUpdate(databaseModel, transactionId, timestamp);
+//	}
 
-	public void setSchema(Schema schema) {
-		this.schema = schema;
-	}
 
-	public SchemaUpdate getSchemaUpdate() {
-		return new SchemaUpdate(schema, transactionId, timestamp);
+	public ModelUpdate getModelUpdate() {
+		return modelUpdate;
 	}
 
 	public Map<Integer, Integer> getRecordIdByCorrelationId() {

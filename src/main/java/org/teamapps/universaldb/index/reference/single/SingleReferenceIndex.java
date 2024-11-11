@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@ package org.teamapps.universaldb.index.reference.single;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.numeric.NumericFilter;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.multi.MultiReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.RecordReference;
+import org.teamapps.universaldb.model.FieldModel;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -34,7 +35,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 
-public class SingleReferenceIndex extends AbstractIndex<RecordReference, NumericFilter> implements ReferenceIndex {
+public class SingleReferenceIndex extends AbstractIndex<RecordReference, NumericFilter> implements ReferenceIndex<RecordReference, NumericFilter> {
 
 	private final PrimitiveEntryAtomicStore atomicStore;
 	private TableIndex referencedTable;
@@ -44,12 +45,13 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 	private MultiReferenceIndex reverseMultiIndex;
 
 
-	public SingleReferenceIndex(String name, TableIndex tableIndex, ColumnType columnType) {
-		super(name, tableIndex, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), name);
+	public SingleReferenceIndex(FieldModel fieldModel, TableIndex tableIndex) {
+		super(fieldModel, tableIndex);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
-	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {
+	@Override
+	public void setReferencedTable(TableIndex referencedTable, FieldIndex reverseIndex, boolean cascadeDeleteReferences) {
 		this.referencedTable = referencedTable;
 		if (reverseIndex != null) {
 			if (reverseIndex instanceof SingleReferenceIndex) {
@@ -82,7 +84,7 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 	}
 
 	@Override
-	public ColumnIndex getReferencedColumn() {
+	public FieldIndex getReferencedColumn() {
 		if (reverseSingleIndex != null) {
 			return reverseSingleIndex;
 		} else {
@@ -150,12 +152,16 @@ public class SingleReferenceIndex extends AbstractIndex<RecordReference, Numeric
 		int previousValue = getValue(id);
 		if (previousValue != value) {
 			if (reverseSingleIndex != null) {
+				if (value > 0) {
+					int previousReverseValue = reverseSingleIndex.getValue(value);
+					if (previousReverseValue > 0) {
+						setIndexValue(previousReverseValue, 0);
+						cyclicReferenceUpdates.add(new CyclicReferenceUpdate(this, true, previousReverseValue, value));
+					}
+				}
 				if (previousValue > 0) {
-					int orphanedReference = reverseSingleIndex.getValue(previousValue);
-					assert orphanedReference > 0;
-					setIndexValue(orphanedReference, 0);
 					reverseSingleIndex.setIndexValue(previousValue, 0);
-					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, orphanedReference));
+					cyclicReferenceUpdates.add(new CyclicReferenceUpdate(reverseSingleIndex, true, previousValue, id));
 				}
 				if (value > 0) {
 					reverseSingleIndex.setIndexValue(value, id);

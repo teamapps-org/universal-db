@@ -25,7 +25,8 @@ import java.util.function.Supplier;
 public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 {staticFields}
 
-    private static void setTableIndex(TableIndex tableIndex) {
+    private static void setTableIndex(TableIndex tableIndex, UniversalDB udb) {
+		universalDB = udb;
         table = tableIndex;
 {staticFieldSetters}
     }
@@ -72,18 +73,34 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 
     @Override
     public {udbType} save() {
-        saveRecord();
+        saveRecord(universalDB);
+        return this;
+    }
+
+   @Override
+    public {udbType} save(int userId, long timestamp) {
+        saveRecord(universalDB, userId, timestamp);
         return this;
     }
 
     @Override
     public void delete() {
-        deleteRecord();
+        deleteRecord(universalDB);
+    }
+
+    @Override
+    public void delete(int userId, long timestamp) {
+        deleteRecord(universalDB, userId, timestamp);
     }
 
     @Override
     public void restoreDeleted() {
-        restoreDeletedRecord();
+        restoreDeletedRecord(universalDB);
+    }
+
+    @Override
+    public void restoreDeleted(int userId, long timestamp) {
+        restoreDeletedRecord(universalDB, userId, timestamp);
     }
 }
 

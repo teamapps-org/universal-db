@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,7 @@ package org.teamapps.universaldb.index.file;
 
 public enum FileDataField {
 	NAME,
-	MIME_TYPE,
-	HASH,
+	EXTENSION,
 	META_DATA,
 	CONTENT,
-	CONTENT_LANGUAGE,
 }

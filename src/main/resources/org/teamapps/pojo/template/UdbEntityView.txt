@@ -27,7 +27,8 @@ import java.util.function.Supplier;
 public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
 {staticFields}
 
-    private static void setTableIndex(TableIndex tableIndex) {
+    private static void setTableIndex(TableIndex tableIndex, UniversalDB udb) {
+		universalDB = udb;
         table = tableIndex;
 {staticFieldSetters}
     }
@@ -83,20 +84,21 @@ public class {udbType} extends AbstractUdbEntity<{type}> implements {type} {
     	throw new UnsupportedOperationException();
     }
 
-	@Override
-	public String toString() {
-    	StringBuilder sb = new StringBuilder();
-    	sb.append(table.getName()).append(": ").append(getId()).append("\n");
-		for (ColumnIndex column : table.getColumnIndices()) {
-			sb.append("\t").append(column.getName()).append(": ").append(column.getStringValue(getId()));
-			if (isChanged(column)) {
-			    TransactionRequestRecordValue changeValue = getChangeValue(column);
-				sb.append(" -> ").append(changeValue.getValue());
-			}
-			sb.append("\n");
-		}
-		return sb.toString();
-	}
+    @Override
+    public {udbType} save(int userId, long timestamp) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void delete(int userId, long timestamp) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void restoreDeleted(int userId, long timestamp) {
+        throw new UnsupportedOperationException();
+    }
+
 }
 
 

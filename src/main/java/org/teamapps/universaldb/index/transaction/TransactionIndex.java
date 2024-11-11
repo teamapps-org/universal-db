@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,23 @@ package org.teamapps.universaldb.index.transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teamapps.universaldb.UniversalDB;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 import org.teamapps.universaldb.index.log.DefaultLogIndex;
 import org.teamapps.universaldb.index.log.LogIndex;
 import org.teamapps.universaldb.index.log.LogIterator;
 import org.teamapps.universaldb.index.log.RotatingLogIndex;
 import org.teamapps.universaldb.index.transaction.resolved.ResolvedTransaction;
-import org.teamapps.universaldb.index.transaction.schema.SchemaUpdate;
-import org.teamapps.universaldb.schema.Schema;
+import org.teamapps.universaldb.index.transaction.schema.ModelUpdate;
+import org.teamapps.universaldb.model.DatabaseModel;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -53,42 +56,34 @@ public class TransactionIndex {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final File path;
-	private LogIndex transactionLog;
-	private LogIndex schemaLog;
+	private final LogIndex transactionLog;
+	private final LogIndex modelsLog;
 	private PrimitiveEntryAtomicStore databaseStats;
 	private volatile boolean active = true;
 
-	private Schema currentSchema;
+	private DatabaseModel currentModel;
+	private ModelUpdate currentModelUpdate;
 
-	public static void exportEmptyIndexWithModel(File baseInputPath, File baseOutputPath) {
-		new TransactionIndex(baseInputPath, baseOutputPath);
-	}
-
-	private TransactionIndex(File basePath, File baseOutputPath) {
-		this.path = new File(basePath, "transactions");
-		this.path.mkdir();
+	public TransactionIndex(File path, boolean skipIndexCheck) {
+		this.path = path;
 		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
-		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
+		this.modelsLog = new DefaultLogIndex(this.path, "models");
 		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
-		List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
-		currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
-
-		try {
-			TransactionIndex newTransactionIndex = new TransactionIndex(baseOutputPath);
-			newTransactionIndex.writeSchemaUpdate(new SchemaUpdate(currentSchema, 0, System.currentTimeMillis()));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		logger.info("Open transaction index on: {}", path.getAbsolutePath());
+		init();
+		if (!skipIndexCheck) {
+			checkIndex();
 		}
 	}
 
-	public TransactionIndex(File basePath) {
-		this.path = new File(basePath, "transactions");
-		this.path.mkdir();
-		this.transactionLog = new RotatingLogIndex(this.path, "transactions");
-		this.schemaLog = new DefaultLogIndex(this.path, "schemas");
-		this.databaseStats = new PrimitiveEntryAtomicStore(this.path, "db-stats");
-		init();
-		checkIndex();
+	private static long createId() {
+		SecureRandom secureRandom = new SecureRandom();
+		while (true) {
+			long id = Math.abs(secureRandom.nextLong());
+			if (Long.toHexString(id).length() == 16) {
+				return id;
+			}
+		}
 	}
 
 	private void init() {
@@ -99,18 +94,16 @@ public class TransactionIndex {
 			databaseStats.setLong(FIRST_SYSTEM_START, System.currentTimeMillis());
 		}
 		databaseStats.setLong(LAST_SYSTEM_START, System.currentTimeMillis());
-		if (!schemaLog.isEmpty()) {
-			List<SchemaUpdate> schemaUpdates = getSchemaUpdates();
-			currentSchema = getSchemaUpdates().get(schemaUpdates.size() - 1).getSchema();
-		}
-		logger.info(UniversalDB.SKIP_DB_LOGGING, "STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getSchemaUpdates().size());
+		currentModelUpdate = getModelUpdates().stream().reduce((first, second) -> second).orElse(null);
+		currentModel = currentModelUpdate == null ? null : currentModelUpdate.getMergedModel();
+		logger.info(UniversalDB.SKIP_DB_LOGGING, "STARTED TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}, schema-updates: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId(), getModelUpdates().size());
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
 				active = false;
 				logger.info(UniversalDB.SKIP_DB_LOGGING, "SHUTTING DOWN TRANSACTION INDEX: node-id: {}, last-transaction-id: {}, last-transaction-store-id: {}, transaction-count: {}, last-request-id: {}", getNodeIdAsString(), getLastTransactionId(), getLastTransactionStoreId(), getTransactionCount(), getLastTransactionRequestId());
 				databaseStats.setLong(TIMESTAMP_SHUTDOWN, System.currentTimeMillis());
 				transactionLog.close();
-				schemaLog.close();
+				modelsLog.close();
 				databaseStats.flush();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -132,8 +125,21 @@ public class TransactionIndex {
 			expectedTransactionId = transaction.getTransactionId() + 1;
 		}
 		logger.info(UniversalDB.SKIP_DB_LOGGING, "Transaction index check result: {}", ok);
+		logIterator.closeSave();
 		if (!ok) {
 			throw new RuntimeException("Error in transaction log!");
+		}
+		if (getLastTransactionId() != (expectedTransactionId - 1)) {
+			logger.error("Wrong transaction id in stats file, expected: {}, actual: {}, probably system was not shut down properly", (expectedTransactionId - 1), getLastTransactionId());
+			if (new File(path, "transaction-log.repair").exists()) {
+				logger.warn("Fixing transaction stats file...");
+				databaseStats.setLong(LAST_TRANSACTION_ID, expectedTransactionId - 1);
+				new File(path, "transaction-log.repair").delete();
+				logger.warn("Transaction stats file fixed, repair-file removed");
+			} else {
+				logger.warn("To fix the transaction id: create a file 'transaction-log.repair' and put it into the directory: {} and restart", path.getPath());
+				throw new RuntimeException("Error last transaction id not matching transaction log!");
+			}
 		}
 		return ok;
 	}
@@ -189,39 +195,37 @@ public class TransactionIndex {
 		}
 	}
 
-	public synchronized boolean isValidSchema(Schema schema) {
-		if (currentSchema != null) {
-			if (!currentSchema.isCompatibleWith(schema)) {
-				return false;
-			}
-			Schema schemaCopy = Schema.parse(currentSchema.getSchemaDefinition());
-			schemaCopy.merge(schema);
-			schemaCopy.mapSchema();
-			if (!schemaCopy.checkModel()) {
-				return false;
-			}
-		}
-		return true;
+	public synchronized boolean isValidModel(DatabaseModel model) {
+		return (currentModel == null && model.isValid()) || currentModel.isCompatible(model);
 	}
 
-	public synchronized boolean isSchemaUpdate(Schema schema) {
-		if (currentSchema == null) {
-			return true;
+	public synchronized boolean isModelUpdate(DatabaseModel model) {
+//		long maxBuildTime = getModelUpdates().stream().mapToLong(update -> update.getDatabaseModel().getPojoBuildTime()).max().orElse(0);
+//		return model.getPojoBuildTime() > maxBuildTime;
+		if (currentModelUpdate != null && currentModelUpdate.getDatabaseModel().isSameModel(model)) {
+			return false;
 		}
-		Schema schemaCopy = Schema.parse(currentSchema.getSchemaDefinition());
-		schemaCopy.merge(schema);
-		schemaCopy.mapSchema();
-		return !currentSchema.getSchemaDefinition().equals(schemaCopy.getSchemaDefinition());
+		return getModelUpdates()
+				.stream()
+				.noneMatch(update -> update.getDatabaseModel().getPojoBuildTime() == model.getPojoBuildTime());
 	}
 
-	public synchronized void writeSchemaUpdate(SchemaUpdate schemaUpdate) throws IOException {
-		schemaLog.writeLog(schemaUpdate.getBytes());
-		currentSchema = schemaUpdate.getSchema();
+	public synchronized void writeModelUpdate(ModelUpdate modelUpdate) throws IOException {
+		currentModelUpdate = modelUpdate;
+		DatabaseModel model = modelUpdate.getDatabaseModel();
+		if (currentModel == null) {
+			currentModel = model;
+			currentModel.initialize(); //todo copy!!!
+		} else {
+			currentModel.mergeModel(model);
+		}
+		modelUpdate.setMergedModel(currentModel);
+		modelsLog.writeLog(modelUpdate.getBytes());
 		logger.info(UniversalDB.SKIP_DB_LOGGING, "Updating schema");
 	}
 
-	public synchronized Schema getCurrentSchema() {
-		return currentSchema;
+	public synchronized DatabaseModel getCurrentModel() {
+		return currentModel;
 	}
 
 	public synchronized void writeTransaction(ResolvedTransaction transaction) throws Exception {
@@ -235,15 +239,16 @@ public class TransactionIndex {
 		databaseStats.setLong(LAST_TRANSACTION_ID, transaction.getTransactionId());
 		databaseStats.setLong(LAST_TRANSACTION_STORE_ID, transactionLog.getPosition());
 		databaseStats.setLong(TRANSACTIONS_COUNT, getTransactionCount() + 1);
+		databaseStats.flush();
 	}
 
-	public synchronized List<SchemaUpdate> getSchemaUpdates() {
-		if (schemaLog.isEmpty()) {
+	public synchronized List<ModelUpdate> getModelUpdates() {
+		if (modelsLog.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return schemaLog.readAllLogs()
+		return modelsLog.readAllLogs()
 				.stream()
-				.map(SchemaUpdate::new)
+				.map(ModelUpdate::new)
 				.collect(Collectors.toList());
 	}
 
@@ -258,16 +263,6 @@ public class TransactionIndex {
 
 	public LogIterator getLogIterator() {
 		return transactionLog.readLogs();
-	}
-
-	private static long createId() {
-		SecureRandom secureRandom = new SecureRandom();
-		while (true) {
-			long id = Math.abs(secureRandom.nextLong());
-			if (Long.toHexString(id).length() == 16) {
-				return id;
-			}
-		}
 	}
 
 

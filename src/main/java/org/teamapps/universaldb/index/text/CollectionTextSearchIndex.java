@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.teamapps.universaldb.index.file.FileUtil;
-import org.teamapps.universaldb.index.translation.TranslatableTextFieldFilter;
+import org.teamapps.universaldb.index.filelegacy.FileUtil;
 import org.teamapps.universaldb.index.translation.TranslatableText;
 
 import java.io.File;

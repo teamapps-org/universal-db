@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,12 @@ package org.teamapps.universaldb.index.reference.multi;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.BlockChainAtomicStore;
+import org.teamapps.universaldb.index.buffer.chain.BlockChainAtomicStore;
 import org.teamapps.universaldb.index.reference.CyclicReferenceUpdate;
 import org.teamapps.universaldb.index.reference.ReferenceIndex;
 import org.teamapps.universaldb.index.reference.single.SingleReferenceIndex;
 import org.teamapps.universaldb.index.reference.value.*;
+import org.teamapps.universaldb.model.FieldModel;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static org.teamapps.universaldb.index.IndexType.MULTI_REFERENCE;
 
-public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, MultiReferenceFilter> implements ReferenceIndex {
+public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, MultiReferenceFilter> implements ReferenceIndex<MultiReferenceValue, MultiReferenceFilter> {
 
 	private final BlockChainAtomicStore referenceStore;
 	private TableIndex referencedTable;
@@ -47,12 +48,13 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	private boolean ensureNoDuplicates = true;
 
-	public MultiReferenceIndex(String name, TableIndex table, ColumnType columnType) {
-		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		this.referenceStore = new BlockChainAtomicStore(table.getDataPath(), name);
+	public MultiReferenceIndex(FieldModel fieldModel, TableIndex tableIndex) {
+		super(fieldModel, tableIndex);
+		this.referenceStore = new BlockChainAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
-	public void setReferencedTable(TableIndex referencedTable, ColumnIndex reverseIndex, boolean cascadeDeleteReferences) {
+	@Override
+	public void setReferencedTable(TableIndex referencedTable, FieldIndex reverseIndex, boolean cascadeDeleteReferences) {
 		this.referencedTable = referencedTable;
 		if (reverseIndex != null) {
 			if (reverseIndex instanceof SingleReferenceIndex) {
@@ -85,7 +87,7 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 	}
 
 	@Override
-	public ColumnIndex getReferencedColumn() {
+	public FieldIndex getReferencedColumn() {
 		if (reverseSingleIndex != null) {
 			return reverseSingleIndex;
 		} else {
@@ -173,16 +175,12 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	public void setResolvedReferenceEditValue(int id, ResolvedMultiReferenceUpdate editValue) {
 		switch (editValue.getType()) {
-			case REMOVE_ALL_REFERENCES:
-				removeAllReferences(id, false);
-				break;
-			case SET_REFERENCES:
-				setReferences(id, editValue.getSetReferences(), false);
-				break;
-			case ADD_REMOVE_REFERENCES:
+			case REMOVE_ALL_REFERENCES -> removeAllReferences(id, false);
+			case SET_REFERENCES -> setReferences(id, editValue.getSetReferences(), false);
+			case ADD_REMOVE_REFERENCES -> {
 				removeReferences(id, editValue.getRemoveReferences(), false);
 				addReferences(id, editValue.getAddReferences(), false);
-				break;
+			}
 		}
 	}
 
@@ -317,31 +315,19 @@ public class MultiReferenceIndex extends AbstractIndex<MultiReferenceValue, Mult
 
 	@Override
 	public BitSet filter(BitSet records, MultiReferenceFilter filter) {
-		switch (filter.getType()) {
-			case EQUALS:
-				return filterEquals(records, filter.getReferencesSet());
-			case NOT_EQUALS:
-				return filterNotEquals(records, filter.getReferencesSet());
-			case IS_EMPTY:
-				return filterIsEmpty(records);
-			case IS_NOT_EMPTY:
-				return filterIsNotEmpty(records);
-			case CONTAINS_ANY:
-				return filterContainsAny(records, filter.getReferencesSet());
-			case CONTAINS_NONE:
-				return filterContainsNone(records, filter.getReferencesSet());
-			case CONTAINS_ALL:
-				return filterContainsAll(records, filter.getReferencesSet());
-			case CONTAINS_ANY_NOT:
-				return filterContainsAnyNot(records, filter.getReferencesSet());
-			case ENTRY_COUNT_EQUALS:
-				return filterEntryCountEquals(records, filter.getCountFilter());
-			case ENTRY_COUNT_GREATER:
-				return filterEntryCountGreater(records, filter.getCountFilter());
-			case ENTRY_COUNT_LESSER:
-				return filterEntryCountSmaller(records, filter.getCountFilter());
-		}
-		return null;
+		return switch (filter.getType()) {
+			case EQUALS -> filterEquals(records, filter.getReferencesSet());
+			case NOT_EQUALS -> filterNotEquals(records, filter.getReferencesSet());
+			case IS_EMPTY -> filterIsEmpty(records);
+			case IS_NOT_EMPTY -> filterIsNotEmpty(records);
+			case CONTAINS_ANY -> filterContainsAny(records, filter.getReferencesSet());
+			case CONTAINS_NONE -> filterContainsNone(records, filter.getReferencesSet());
+			case CONTAINS_ALL -> filterContainsAll(records, filter.getReferencesSet());
+			case CONTAINS_ANY_NOT -> filterContainsAnyNot(records, filter.getReferencesSet());
+			case ENTRY_COUNT_EQUALS -> filterEntryCountEquals(records, filter.getCountFilter());
+			case ENTRY_COUNT_GREATER -> filterEntryCountGreater(records, filter.getCountFilter());
+			case ENTRY_COUNT_LESSER -> filterEntryCountSmaller(records, filter.getCountFilter());
+		};
 	}
 
 	@Override

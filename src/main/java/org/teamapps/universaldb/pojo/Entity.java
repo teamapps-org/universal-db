@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,10 @@ public interface Entity<ENTITY> extends Identifiable {
 
 	int getId();
 
+	String getTable();
+
+	String getDatabase();
+
 	void clearChanges();
 
 	boolean isChanged(String fieldName);
@@ -37,9 +41,15 @@ public interface Entity<ENTITY> extends Identifiable {
 
 	ENTITY save();
 
+	ENTITY save(int userId, long timestamp);
+
 	void delete();
 
+	void delete(int userId, long timestamp);
+
 	void restoreDeleted();
+
+	void restoreDeleted(int userId, long timestamp);
 
 	boolean isRestorable();
 

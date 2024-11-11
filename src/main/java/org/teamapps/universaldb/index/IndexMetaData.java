@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,10 @@ public class IndexMetaData {
 
 	private final RandomAccessStore randomAccessStore;
 
-	public IndexMetaData(File dataPath, String name, String fqn, int indexType) {
+	public IndexMetaData(File dataPath, String name, String fqn, int indexType, int mappingId) {
+		if (mappingId == 0) {
+			throw new RuntimeException("Error: cannot create index without mappingId:" + name + ", " + fqn);
+		}
 		this.randomAccessStore = new RandomAccessStore(dataPath, name + ".mdx");
 		if (randomAccessStore.getSize() == 0) {
 			try {
@@ -50,9 +53,12 @@ public class IndexMetaData {
 				randomAccessStore.write(NONCE_POS, nonce);
 				randomAccessStore.writeInt(COUNTER_OFFSET_POS, ctrOffset);
 				randomAccessStore.writeString(FQN_POS, fqn);
+				randomAccessStore.writeInt(MAPPING_ID_POS, mappingId);
 			} catch (IOException e) {
 				throw new RuntimeException("Error creating index meta data", e);
 			}
+		} else if (getMappingId() != mappingId) {
+			throw new RuntimeException("Wrong mapping id:" + getMappingId() + ", expected:" + mappingId + ", path:" + dataPath + "/" + name);
 		}
 	}
 

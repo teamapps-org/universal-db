@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ package org.teamapps.universaldb.index.text;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.BlockEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.BlockEntryAtomicStore;
+import org.teamapps.universaldb.model.FieldModel;
 import org.teamapps.universaldb.util.DataStreamUtil;
 
 import java.io.DataInputStream;
@@ -32,22 +33,22 @@ import java.util.*;
 
 public class TextIndex extends AbstractIndex<String, TextFilter> {
 
-	private BlockEntryAtomicStore atomicStore;
+	private final BlockEntryAtomicStore atomicStore;
 	private final TextSearchIndex searchIndex;
 	private final CollectionTextSearchIndex collectionSearchIndex;
 
-	public TextIndex(String name, TableIndex table, ColumnType columnType, CollectionTextSearchIndex collectionSearchIndex) {
-		super(name, table, columnType, FullTextIndexingOptions.INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
+	public TextIndex(FieldModel fieldModel, TableIndex tableIndex, CollectionTextSearchIndex collectionSearchIndex) {
+		super(fieldModel, tableIndex);
+		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 		this.searchIndex = null;
 		this.collectionSearchIndex = collectionSearchIndex;
 	}
 
-	public TextIndex(String name, TableIndex table, ColumnType columnType, boolean withLocalSearchIndex) {
-		super(name, table, columnType, withLocalSearchIndex ? FullTextIndexingOptions.INDEXED : FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new BlockEntryAtomicStore(table.getDataPath(), name);
+	public TextIndex(FieldModel fieldModel, TableIndex tableIndex, boolean withLocalSearchIndex) {
+		super(fieldModel, tableIndex);
+		atomicStore = new BlockEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 		if (withLocalSearchIndex) {
-			searchIndex = new TextSearchIndex(getFullTextIndexPath(), name);
+			searchIndex = new TextSearchIndex(tableIndex.getFullTextIndexPath(), fieldModel.getName());
 		} else {
 			searchIndex = null;
 		}

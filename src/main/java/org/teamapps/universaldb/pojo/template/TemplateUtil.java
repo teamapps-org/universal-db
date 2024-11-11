@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,8 @@ public class TemplateUtil {
 	public static final String UDB_QUERY_TPL = "UdbQuery.txt";
 	public static final String ENUM_TPL = "Enum.txt";
 
-	public static final String SCHEMA_INTERFACE_TPL = "SchemaInterface.txt";
+	public static final String MODEL_PROVIDER_TPL = "ModelProvider.txt";
+	public static final String MODEL_PROVIDER_CODE_TPL = "ModelProviderCode.txt";
 	public static final String TEMPLATE_BLOCKS_TPL = "templateBlocks.txt";
 
 	public static String readeTemplate(String name) throws IOException {
@@ -91,8 +92,8 @@ public class TemplateUtil {
 		return readeTemplate(ENTITY_INTERFACE_TPL);
 	}
 
-	public static String getSchemaInterfaceTemplate() throws IOException {
-		return readeTemplate(SCHEMA_INTERFACE_TPL);
+	public static String getModelProviderTemplate() throws IOException {
+		return readeTemplate(MODEL_PROVIDER_TPL);
 	}
 
 	public static String getEnumTemplate() throws IOException {
@@ -103,9 +104,8 @@ public class TemplateUtil {
 		try {
 			return readTemplateBlocks(TEMPLATE_BLOCKS_TPL);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		return null;
 	}
 
 	public static String setValue(String template, String name, String value) {

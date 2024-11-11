@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ package org.teamapps.universaldb.index.numeric;
 
 import org.teamapps.universaldb.context.UserContext;
 import org.teamapps.universaldb.index.*;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.model.FieldModel;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -33,9 +34,9 @@ public class FloatIndex extends AbstractIndex<Float, NumericFilter> implements N
 
 	private PrimitiveEntryAtomicStore atomicStore;
 
-	public FloatIndex(String name, TableIndex table, ColumnType columnType) {
-		super(name, table, columnType, FullTextIndexingOptions.NOT_INDEXED);
-		atomicStore = new PrimitiveEntryAtomicStore(table.getDataPath(), name);
+	public FloatIndex(FieldModel fieldModel, TableIndex tableIndex) {
+		super(fieldModel, tableIndex);
+		atomicStore = new PrimitiveEntryAtomicStore(tableIndex.getDataPath(), fieldModel.getName());
 	}
 
 	@Override

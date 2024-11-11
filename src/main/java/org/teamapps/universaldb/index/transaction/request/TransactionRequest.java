@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@
 package org.teamapps.universaldb.index.transaction.request;
 
 import org.teamapps.universaldb.index.transaction.TransactionType;
-import org.teamapps.universaldb.schema.Schema;
-import org.teamapps.universaldb.util.DataStreamUtil;
+import org.teamapps.universaldb.model.DatabaseModel;
 
 import java.io.*;
 import java.util.*;
@@ -35,26 +34,30 @@ public class TransactionRequest {
 	private final long timestamp;
 	private final List<TransactionRequestRecord> records = new ArrayList<>();
 
-	private Schema schema;
+	private DatabaseModel databaseModel;
 	private final Set<Integer> createRecordCorrelationSet = new HashSet<>();
 	private final Map<Integer, Integer> recordIdByCorrelationId = new HashMap<>();
 
 
 	public TransactionRequest(long nodeId, long requestId, int userId) {
+		this(nodeId, requestId, userId, System.currentTimeMillis());
+	}
+
+	public TransactionRequest(long nodeId, long requestId, int userId, long timestamp) {
 		this.nodeId = nodeId;
 		this.requestId = requestId;
 		this.transactionType = TransactionType.DATA_UPDATE;
 		this.userId = userId;
-		this.timestamp = System.currentTimeMillis();
+		this.timestamp = timestamp;
 	}
 
-	public TransactionRequest(long nodeId, long requestId, int userId, Schema schema) {
+	public TransactionRequest(long nodeId, long requestId, int userId, DatabaseModel databaseModel) {
 		this.nodeId = nodeId;
 		this.requestId = requestId;
 		this.transactionType = TransactionType.MODEL_UPDATE;
 		this.userId = userId;
 		this.timestamp = System.currentTimeMillis();
-		this.schema = schema;
+		this.databaseModel = databaseModel;
 	}
 
 	public TransactionRequest(byte[] bytes) throws IOException {
@@ -70,7 +73,7 @@ public class TransactionRequest {
 				records.add(new TransactionRequestRecord(dis));
 			}
 		} else {
-			this.schema = new Schema(dis);
+			this.databaseModel = new DatabaseModel(dis);
 		}
 	}
 
@@ -88,7 +91,7 @@ public class TransactionRequest {
 				record.write(dos);
 			}
 		} else {
-			DataStreamUtil.writeStringWithLengthHeader(dos, schema.getSchemaDefinition());
+			databaseModel.write(dos);
 		}
 		return bos.toByteArray();
 	}
@@ -124,8 +127,8 @@ public class TransactionRequest {
 		return records;
 	}
 
-	public Schema getSchema() {
-		return schema;
+	public DatabaseModel getDatabaseModel() {
+		return databaseModel;
 	}
 
 	public int getResolvedRecordIdByCorrelationId(int correlationId) {

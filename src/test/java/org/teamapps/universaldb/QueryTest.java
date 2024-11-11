@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,6 @@ public class QueryTest {
 
 	@Test
 	public void testNumericQuery() {
-
 		int size = 1000;
 		long longOffset = 1000_000_000_000L;
 
@@ -74,7 +73,6 @@ public class QueryTest {
 
 		assertEquals(size, FieldTest.getAll().size());
 		assertEquals(size, FieldTest.getCount());
-
 		values = FieldTest.filter().intField(NumericFilter.containsFilter(1, 3, 7)).execute();
 		assertTrue(check(values, 1, 3, 7));
 
@@ -298,10 +296,10 @@ public class QueryTest {
 		}
 		List<FieldTest> values;
 
-		values = FieldTest.filter().fileField(FileFilter.sizeEquals(12805l)).execute();
+		values = FieldTest.filter().fileField(FileFilter.sizeEquals(12805)).execute();
 		assertTrue(check(values, 5, 10));
 
-		values = FieldTest.filter().fileField(FileFilter.sizeGreater(12000l)).execute();
+		values = FieldTest.filter().fileField(FileFilter.sizeGreater(12000)).execute();
 		assertTrue(check(values, 5, 10));
 
 		values = FieldTest.filter().fileField(FileFilter.sizeGreater(25000)).execute();
@@ -319,7 +317,16 @@ public class QueryTest {
 		values = FieldTest.filter().fileField(FileFilter.termContains("temp", FileDataField.NAME)).execute();
 		assertTrue(check(values, 5, 10));
 
-		values = FieldTest.filter().fileField(FileFilter.termContains("application/vnd.openxmlformats-officedocument.wordprocessingml.document", FileDataField.MIME_TYPE)).execute();
+		values = FieldTest.filter().fileField(FileFilter.termContains("sam.smith@gmail.com", FileDataField.CONTENT)).execute();
+		assertTrue(check(values, 5, 10));
+
+		values = FieldTest.filter().fileField(FileFilter.termContains("diam nonumy eirmod tempor invidunt sedz", FileDataField.CONTENT)).execute();
+		assertTrue(check(values));
+
+		values = FieldTest.filter().fileField(FileFilter.termContains("diam nonumy eirmod tempor invidunt sed", FileDataField.CONTENT)).execute();
+		assertTrue(check(values, 5, 10));
+
+		values = FieldTest.filter().fileField(FileFilter.termContains("application/vnd.openxmlformats-officedocument.wordprocessingml.document", FileDataField.META_DATA)).execute();
 		assertTrue(check(values, 5, 10));
 
 	}

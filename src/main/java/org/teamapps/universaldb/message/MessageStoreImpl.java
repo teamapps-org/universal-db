@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * UniversalDB
  * ---
- * Copyright (C) 2014 - 2023 TeamApps.org
+ * Copyright (C) 2014 - 2024 TeamApps.org
  * ---
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,14 @@
 package org.teamapps.universaldb.message;
 
 import org.teamapps.message.protocol.file.LocalFileStore;
-import org.teamapps.message.protocol.message.Message;
 import org.teamapps.message.protocol.message.MessageRecord;
 import org.teamapps.message.protocol.model.PojoObjectDecoder;
-import org.teamapps.universaldb.index.buffer.PrimitiveEntryAtomicStore;
+import org.teamapps.universaldb.index.buffer.common.PrimitiveEntryAtomicStore;
 
 import java.io.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -77,7 +75,7 @@ public class MessageStoreImpl<MESSAGE extends MessageRecord> implements MessageS
 
 	private DataOutputStream init() {
 		try {
-			lastId = (int) messagePositions.getLong(0);
+			lastId = (int) messagePositions.getLongAllowZeroId(0);
 			DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(storeFile, true), 16_000));
 			if (position == 0) {
 				dataOutputStream.writeInt((int) (System.currentTimeMillis() / 1000));
