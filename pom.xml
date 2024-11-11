@@ -20,7 +20,7 @@
 
     <artifactId>universal-db</artifactId>
     <groupId>org.teamapps</groupId>
-    <version>0.6.21-SNAPSHOT</version>
+    <version>0.7.1-SNAPSHOT</version>
 
     <name>UniversalDB</name>
     <description>Ultra fast TeamApps database</description>
@@ -47,8 +47,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <junit.version>4.13.2</junit.version>
-        <tika-version>2.9.2</tika-version>
-        <lucene-version>9.11.1</lucene-version>
+        <tika-version>3.0.0</tika-version>
+        <lucene-version>10.0.0</lucene-version>
     </properties>
 
     <distributionManagement>
