@@ -23,6 +23,7 @@ import com.github.pemistahl.lingua.api.IsoCode639_1;
 import com.github.pemistahl.lingua.api.Language;
 import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
+import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.WriteLimitReachedException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.Office;
@@ -35,8 +36,10 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.teamapps.udb.model.FileContentData;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,11 +49,30 @@ import java.util.List;
 
 public class FileContentParser {
 
+	public static TikaConfig TIKA_CONFIG;
 	private static final LanguageDetector languageDetector = LanguageDetectorBuilder.fromAllLanguages().withLowAccuracyMode().build();
 	private final File file;
 	private final String fileName;
 	private Metadata meta;
 	private FileContentData data;
+
+	static {
+		try {
+			String xmlConfig = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+					"<properties>\n" +
+					"   <parsers>\n" +
+					"       <parser class=\"org.apache.tika.parser.DefaultParser\">\n" +
+					"           <parser-exclude class=\"org.apache.tika.parser.external.CompositeExternalParser\"/>\n" +
+					"           <parser-exclude class=\"org.apache.tika.parser.executable.ExecutableParser\"/>\n" +
+					"           <parser-exclude class=\"org.apache.tika.parser.ocr.TesseractOCRParser\"/>\n" +
+					"       </parser>\n" +
+					"   </parsers>\n" +
+					"</properties>";
+			TIKA_CONFIG = new TikaConfig(new ByteArrayInputStream(xmlConfig.getBytes(StandardCharsets.UTF_8)));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	public static FileContentData parseFile(File file) {
 		return parseFile(file, file.getName());
@@ -94,7 +116,7 @@ public class FileContentParser {
 			BodyContentHandler handler = new BodyContentHandler(maxContentLength);
 			meta = new Metadata();
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-			Parser parser = new AutoDetectParser();
+			Parser parser = new AutoDetectParser(TIKA_CONFIG);
 			try {
 				parser.parse(bis, handler, meta, new ParseContext());
 			} catch (WriteLimitReachedException ignore) {
@@ -249,4 +271,5 @@ public class FileContentParser {
 		}
 		return null;
 	}
+
 }

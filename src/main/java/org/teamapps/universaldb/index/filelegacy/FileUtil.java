@@ -26,6 +26,7 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.teamapps.universaldb.index.file.value.FileContentParser;
 import org.xml.sax.SAXException;
 
 import javax.crypto.Cipher;
@@ -107,7 +108,7 @@ public class FileUtil {
 			BodyContentHandler handler = new BodyContentHandler(MAX_CHARACTERS_CONTENT);
 			Metadata meta = new Metadata();
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-			Parser parser = new AutoDetectParser();
+			Parser parser = new AutoDetectParser(FileContentParser.TIKA_CONFIG);
 			try {
 				parser.parse(bis, handler, meta, new ParseContext());
 			} catch (SAXException e) {
