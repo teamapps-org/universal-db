@@ -170,6 +170,16 @@ public class FileContentParser {
 		}
 	}
 
+	public static String getDetectedLanguage(String text) {
+		if (text != null && text.length() > 50) {
+			Language language = languageDetector.detectLanguageOf(text);
+			if (language.getIsoCode639_1() != IsoCode639_1.NONE) {
+				return language.getIsoCode639_1().name().toLowerCase();
+			}
+		}
+		return null;
+	}
+
 	private PropertyReader properties(Property... properties) {
 		return new PropertyReader(meta).properties(properties);
 	}

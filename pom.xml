@@ -42,25 +42,14 @@
     </developers>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>23</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-assembly-plugin-version>3.0.0</maven-assembly-plugin-version>
         <junit.version>4.13.2</junit.version>
-        <tika-version>3.1.0</tika-version>
-        <lucene-version>10.1.0</lucene-version>
+        <tika-version>3.2.3</tika-version>
+        <lucene-version>10.3.2</lucene-version>
     </properties>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <scm>
         <url>https://github.com/teamapps-org/universal-db</url>
@@ -75,7 +64,7 @@
         <dependency>
             <groupId>org.teamapps</groupId>
             <artifactId>teamapps-message-protocol</artifactId>
-            <version>0.16</version>
+            <version>0.18</version>
         </dependency>
 
         <dependency>
@@ -88,7 +77,7 @@
         <dependency>
             <groupId>org.agrona</groupId>
             <artifactId>agrona</artifactId>
-            <version>1.21.2</version>
+            <version>2.3.2</version>
         </dependency>
 
         <dependency>
@@ -101,31 +90,31 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.17.0</version>
+            <version>3.20.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>4.4</version>
+            <version>4.5.0</version>
         </dependency>
 
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.18.0</version>
+            <version>2.21.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.16</version>
+            <version>2.0.17</version>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.16</version>
+            <version>1.5.21</version>
         </dependency>
 
         <dependency>
@@ -223,7 +212,7 @@
             <plugin>
                 <groupId>org.teamapps</groupId>
                 <artifactId>teamapps-message-protocol-maven-plugin</artifactId>
-                <version>0.4</version>
+                <version>0.6</version>
                 <executions>
                     <execution>
                         <id>source</id>
@@ -261,13 +250,13 @@
                 </configuration>
             </plugin>
 
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>3.5.4</version>
                 <configuration>
                     <argLine>
+                        --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
                         --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
                         --add-opens=java.base/java.lang=ALL-UNNAMED
                         --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
@@ -276,8 +265,23 @@
                     </argLine>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <mavenExecutorId>forked-path</mavenExecutorId>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <tagNameFormat>v@{version}</tagNameFormat>
+                    <releaseProfiles>release</releaseProfiles>
+                    <pushChanges>true</pushChanges>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
 
     <profiles>
         <profile>
@@ -285,32 +289,21 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>2.5.3</version>
-                        <configuration>
-                            <mavenExecutorId>forked-path</mavenExecutorId>
-                            <useReleaseProfile>false</useReleaseProfile>
-                            <autoVersionSubmodules>true</autoVersionSubmodules>
-                            <tagNameFormat>v@{version}</tagNameFormat>
-                            <releaseProfiles>javadoc-jar,sources-jar,license-handling</releaseProfiles>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.13</version>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.9.0</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <deploymentName>${project.name} ${project.version}</deploymentName>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
                         </configuration>
                     </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>3.2.8</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -321,50 +314,43 @@
                             </execution>
                         </executions>
                     </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.12.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <doclint>none</doclint>
+                            <quiet>true</quiet>
+                        </configuration>
+                    </plugin>
+
                 </plugins>
             </build>
         </profile>
 
-        <profile>
-            <id>javadoc-jar</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.0.1</version>
-                        <executions>
-                            <execution>
-                                <id>generate-javadoc-jar</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>sources-jar</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
-                        <executions>
-                            <execution>
-                                <id>generate-sources-jar</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <profile>
             <id>license-handling</id>
             <build>
@@ -372,7 +358,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>license-maven-plugin</artifactId>
-                        <version>1.19</version>
+                        <version>2.7.0</version>
                         <executions>
                             <execution>
                                 <id>download-licenses</id>
@@ -395,7 +381,7 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <projectName>UniversalDB</projectName>
+                            <projectName>${project.name}</projectName>
                             <organizationName>TeamApps.org</organizationName>
                             <inceptionYear>2014</inceptionYear>
                             <licenseName>apache_v2</licenseName>
@@ -416,6 +402,7 @@
                                 <exclude>**/*.json</exclude>
                                 <exclude>**/*.svg</exclude>
                                 <exclude>**/*.txt</exclude>
+                                <exclude>**/*.xml</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
@@ -423,5 +410,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>
