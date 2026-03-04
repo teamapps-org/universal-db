@@ -233,6 +233,16 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			recordReference = new RecordReference(entity.getId(), entity.getCorrelationId());
 		}
 		int currentValue = index.getValue(getId());
+		if (currentValue == 0 && entityChangeSet.getChangeValue(index) != null) {
+			TransactionRequestRecordValue changeValue = entityChangeSet.getChangeValue(index);
+			if (entity == null && changeValue.getValue() != null) {
+				entityChangeSet.addChangeValue(index, null);
+				entityChangeSet.setReferenceChange(index, null);
+			} else if (entity != null && changeValue.getValue() == null) {
+				entityChangeSet.addChangeValue(index, recordReference);
+				entityChangeSet.setReferenceChange(index, entity);
+			}
+		}
 		if ((currentValue == 0 && entity != null) || (currentValue > 0 && entity == null) || (entity != null && (entity.getId() == 0 || entity.getId() != currentValue))) {
 			checkChangeSet();
 			entityChangeSet.addChangeValue(index, recordReference);

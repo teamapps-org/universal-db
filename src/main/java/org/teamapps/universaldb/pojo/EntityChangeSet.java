@@ -66,10 +66,6 @@ public class EntityChangeSet {
 		return entityByReference;
 	}
 
-	public TransactionRequestRecordValue getChangeValue2(FieldIndex index) {
-		return changeMap.get(index.getMappingId());
-	}
-
 	public boolean isChanged(FieldIndex fieldIndex) {
 		return changeMap.containsKey(fieldIndex.getMappingId());
 	}
