@@ -233,7 +233,7 @@ public abstract class AbstractUdbEntity<ENTITY extends Entity> implements Entity
 			recordReference = new RecordReference(entity.getId(), entity.getCorrelationId());
 		}
 		int currentValue = index.getValue(getId());
-		if (currentValue == 0 && entityChangeSet.getChangeValue(index) != null) {
+		if (currentValue == 0 && Optional.ofNullable(entityChangeSet).map(cs -> cs.getChangeValue(index)).isPresent()) {
 			TransactionRequestRecordValue changeValue = entityChangeSet.getChangeValue(index);
 			if (entity == null && changeValue.getValue() != null) {
 				entityChangeSet.addChangeValue(index, null);
