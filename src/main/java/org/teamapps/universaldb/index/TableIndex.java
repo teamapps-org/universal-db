@@ -207,6 +207,12 @@ public class TableIndex implements MappedObject {
 		try {
 			collectionTextSearchIndex.deleteAllDocuments();
 			BitSet bitSet = records.getBitSet();
+			if (deletedRecords != null) {
+				BitSet deletedBitset = deletedRecords.getBitSet();
+				if (deletedBitset.isEmpty()) {
+					bitSet.or(deletedBitset);
+				}
+			}
 			for (int id = bitSet.nextSetBit(0); id >= 0; id = bitSet.nextSetBit(id + 1)) {
 				List<FullTextIndexValue> values = new ArrayList<>();
 				for (TextIndex textField : getTextFields()) {
