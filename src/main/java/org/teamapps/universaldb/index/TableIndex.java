@@ -209,7 +209,7 @@ public class TableIndex implements MappedObject {
 			BitSet bitSet = records.getBitSet();
 			if (deletedRecords != null) {
 				BitSet deletedBitset = deletedRecords.getBitSet();
-				if (deletedBitset.isEmpty()) {
+				if (!deletedBitset.isEmpty()) {
 					bitSet.or(deletedBitset);
 				}
 			}
