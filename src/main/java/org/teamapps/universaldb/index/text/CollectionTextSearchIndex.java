@@ -71,6 +71,14 @@ public class CollectionTextSearchIndex {
 
 	public void setRecordValues(int id, List<FullTextIndexValue> values, boolean update) {
 		try {
+			setRecordValuesChecked(id, values, update);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/** Variant for recovery callers that must not report success after a failed projection write. */
+	public void setRecordValuesChecked(int id, List<FullTextIndexValue> values, boolean update) throws IOException {
 			idSearchField.setStringValue("" + id);
 			idField.setLongValue(id);
 			Document doc = new Document();
@@ -98,9 +106,6 @@ public class CollectionTextSearchIndex {
 			} else {
 				writer.addDocument(doc);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public void setFileContent(int id, String fieldName, String content, boolean update) {
@@ -143,7 +148,7 @@ public class CollectionTextSearchIndex {
 			if (filters == null || filters.isEmpty()) {
 				return bitSet;
 			}
-			DirectoryReader reader = DirectoryReader.open(writer, false, false);
+			DirectoryReader reader = DirectoryReader.open(writer, true, false);
 			IndexSearcher searcher = new IndexSearcher(reader);
 			SearchCollector collector = new SearchCollector();
 
@@ -176,6 +181,15 @@ public class CollectionTextSearchIndex {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	/** IDs present in the current projection, including writes not yet committed to disk. */
+	public BitSet getIndexedRecordIds() throws IOException {
+		try (DirectoryReader reader = DirectoryReader.open(writer, true, false)) {
+			SearchCollector collector = new SearchCollector();
+			new IndexSearcher(reader).search(new MatchAllDocsQuery(), collector);
+			return collector.getResultIds();
+		}
 	}
 
 

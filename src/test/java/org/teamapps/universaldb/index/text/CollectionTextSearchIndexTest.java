@@ -20,10 +20,30 @@
 package org.teamapps.universaldb.index.text;
 
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+import java.util.BitSet;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
 public class CollectionTextSearchIndexTest {
+
+    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+
+    @Test public void nearRealTimeSearchAppliesReplacementAndDeletionBeforeCommit() throws Exception {
+        CollectionTextSearchIndex index = new CollectionTextSearchIndex(temporary.newFolder(), "files");
+        BitSet candidates = new BitSet(); candidates.set(1);
+        try {
+            index.setRecordValues(1, List.of(new FullTextIndexValue("CONTENT", "altertext")), false);
+            assertTrue(index.filter(candidates, List.of(new TextFieldFilter(TextFilterType.TERM_EQUALS, "CONTENT", "altertext")), true).get(1));
+            index.setRecordValues(1, List.of(new FullTextIndexValue("CONTENT", "neuertext")), true);
+            assertTrue(index.filter(candidates, List.of(new TextFieldFilter(TextFilterType.TERM_EQUALS, "CONTENT", "altertext")), true).isEmpty());
+            assertTrue(index.filter(candidates, List.of(new TextFieldFilter(TextFilterType.TERM_EQUALS, "CONTENT", "neuertext")), true).get(1));
+            index.delete(1, List.of());
+            assertTrue(index.filter(candidates, List.of(new TextFieldFilter(TextFilterType.TERM_EQUALS, "CONTENT", "neuertext")), true).isEmpty());
+        } finally { index.commit(true); }
+    }
 
     @Test
     public void getMaxDoc() {

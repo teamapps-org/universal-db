@@ -33,12 +33,14 @@ import org.teamapps.universaldb.index.file.store.DatabaseFileStore;
 import org.teamapps.universaldb.index.file.store.FileStoreUtil;
 import org.teamapps.universaldb.index.file.value.*;
 import org.teamapps.universaldb.index.text.CollectionTextSearchIndex;
+import org.teamapps.universaldb.index.text.FullTextIndexValue;
 import org.teamapps.universaldb.message.MessageStore;
 import org.teamapps.universaldb.message.MessageStoreImpl;
 import org.teamapps.universaldb.model.FileFieldModel;
 
 import java.io.*;
 import java.util.BitSet;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -54,6 +56,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 	private final boolean fileStoreEncrypted;
 	private CollectionTextSearchIndex fullTextIndex;
 	private MessageStore<FileContentData> contentDataMessageStore;
+	private boolean fullTextCoverageChecked;
 
 	public FileIndex(FileFieldModel fileFieldModel, TableIndex tableIndex) {
 		super(fileFieldModel, tableIndex);
@@ -201,6 +204,7 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 				FileContentData contentData = new FileContentData(bytes);
 				contentDataMessageStore.save(contentData);
 			}
+			if (fullTextIndex != null) fullTextIndex.setRecordValuesChecked(id, storedTextValues(id), true);
 		} catch (EOFException ignore) {
 		}
 	}
@@ -219,10 +223,42 @@ public class FileIndex extends AbstractIndex<FileValue, FileFilter> {
 
 	public BitSet filterFullText(BitSet records, FileFilter fileFilter) {
 		if (fileFieldModel.isIndexContent()) {
+			ensureFullTextCoverage();
 			return fullTextIndex.filter(records, fileFilter.getTextFilters(), false);
 		} else {
 			return new BitSet();
 		}
+	}
+
+	/** A restored/missing Lucene directory must not silently hide existing files. No file parsing or downloads. */
+	private void ensureFullTextCoverage() {
+		synchronized (getTable().getDatabaseIndex().getUniversalDB()) {
+			if (fullTextCoverageChecked) return;
+			try {
+				BitSet missing = (BitSet) getTable().getRecords().clone();
+				BitSet deleted = getTable().getDeletedRecords();
+				if (deleted != null) missing.or(deleted);
+				missing.andNot(fullTextIndex.getIndexedRecordIds());
+				for (int id = missing.nextSetBit(0); id >= 0; id = missing.nextSetBit(id + 1)) {
+					if (sizeIndex.getValue(id) > 0) fullTextIndex.setRecordValuesChecked(id, storedTextValues(id), true);
+				}
+				fullTextCoverageChecked = true;
+			} catch (IOException e) {
+				throw new UncheckedIOException("Cannot restore file search index: " + getFQN(), e);
+			}
+		}
+	}
+
+	private List<FullTextIndexValue> storedTextValues(int id) {
+		List<FullTextIndexValue> values = new ArrayList<>();
+		String name = nameIndex.getValue(id);
+		values.add(new FullTextIndexValue(FileDataField.NAME.name(), name));
+		if (name != null && name.lastIndexOf('.') >= 0)
+			values.add(new FullTextIndexValue(FileDataField.EXTENSION.name(), name.substring(name.lastIndexOf('.') + 1)));
+		FileContentData data = contentDataMessageStore.getById(id);
+		if (data != null && data.getContent() != null) values.add(new FullTextIndexValue(FileDataField.CONTENT.name(), data.getContent()));
+		if (data != null && data.getMetaValues() != null) values.add(new FullTextIndexValue(FileDataField.META_DATA.name(), String.join(", ", data.getMetaValues())));
+		return values;
 	}
 
 	@Override

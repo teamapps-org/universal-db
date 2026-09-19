@@ -75,6 +75,16 @@ public class UniversalDB {
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final ThreadLocal<Integer> THREAD_LOCAL_USER_ID = ThreadLocal.withInitial(() -> 0);
 	private static final ThreadLocal<UserContext> THREAD_LOCAL_USER_CONTEXT = ThreadLocal.withInitial(() -> UserContext.create(Locale.US));
+	// Process-local invalidation tokens, not persisted data or an additional per-record index.
+	private final Map<Integer, Long> tableChangeSequences = new HashMap<>();
+
+	public synchronized long getTableChangeSequence(int tableId) {
+		return tableChangeSequences.getOrDefault(tableId, 0L);
+	}
+
+	private void tableChanging(int tableId) {
+		tableChangeSequences.merge(tableId, 1L, Long::sum);
+	}
 
 	private final DatabaseManager databaseManager;
 	private final DatabaseIndex databaseIndex;
@@ -417,6 +427,7 @@ public class UniversalDB {
 	}
 
 	private void handleDataUpdateRequest(TransactionRequest request, ResolvedTransaction resolvedTransaction) throws Exception {
+		for (TransactionRequestRecord record : request.getRecords()) tableChanging(record.getTableId());
 		for (TransactionRequestRecord record : request.getRecords()) {
 			if (record.getRecordType() == TransactionRequestRecordType.CREATE || record.getRecordType() == TransactionRequestRecordType.CREATE_WITH_ID) {
 				TableIndex tableIndex = getTableIndexById(record.getTableId());
@@ -487,6 +498,7 @@ public class UniversalDB {
 		transactionIndex.writeTransaction(resolvedTransaction);
 
 		for (ResolvedTransactionRecord transactionRecord : resolvedTransaction.getTransactionRecords()) {
+			tableChanging(transactionRecord.getTableId()); // Includes inverse/cyclic reference changes.
 			TableIndex tableIndex = getTableIndexById(transactionRecord.getTableId());
 			if (tableIndex.getTableModel().isVersioning()) {
 				tableIndex.getRecordVersioningIndex().writeRecordUpdate(resolvedTransaction, transactionRecord);
@@ -518,6 +530,7 @@ public class UniversalDB {
 	}
 
 	private void handleDataUpdateTransaction(ResolvedTransaction transaction) throws Exception {
+		for (ResolvedTransactionRecord record : transaction.getTransactionRecords()) tableChanging(record.getTableId());
 		for (ResolvedTransactionRecord record : transaction.getTransactionRecords()) {
 			TableIndex tableIndex = getTableIndexById(record.getTableId());
 
